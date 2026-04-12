@@ -1,12 +1,13 @@
-import { NextResponse } from "next/server";
-import postgres from "postgres";
+-- ============================================
+-- CONDOAPP — PEGAR TODO ESTO EN EL SQL EDITOR DE SUPABASE
+-- https://supabase.com/dashboard/project/mjvusvhyugcckfxxednp/sql/new
+-- Seleccionar todo (Ctrl+A), copiar (Ctrl+C), pegar, y click RUN
+-- ============================================
 
-const MIGRATION_SECRET = "condoapp-migrate-2026";
-
-const MIGRATION_SQL = `
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
-CREATE TABLE IF NOT EXISTS organizations (
+-- 1. ORGANIZATIONS
+CREATE TABLE organizations (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   name TEXT NOT NULL,
   address TEXT NOT NULL DEFAULT '',
@@ -19,7 +20,8 @@ CREATE TABLE IF NOT EXISTS organizations (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-CREATE TABLE IF NOT EXISTS profiles (
+-- 2. PROFILES
+CREATE TABLE profiles (
   id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
   email TEXT NOT NULL,
   full_name TEXT NOT NULL DEFAULT '',
@@ -31,7 +33,8 @@ CREATE TABLE IF NOT EXISTS profiles (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-CREATE TABLE IF NOT EXISTS units (
+-- 3. UNITS
+CREATE TABLE units (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
   unit_number TEXT NOT NULL,
@@ -43,7 +46,8 @@ CREATE TABLE IF NOT EXISTS units (
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-CREATE TABLE IF NOT EXISTS unit_residents (
+-- 4. UNIT_RESIDENTS
+CREATE TABLE unit_residents (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   unit_id UUID NOT NULL REFERENCES units(id) ON DELETE CASCADE,
   profile_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
@@ -54,7 +58,8 @@ CREATE TABLE IF NOT EXISTS unit_residents (
   UNIQUE(unit_id, profile_id)
 );
 
-CREATE TABLE IF NOT EXISTS invoices (
+-- 5. INVOICES
+CREATE TABLE invoices (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
   unit_id UUID NOT NULL REFERENCES units(id) ON DELETE CASCADE,
@@ -67,7 +72,8 @@ CREATE TABLE IF NOT EXISTS invoices (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-CREATE TABLE IF NOT EXISTS transactions (
+-- 6. TRANSACTIONS
+CREATE TABLE transactions (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   invoice_id UUID NOT NULL REFERENCES invoices(id) ON DELETE CASCADE,
   amount NUMERIC(12,2) NOT NULL,
@@ -80,7 +86,8 @@ CREATE TABLE IF NOT EXISTS transactions (
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-CREATE TABLE IF NOT EXISTS fee_breakdown (
+-- 7. FEE_BREAKDOWN
+CREATE TABLE fee_breakdown (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
   concept TEXT NOT NULL,
@@ -89,7 +96,8 @@ CREATE TABLE IF NOT EXISTS fee_breakdown (
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-CREATE TABLE IF NOT EXISTS expense_records (
+-- 8. EXPENSE_RECORDS
+CREATE TABLE expense_records (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
   category TEXT NOT NULL,
@@ -102,7 +110,8 @@ CREATE TABLE IF NOT EXISTS expense_records (
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-CREATE TABLE IF NOT EXISTS maintenance_requests (
+-- 9. MAINTENANCE_REQUESTS
+CREATE TABLE maintenance_requests (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
   unit_id UUID REFERENCES units(id) ON DELETE SET NULL,
@@ -120,7 +129,8 @@ CREATE TABLE IF NOT EXISTS maintenance_requests (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-CREATE TABLE IF NOT EXISTS maintenance_status_log (
+-- 10. MAINTENANCE_STATUS_LOG
+CREATE TABLE maintenance_status_log (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   request_id UUID NOT NULL REFERENCES maintenance_requests(id) ON DELETE CASCADE,
   old_status TEXT,
@@ -130,7 +140,8 @@ CREATE TABLE IF NOT EXISTS maintenance_status_log (
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-CREATE TABLE IF NOT EXISTS announcements (
+-- 11. ANNOUNCEMENTS
+CREATE TABLE announcements (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
   author_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
@@ -143,7 +154,8 @@ CREATE TABLE IF NOT EXISTS announcements (
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-CREATE TABLE IF NOT EXISTS common_areas (
+-- 12. COMMON_AREAS
+CREATE TABLE common_areas (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
   name TEXT NOT NULL,
@@ -154,7 +166,8 @@ CREATE TABLE IF NOT EXISTS common_areas (
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-CREATE TABLE IF NOT EXISTS reservations (
+-- 13. RESERVATIONS
+CREATE TABLE reservations (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   common_area_id UUID NOT NULL REFERENCES common_areas(id) ON DELETE CASCADE,
   reserved_by UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
@@ -165,7 +178,8 @@ CREATE TABLE IF NOT EXISTS reservations (
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-CREATE TABLE IF NOT EXISTS assemblies (
+-- 14. ASSEMBLIES
+CREATE TABLE assemblies (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
   title TEXT NOT NULL,
@@ -176,7 +190,8 @@ CREATE TABLE IF NOT EXISTS assemblies (
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-CREATE TABLE IF NOT EXISTS votes (
+-- 15. VOTES
+CREATE TABLE votes (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   assembly_id UUID NOT NULL REFERENCES assemblies(id) ON DELETE CASCADE,
   question TEXT NOT NULL,
@@ -186,7 +201,8 @@ CREATE TABLE IF NOT EXISTS votes (
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-CREATE TABLE IF NOT EXISTS vote_responses (
+-- 16. VOTE_RESPONSES
+CREATE TABLE vote_responses (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   vote_id UUID NOT NULL REFERENCES votes(id) ON DELETE CASCADE,
   voter_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
@@ -195,7 +211,8 @@ CREATE TABLE IF NOT EXISTS vote_responses (
   UNIQUE(vote_id, voter_id)
 );
 
-CREATE TABLE IF NOT EXISTS access_passes (
+-- 17. ACCESS_PASSES
+CREATE TABLE access_passes (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
   created_by UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
@@ -208,18 +225,20 @@ CREATE TABLE IF NOT EXISTS access_passes (
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-CREATE INDEX IF NOT EXISTS idx_profiles_org ON profiles(organization_id);
-CREATE INDEX IF NOT EXISTS idx_units_org ON units(organization_id);
-CREATE INDEX IF NOT EXISTS idx_invoices_unit ON invoices(unit_id);
-CREATE INDEX IF NOT EXISTS idx_invoices_status ON invoices(status);
-CREATE INDEX IF NOT EXISTS idx_invoices_due ON invoices(due_date);
-CREATE INDEX IF NOT EXISTS idx_transactions_invoice ON transactions(invoice_id);
-CREATE INDEX IF NOT EXISTS idx_maintenance_org ON maintenance_requests(organization_id);
-CREATE INDEX IF NOT EXISTS idx_maintenance_status ON maintenance_requests(status);
-CREATE INDEX IF NOT EXISTS idx_announcements_org ON announcements(organization_id);
-CREATE INDEX IF NOT EXISTS idx_reservations_area ON reservations(common_area_id);
-CREATE INDEX IF NOT EXISTS idx_access_passes_qr ON access_passes(qr_code);
+-- INDEXES
+CREATE INDEX idx_profiles_org ON profiles(organization_id);
+CREATE INDEX idx_units_org ON units(organization_id);
+CREATE INDEX idx_invoices_unit ON invoices(unit_id);
+CREATE INDEX idx_invoices_status ON invoices(status);
+CREATE INDEX idx_invoices_due ON invoices(due_date);
+CREATE INDEX idx_transactions_invoice ON transactions(invoice_id);
+CREATE INDEX idx_maintenance_org ON maintenance_requests(organization_id);
+CREATE INDEX idx_maintenance_status ON maintenance_requests(status);
+CREATE INDEX idx_announcements_org ON announcements(organization_id);
+CREATE INDEX idx_reservations_area ON reservations(common_area_id);
+CREATE INDEX idx_access_passes_qr ON access_passes(qr_code);
 
+-- AUTO-CREATE PROFILE ON SIGNUP
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -229,11 +248,11 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
-DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
 CREATE TRIGGER on_auth_user_created
   AFTER INSERT ON auth.users
   FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
 
+-- AUTO-UPDATE updated_at
 CREATE OR REPLACE FUNCTION update_updated_at()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -242,15 +261,12 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-DROP TRIGGER IF EXISTS set_updated_at_organizations ON organizations;
 CREATE TRIGGER set_updated_at_organizations BEFORE UPDATE ON organizations FOR EACH ROW EXECUTE FUNCTION update_updated_at();
-DROP TRIGGER IF EXISTS set_updated_at_profiles ON profiles;
 CREATE TRIGGER set_updated_at_profiles BEFORE UPDATE ON profiles FOR EACH ROW EXECUTE FUNCTION update_updated_at();
-DROP TRIGGER IF EXISTS set_updated_at_invoices ON invoices;
 CREATE TRIGGER set_updated_at_invoices BEFORE UPDATE ON invoices FOR EACH ROW EXECUTE FUNCTION update_updated_at();
-DROP TRIGGER IF EXISTS set_updated_at_maintenance ON maintenance_requests;
 CREATE TRIGGER set_updated_at_maintenance BEFORE UPDATE ON maintenance_requests FOR EACH ROW EXECUTE FUNCTION update_updated_at();
 
+-- RLS
 ALTER TABLE organizations ENABLE ROW LEVEL SECURITY;
 ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE units ENABLE ROW LEVEL SECURITY;
@@ -269,6 +285,7 @@ ALTER TABLE votes ENABLE ROW LEVEL SECURITY;
 ALTER TABLE vote_responses ENABLE ROW LEVEL SECURITY;
 ALTER TABLE access_passes ENABLE ROW LEVEL SECURITY;
 
+-- HELPER FUNCTIONS
 CREATE OR REPLACE FUNCTION auth.user_org_id()
 RETURNS UUID AS $$
   SELECT organization_id FROM public.profiles WHERE id = auth.uid()
@@ -278,127 +295,21 @@ CREATE OR REPLACE FUNCTION auth.user_role()
 RETURNS TEXT AS $$
   SELECT role FROM public.profiles WHERE id = auth.uid()
 $$ LANGUAGE sql SECURITY DEFINER STABLE;
-`;
 
-const RLS_POLICIES = `
-DO $$ BEGIN
-  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Users can view own profile') THEN
-    CREATE POLICY "Users can view own profile" ON profiles FOR SELECT USING (id = auth.uid());
-  END IF;
-  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Users can view profiles in same org') THEN
-    CREATE POLICY "Users can view profiles in same org" ON profiles FOR SELECT USING (organization_id = auth.user_org_id());
-  END IF;
-  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Users can update own profile') THEN
-    CREATE POLICY "Users can update own profile" ON profiles FOR UPDATE USING (id = auth.uid());
-  END IF;
-  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Users can view their org') THEN
-    CREATE POLICY "Users can view their org" ON organizations FOR SELECT USING (id = auth.user_org_id());
-  END IF;
-  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Users can view units in their org') THEN
-    CREATE POLICY "Users can view units in their org" ON units FOR SELECT USING (organization_id = auth.user_org_id());
-  END IF;
-  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Users can view announcements in their org') THEN
-    CREATE POLICY "Users can view announcements in their org" ON announcements FOR SELECT USING (organization_id = auth.user_org_id());
-  END IF;
-  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Users can view maintenance in their org') THEN
-    CREATE POLICY "Users can view maintenance in their org" ON maintenance_requests FOR SELECT USING (organization_id = auth.user_org_id());
-  END IF;
-  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Users can create maintenance requests') THEN
-    CREATE POLICY "Users can create maintenance requests" ON maintenance_requests FOR INSERT WITH CHECK (organization_id = auth.user_org_id() AND reported_by = auth.uid());
-  END IF;
-  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Residents can view their invoices') THEN
-    CREATE POLICY "Residents can view their invoices" ON invoices FOR SELECT USING (unit_id IN (SELECT unit_id FROM unit_residents WHERE profile_id = auth.uid()));
-  END IF;
-  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Admins can view all invoices in org') THEN
-    CREATE POLICY "Admins can view all invoices in org" ON invoices FOR SELECT USING (organization_id = auth.user_org_id() AND auth.user_role() IN ('admin', 'super_admin'));
-  END IF;
-  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Users can view fee breakdown in their org') THEN
-    CREATE POLICY "Users can view fee breakdown in their org" ON fee_breakdown FOR SELECT USING (organization_id = auth.user_org_id());
-  END IF;
-  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Users can view expenses in their org') THEN
-    CREATE POLICY "Users can view expenses in their org" ON expense_records FOR SELECT USING (organization_id = auth.user_org_id());
-  END IF;
-  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Users can view common areas in their org') THEN
-    CREATE POLICY "Users can view common areas in their org" ON common_areas FOR SELECT USING (organization_id = auth.user_org_id());
-  END IF;
-  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Users can view passes in their org') THEN
-    CREATE POLICY "Users can view passes in their org" ON access_passes FOR SELECT USING (organization_id = auth.user_org_id());
-  END IF;
-END $$;
-`;
-
-export async function POST(request: Request) {
-  const url = new URL(request.url);
-  const secret = url.searchParams.get("secret");
-
-  if (secret !== MIGRATION_SECRET) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  const dbPassword = process.env.SUPABASE_DB_PASSWORD;
-  if (!dbPassword) {
-    return NextResponse.json({ error: "SUPABASE_DB_PASSWORD not set" }, { status: 500 });
-  }
-
-  // Try multiple connection methods
-  const configs = [
-    { host: "aws-0-us-east-1.pooler.supabase.com", port: 6543, username: "postgres.ahcybxrykpufsyludzrm" },
-    { host: "aws-0-us-east-2.pooler.supabase.com", port: 6543, username: "postgres.ahcybxrykpufsyludzrm" },
-    { host: "aws-0-sa-east-1.pooler.supabase.com", port: 6543, username: "postgres.ahcybxrykpufsyludzrm" },
-    { host: "aws-0-us-west-1.pooler.supabase.com", port: 6543, username: "postgres.ahcybxrykpufsyludzrm" },
-    { host: "aws-0-eu-west-1.pooler.supabase.com", port: 6543, username: "postgres.ahcybxrykpufsyludzrm" },
-    { host: "aws-0-ap-southeast-1.pooler.supabase.com", port: 6543, username: "postgres.ahcybxrykpufsyludzrm" },
-  ];
-
-  let sql: ReturnType<typeof postgres> | null = null;
-  let connectedHost = "";
-
-  for (const cfg of configs) {
-    try {
-      const attempt = postgres({
-        host: cfg.host,
-        port: cfg.port,
-        database: "postgres",
-        username: cfg.username,
-        password: dbPassword,
-        ssl: "require",
-        connect_timeout: 8,
-      });
-      await attempt`SELECT 1`;
-      sql = attempt;
-      connectedHost = cfg.host;
-      break;
-    } catch {
-      continue;
-    }
-  }
-
-  if (!sql) {
-    return NextResponse.json({ error: "Could not connect to any Supabase pooler region", results: configs.map(c => c.host) }, { status: 500 });
-  }
-
-  const results: string[] = [];
-
-  try {
-    results.push(`Connected via: ${connectedHost}`);
-
-    results.push("Running schema migration...");
-    await sql.unsafe(MIGRATION_SQL);
-    results.push("Schema migration completed!");
-
-    results.push("Running RLS policies...");
-    await sql.unsafe(RLS_POLICIES);
-    results.push("RLS policies completed!");
-
-    const tables = await sql`SELECT tablename FROM pg_tables WHERE schemaname = 'public' ORDER BY tablename`;
-    results.push(`Tables created: ${tables.map((t) => (t as Record<string, string>).tablename).join(", ")}`);
-
-    await sql.end();
-    return NextResponse.json({ success: true, results });
-  } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : "Unknown error";
-    results.push(`Error: ${message}`);
-    await sql.end();
-    return NextResponse.json({ error: message, results }, { status: 500 });
-  }
-}
+-- RLS POLICIES
+CREATE POLICY "Users can view own profile" ON profiles FOR SELECT USING (id = auth.uid());
+CREATE POLICY "Users can view profiles in same org" ON profiles FOR SELECT USING (organization_id = auth.user_org_id());
+CREATE POLICY "Users can update own profile" ON profiles FOR UPDATE USING (id = auth.uid());
+CREATE POLICY "Users can view their org" ON organizations FOR SELECT USING (id = auth.user_org_id());
+CREATE POLICY "Admins can update their org" ON organizations FOR UPDATE USING (id = auth.user_org_id() AND auth.user_role() IN ('admin', 'super_admin'));
+CREATE POLICY "Users can view units in their org" ON units FOR SELECT USING (organization_id = auth.user_org_id());
+CREATE POLICY "Users can view announcements in their org" ON announcements FOR SELECT USING (organization_id = auth.user_org_id());
+CREATE POLICY "Users can view maintenance in their org" ON maintenance_requests FOR SELECT USING (organization_id = auth.user_org_id());
+CREATE POLICY "Users can create maintenance requests" ON maintenance_requests FOR INSERT WITH CHECK (organization_id = auth.user_org_id() AND reported_by = auth.uid());
+CREATE POLICY "Residents can view their invoices" ON invoices FOR SELECT USING (unit_id IN (SELECT unit_id FROM unit_residents WHERE profile_id = auth.uid()));
+CREATE POLICY "Admins can view all invoices in org" ON invoices FOR SELECT USING (organization_id = auth.user_org_id() AND auth.user_role() IN ('admin', 'super_admin'));
+CREATE POLICY "Users can view fee breakdown in their org" ON fee_breakdown FOR SELECT USING (organization_id = auth.user_org_id());
+CREATE POLICY "Users can view expenses in their org" ON expense_records FOR SELECT USING (organization_id = auth.user_org_id());
+CREATE POLICY "Users can view common areas in their org" ON common_areas FOR SELECT USING (organization_id = auth.user_org_id());
+CREATE POLICY "Users can view passes in their org" ON access_passes FOR SELECT USING (organization_id = auth.user_org_id());
+CREATE POLICY "Users can create passes" ON access_passes FOR INSERT WITH CHECK (organization_id = auth.user_org_id() AND created_by = auth.uid());
