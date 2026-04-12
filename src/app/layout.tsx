@@ -45,9 +45,6 @@ export const metadata: Metadata = {
   },
 };
 
-const FONT_URL =
-  "https://fonts.googleapis.com/css2?family=Outfit:wght@600;700;800;900&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&display=swap";
-
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -62,22 +59,11 @@ export default function RootLayout({
           href="https://fonts.gstatic.com"
           crossOrigin="anonymous"
         />
-        {/* Non-render-blocking font loading */}
-        <link rel="preload" as="style" href={FONT_URL} />
-        <noscript>
-          <link rel="stylesheet" href={FONT_URL} />
-        </noscript>
       </head>
       <body className="min-h-full flex flex-col">
         {children}
-        {/* Load font stylesheet after first paint */}
         <Script id="font-loader" strategy="afterInteractive">
-          {`
-            var l = document.createElement('link');
-            l.rel = 'stylesheet';
-            l.href = '${FONT_URL}';
-            document.head.appendChild(l);
-          `}
+          {`(function(){var l=document.createElement('link');l.rel='stylesheet';l.href='https://fonts.googleapis.com/css2?family=Outfit:wght@600;700;800;900&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&display=swap';document.head.appendChild(l)})();`}
         </Script>
       </body>
     </html>

@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://condoapp-wine.vercel.app/sitemap.xml

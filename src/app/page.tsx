@@ -64,7 +64,7 @@ export default function HomePage() {
                     </svg>
                   </span>
                 </Link>
-                <span className="text-[13px] text-[#94A3B8]">Gratis hasta 15 unidades</span>
+                <span className="text-[13px] text-[#6B7280]">Gratis hasta 15 unidades</span>
               </div>
 
               <div className="hero-text hero-text-d4 mt-10 flex items-center gap-6">
@@ -85,7 +85,7 @@ export default function HomePage() {
 
             {/* Phone mockup */}
             <div className="md:col-span-6 lg:col-span-7 flex justify-center md:justify-end">
-              <div className="relative hero-phone">
+              <div className="relative hero-phone" aria-hidden="true">
                 <div className="relative w-[280px] md:w-[320px] rounded-[2.5rem] bg-[#0F172A] p-3 shadow-[0_40px_100px_-20px_rgba(15,23,42,0.35)]">
                   <div className="rounded-[2rem] bg-white overflow-hidden">
                     <div className="flex items-center justify-between px-6 py-2.5 bg-[#F8FAFC]">
@@ -93,15 +93,15 @@ export default function HomePage() {
                       <div className="flex gap-1"><div className="w-4 h-2 rounded-sm bg-[#0F172A]"/></div>
                     </div>
                     <div className="px-5 pt-4 pb-3 bg-white border-b border-[#F1F5F9]">
-                      <p className="text-[11px] text-[#94A3B8] font-medium">Residencias Los Robles</p>
+                      <p className="text-[11px] text-[#6B7280] font-medium">Residencias Los Robles</p>
                       <p className="text-[18px] font-bold text-[#0F172A] mt-0.5" style={{fontFamily:'Outfit,sans-serif'}}>Hola, Rafael</p>
                     </div>
                     <div className="px-5 pt-4">
                       <div className="rounded-2xl bg-gradient-to-br from-[#0F172A] to-[#1E293B] p-5 text-white">
-                        <p className="text-[11px] opacity-60 font-medium">Saldo pendiente</p>
+                        <p className="text-[11px] opacity-70 font-medium">Saldo pendiente</p>
                         <p className="text-[28px] font-extrabold mt-1" style={{fontFamily:'Outfit,sans-serif'}}>$85.00</p>
                         <div className="flex items-center justify-between mt-4">
-                          <span className="text-[10px] opacity-50">Vence 15 Abr</span>
+                          <span className="text-[10px] opacity-70">Vence 15 Abr</span>
                           <span className="bg-[#2DD4BF] text-[#042F2E] text-[11px] font-bold px-4 py-1.5 rounded-lg">Pagar</span>
                         </div>
                       </div>
@@ -117,7 +117,7 @@ export default function HomePage() {
                       </div>
                     </div>
                     <div className="px-5 pt-3 pb-6">
-                      <p className="text-[11px] font-semibold text-[#94A3B8] uppercase tracking-wider mb-2.5">Actividad</p>
+                      <p className="text-[11px] font-semibold text-[#6B7280] uppercase tracking-wider mb-2.5">Actividad</p>
                       {[
                         {title:"Fuga de agua",status:"En progreso",dot:"bg-amber-400",bg:"bg-amber-50",fg:"text-amber-600"},
                         {title:"Asamblea 25 Abr",status:"Urgente",dot:"bg-red-400",bg:"bg-red-50",fg:"text-red-600"},
@@ -241,20 +241,20 @@ export default function HomePage() {
                     <div className="flex items-center justify-between mb-3">
                       <div>
                         <p className="text-[13px] font-bold text-[#0F172A]">Cuota Abril 2026</p>
-                        <p className="text-[11px] text-[#94A3B8]">Vence 15 de abril</p>
+                        <p className="text-[11px] text-[#6B7280]">Vence 15 de abril</p>
                       </div>
                       <span className="text-[11px] font-bold text-[#F59E0B] bg-[#FEF3C7] px-2.5 py-1 rounded-full">Pendiente</span>
                     </div>
                     <div className="flex items-end justify-between">
-                      <p className="text-[32px] font-extrabold text-[#0F172A]" style={{fontFamily:'Outfit,sans-serif'}}>$85<span className="text-[18px] text-[#94A3B8]">.00</span></p>
+                      <p className="text-[32px] font-extrabold text-[#0F172A]" style={{fontFamily:'Outfit,sans-serif'}}>$85<span className="text-[18px] text-[#6B7280]">.00</span></p>
                       <span className="bg-[#0F172A] text-white text-[12px] font-bold px-5 py-2.5 rounded-xl">Pagar ahora</span>
                     </div>
                   </div>
-                  <div className="bg-white rounded-2xl p-5 shadow-sm border border-black/[0.04] opacity-60">
+                  <div className="bg-white rounded-2xl p-5 shadow-sm border border-black/[0.04] opacity-70">
                     <div className="flex items-center justify-between">
                       <div>
                         <p className="text-[13px] font-bold text-[#0F172A]">Cuota Marzo 2026</p>
-                        <p className="text-[11px] text-[#94A3B8]">Pagado 10 de marzo</p>
+                        <p className="text-[11px] text-[#6B7280]">Pagado 10 de marzo</p>
                       </div>
                       <span className="text-[11px] font-bold text-[#16A34A] bg-[#DCFCE7] px-2.5 py-1 rounded-full">Pagado</span>
                     </div>
@@ -294,7 +294,7 @@ export default function HomePage() {
                     <div className="h-10 w-10 rounded-xl bg-[#FEF3C7] flex items-center justify-center shrink-0" aria-hidden="true">📸</div>
                     <div>
                       <p className="text-[14px] font-bold text-[#0F172A]">Fuga de agua — Bano piso 1</p>
-                      <p className="text-[11px] text-[#94A3B8]">Reportado hace 2 dias por Rafael M.</p>
+                      <p className="text-[11px] text-[#6B7280]">Reportado hace 2 dias por Rafael M.</p>
                     </div>
                   </div>
                   <div className="flex gap-1.5 mb-3" role="progressbar" aria-valuenow={75} aria-valuemin={0} aria-valuemax={100} aria-label="Progreso de solicitud">
@@ -303,7 +303,7 @@ export default function HomePage() {
                     <div className="h-1.5 flex-1 rounded-full bg-[#F59E0B]"/>
                     <div className="h-1.5 flex-1 rounded-full bg-[#E2E8F0]"/>
                   </div>
-                  <div className="flex justify-between text-[10px] text-[#94A3B8]">
+                  <div className="flex justify-between text-[10px] text-[#6B7280]">
                     <span className="font-semibold text-[#0F172A]">Nuevo</span>
                     <span className="font-semibold text-[#0F172A]">Revision</span>
                     <span className="font-semibold text-[#F59E0B]">En progreso</span>
@@ -348,7 +348,7 @@ export default function HomePage() {
               <div className="bg-[#FAF5FF] rounded-3xl p-8 md:p-10 border border-[#EDE9FE] flex items-center justify-center">
                 <div className="w-full max-w-[260px]">
                   <div className="bg-white rounded-2xl p-6 shadow-sm border border-black/[0.04] text-center hover-lift">
-                    <div className="mx-auto w-36 h-36 bg-[#FAF5FF] rounded-2xl border-2 border-dashed border-[#C4B5FD] flex items-center justify-center mb-4" aria-label="Codigo QR de visitante">
+                    <div className="mx-auto w-36 h-36 bg-[#FAF5FF] rounded-2xl border-2 border-dashed border-[#C4B5FD] flex items-center justify-center mb-4" role="img" aria-label="Codigo QR de visitante">
                       <div className="grid grid-cols-5 gap-1">
                         {Array.from({length:25}).map((_,i) => (
                           <div key={i} className={`h-4 w-4 rounded-[3px] ${[0,1,2,4,5,6,8,10,12,14,16,18,20,22,23,24].includes(i)?"bg-[#0F172A]":"bg-[#F8FAFC]"}`} />
@@ -356,7 +356,7 @@ export default function HomePage() {
                       </div>
                     </div>
                     <p className="text-[14px] font-bold text-[#0F172A]">Maria Garcia Lopez</p>
-                    <p className="text-[12px] text-[#94A3B8] mt-0.5">V-18.456.789</p>
+                    <p className="text-[12px] text-[#6B7280] mt-0.5">V-18.456.789</p>
                     <div className="mt-3 pt-3 border-t border-[#F1F5F9]">
                       <div className="flex items-center justify-center gap-1.5 text-[11px] text-[#16A34A] font-semibold">
                         <span className="h-1.5 w-1.5 rounded-full bg-[#16A34A]"/>
@@ -435,9 +435,9 @@ export default function HomePage() {
           <div className="grid md:grid-cols-3 gap-5 max-w-4xl mx-auto">
             <Reveal>
               <div className="rounded-2xl bg-white border border-[#E2E8F0] p-7 hover-lift h-full">
-                <p className="text-[12px] font-bold text-[#94A3B8] uppercase tracking-wider">Starter</p>
+                <p className="text-[12px] font-bold text-[#6B7280] uppercase tracking-wider">Starter</p>
                 <p className="mt-3 text-[40px] font-extrabold text-[#0F172A]" style={{fontFamily:'Outfit,sans-serif'}}>Gratis</p>
-                <p className="text-[13px] text-[#94A3B8] mt-1">Hasta 15 unidades, para siempre</p>
+                <p className="text-[13px] text-[#6B7280] mt-1">Hasta 15 unidades, para siempre</p>
                 <Link href="/login" className="mt-6 w-full py-3 rounded-xl border-2 border-[#E2E8F0] text-[13px] font-semibold text-[#0F172A] hover:border-[#CBD5E1] transition-colors btn-press flex items-center justify-center">
                   Crear cuenta gratis
                 </Link>
@@ -461,6 +461,7 @@ export default function HomePage() {
                   <span className="text-[14px] text-[#94A3B8]">/ud/mes</span>
                 </div>
                 <p className="text-[13px] text-[#94A3B8] mt-1">Todo incluido</p>
+
                 <Link href="/login" className="mt-6 w-full py-3 rounded-xl bg-[#2DD4BF] text-[#042F2E] text-[13px] font-bold hover:bg-[#5EEAD4] transition-colors btn-press flex items-center justify-center">
                   Iniciar prueba gratis
                 </Link>
@@ -477,12 +478,12 @@ export default function HomePage() {
 
             <Reveal delay={240}>
               <div className="rounded-2xl bg-white border border-[#E2E8F0] p-7 hover-lift h-full">
-                <p className="text-[12px] font-bold text-[#94A3B8] uppercase tracking-wider">Business</p>
+                <p className="text-[12px] font-bold text-[#6B7280] uppercase tracking-wider">Business</p>
                 <div className="mt-3 flex items-baseline gap-1">
                   <span className="text-[40px] font-extrabold text-[#0F172A]" style={{fontFamily:'Outfit,sans-serif'}}>$3.50</span>
-                  <span className="text-[14px] text-[#94A3B8]">/ud/mes</span>
+                  <span className="text-[14px] text-[#6B7280]">/ud/mes</span>
                 </div>
-                <p className="text-[13px] text-[#94A3B8] mt-1">Administradoras profesionales</p>
+                <p className="text-[13px] text-[#6B7280] mt-1">Administradoras profesionales</p>
                 <Link href="/login" className="mt-6 w-full py-3 rounded-xl border-2 border-[#E2E8F0] text-[13px] font-semibold text-[#0F172A] hover:border-[#CBD5E1] transition-colors btn-press flex items-center justify-center">
                   Contactar ventas
                 </Link>
@@ -533,7 +534,7 @@ export default function HomePage() {
             </div>
             <span className="text-[14px] font-bold text-[#0F172A]" style={{fontFamily:'Outfit,sans-serif'}}>condoapp</span>
           </div>
-          <p className="text-[13px] text-[#94A3B8]">
+          <p className="text-[13px] text-[#6B7280]">
             Hecho por{" "}
             <a href="https://tuwebgo.net" target="_blank" rel="noopener noreferrer" className="font-semibold text-[#0D9488] hover:underline transition-colors">
               tuwebgo.net
