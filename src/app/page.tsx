@@ -1,362 +1,191 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 
-const features = [
-  {
-    title: "Paga en 2 toques",
-    description:
-      "Estado de cuenta claro. Pago movil, Zelle o transferencia. Comprobante instantaneo. Recordatorio automatico antes del vencimiento.",
-    icon: (
-      <svg className="h-7 w-7" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 004.5 19.5z" />
-      </svg>
-    ),
-    color: "from-teal-500/20 to-emerald-500/20",
-    iconColor: "text-teal-600",
-  },
-  {
-    title: "Reporta con foto",
-    description:
-      "Toma foto del problema, describe, envia. Ve el progreso en tiempo real: nuevo, en revision, en progreso, resuelto.",
-    icon: (
-      <svg className="h-7 w-7" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" d="M6.827 6.175A2.31 2.31 0 015.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 00-1.134-.175 2.31 2.31 0 01-1.64-1.055l-.822-1.316a2.192 2.192 0 00-1.736-1.039 48.774 48.774 0 00-5.232 0 2.192 2.192 0 00-1.736 1.039l-.821 1.316z" />
-        <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 12.75a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0z" />
-      </svg>
-    ),
-    color: "from-amber-500/20 to-orange-500/20",
-    iconColor: "text-amber-600",
-  },
-  {
-    title: "Transparencia total",
-    description:
-      "Ve exactamente en que se gasta cada bolivar. Ingresos, gastos con recibo, reporte mensual automatico exportable a PDF.",
-    icon: (
-      <svg className="h-7 w-7" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z" />
-      </svg>
-    ),
-    color: "from-emerald-500/20 to-green-500/20",
-    iconColor: "text-emerald-600",
-  },
-  {
-    title: "Acceso QR para visitantes",
-    description:
-      "Genera un QR con nombre y cedula de tu visitante. El vigilante lo escanea y tiene toda la info al instante. Sin llamadas.",
-    icon: (
-      <svg className="h-7 w-7" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 4.875c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5A1.125 1.125 0 013.75 9.375v-4.5zM3.75 14.625c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5a1.125 1.125 0 01-1.125-1.125v-4.5zM13.5 4.875c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5A1.125 1.125 0 0113.5 9.375v-4.5z" />
-        <path strokeLinecap="round" strokeLinejoin="round" d="M14.25 14.625v1.5a1.125 1.125 0 001.125 1.125h1.5m0 0v2.625m0-2.625h2.625m-2.625 0h-1.5" />
-      </svg>
-    ),
-    color: "from-violet-500/20 to-purple-500/20",
-    iconColor: "text-violet-600",
-  },
-  {
-    title: "Comunicados oficiales",
-    description:
-      "Adios al caos del grupo de WhatsApp. Canal oficial con avisos por prioridad y notificaciones que si puedes controlar.",
-    icon: (
-      <svg className="h-7 w-7" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" d="M10.34 15.84c-.688-.06-1.386-.09-2.09-.09H7.5a4.5 4.5 0 110-9h.75c.704 0 1.402-.03 2.09-.09m0 9.18c.253.962.584 1.892.985 2.783.247.55.06 1.21-.463 1.511l-.657.38c-.551.318-1.26.117-1.527-.461a20.845 20.845 0 01-1.44-4.282m3.102.069a18.03 18.03 0 01-.59-4.59c0-1.586.205-3.124.59-4.59" />
-      </svg>
-    ),
-    color: "from-blue-500/20 to-cyan-500/20",
-    iconColor: "text-blue-600",
-  },
-  {
-    title: "Reserva areas comunes",
-    description:
-      "Salon, piscina, gym, BBQ — reserva en 2 toques con calendario visual. Disponibilidad en tiempo real, sin conflictos.",
-    icon: (
-      <svg className="h-7 w-7" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
-      </svg>
-    ),
-    color: "from-rose-500/20 to-pink-500/20",
-    iconColor: "text-rose-600",
-  },
-];
-
-const stats = [
-  { value: "2", label: "toques para pagar", suffix: "" },
-  { value: "30", label: "menos morosidad", suffix: "%" },
-  { value: "0", label: "contrasenas", suffix: "" },
-  { value: "24/7", label: "acceso total", suffix: "" },
-];
-
-const steps = [
-  {
-    step: "01",
-    title: "Registra tu condominio",
-    description: "El administrador crea el condominio en 2 minutos. Sin contratos, sin setup fee.",
-  },
-  {
-    step: "02",
-    title: "Invita a los residentes",
-    description: "Comparte un enlace por WhatsApp. Los residentes entran con su correo, sin contrasena.",
-  },
-  {
-    step: "03",
-    title: "Todo funciona",
-    description: "Pagos, reportes, comunicados, acceso QR — todo desde el celular. Automatico.",
-  },
-];
-
 export default function HomePage() {
   return (
-    <div className="min-h-screen bg-mesh-hero relative overflow-hidden">
-      {/* Decorative orbs */}
-      <div className="pointer-events-none absolute inset-0 overflow-hidden">
-        <div className="absolute -top-40 -right-40 h-[500px] w-[500px] rounded-full bg-teal-500/8 blur-3xl animate-glow-pulse" />
-        <div className="absolute -bottom-40 -left-40 h-[600px] w-[600px] rounded-full bg-amber-500/6 blur-3xl animate-glow-pulse delay-700" />
-      </div>
-
-      {/* Nav */}
-      <header className="relative z-10 glass border-b border-white/10">
-        <div className="mx-auto flex h-18 max-w-7xl items-center justify-between px-5 md:px-8">
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-teal-500 to-emerald-600 text-white font-bold text-base shadow-lg shadow-teal-500/25">
-              C
-            </div>
-            <span className="text-xl font-bold font-heading tracking-tight">
-              Condo<span className="text-gradient">App</span>
-            </span>
-          </div>
-          <nav className="hidden md:flex items-center gap-8 text-sm font-medium text-muted-foreground">
-            <a href="#features" className="hover:text-foreground transition-colors">Funciones</a>
-            <a href="#how" className="hover:text-foreground transition-colors">Como funciona</a>
-            <a href="#pricing" className="hover:text-foreground transition-colors">Precios</a>
-          </nav>
-          <Link href="/login">
-            <Button className="rounded-full px-6 font-semibold shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/30 transition-all duration-300 hover:-translate-y-0.5">
-              Iniciar sesion
-            </Button>
-          </Link>
-        </div>
-      </header>
-
-      {/* Hero */}
-      <section className="relative z-10 mx-auto max-w-7xl px-5 md:px-8 pt-20 pb-24 md:pt-32 md:pb-36">
-        <div className="mx-auto max-w-4xl text-center">
-          <div className="animate-fade-in-up mb-8 inline-flex items-center gap-2.5 rounded-full border border-teal-200/50 bg-teal-50/80 px-5 py-2 text-sm font-medium text-teal-700 shadow-sm">
-            <span className="relative flex h-2.5 w-2.5">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-teal-400 opacity-75" />
-              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-teal-500" />
-            </span>
-            Gestion de condominios reinventada
-          </div>
-
-          <h1 className="animate-fade-in-up delay-100 font-heading text-5xl font-extrabold tracking-tight leading-[1.1] md:text-7xl lg:text-8xl">
-            Tu condominio,{" "}
-            <span className="text-gradient">
-              mas inteligente
-            </span>
-          </h1>
-
-          <p className="animate-fade-in-up delay-200 mt-7 text-lg text-muted-foreground md:text-xl leading-relaxed max-w-2xl mx-auto">
-            Paga en 2 toques. Reporta con foto. Genera QR para tus visitantes.
-            Transparencia total de las finanzas. Todo desde tu celular.
-          </p>
-
-          <div className="animate-fade-in-up delay-300 mt-10 flex flex-col gap-4 sm:flex-row sm:justify-center">
-            <Link href="/login">
-              <Button
-                size="lg"
-                className="rounded-full text-base px-10 py-6 font-semibold shadow-xl shadow-primary/30 hover:shadow-2xl hover:shadow-primary/40 transition-all duration-300 hover:-translate-y-1 bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-500 hover:to-emerald-500"
-              >
-                Empezar gratis
-                <svg className="ml-2 h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
+    <div className="min-h-screen bg-[#FAFBFC] overflow-hidden">
+      {/* ═══ NAV — minimal, conversion-optimized ═══ */}
+      <nav className="fixed top-0 inset-x-0 z-50">
+        <div className="mx-auto max-w-7xl px-5 md:px-8 py-4">
+          <div className="flex items-center justify-between rounded-2xl bg-white/70 backdrop-blur-xl border border-black/[0.04] px-5 py-3 shadow-[0_2px_20px_rgba(0,0,0,0.04)]">
+            <div className="flex items-center gap-2.5">
+              <div className="h-9 w-9 rounded-xl bg-[#0F172A] flex items-center justify-center">
+                <svg viewBox="0 0 24 24" className="h-5 w-5 text-[#2DD4BF]" fill="currentColor">
+                  <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round"/>
                 </svg>
-              </Button>
-            </Link>
-            <a href="#how">
-              <Button
-                size="lg"
-                variant="outline"
-                className="rounded-full text-base px-10 py-6 font-semibold border-2 hover:bg-muted/50 transition-all duration-300"
-              >
-                Ver como funciona
-              </Button>
-            </a>
-          </div>
-
-          <p className="animate-fade-in-up delay-400 mt-5 text-sm text-muted-foreground">
-            Gratis hasta 15 unidades. Sin tarjeta de credito. Sin contratos.
-          </p>
-        </div>
-
-        {/* Stats bar */}
-        <div className="animate-fade-in-up delay-500 mt-20 mx-auto max-w-3xl">
-          <div className="glass rounded-2xl p-1 shadow-xl shadow-black/5">
-            <div className="grid grid-cols-2 md:grid-cols-4 divide-x divide-border/50">
-              {stats.map((stat) => (
-                <div key={stat.label} className="px-6 py-5 text-center">
-                  <div className="font-heading text-3xl font-extrabold text-foreground">
-                    {stat.value}
-                    <span className="text-gradient">{stat.suffix}</span>
-                  </div>
-                  <div className="mt-1 text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                    {stat.label}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Social proof */}
-      <section className="relative z-10 border-y bg-muted/30 py-10">
-        <div className="mx-auto max-w-7xl px-5 md:px-8">
-          <p className="text-center text-sm font-medium text-muted-foreground tracking-wide">
-            DISEÑADO PARA CONDOMINIOS EN VENEZUELA Y TODA LATINOAMERICA
-          </p>
-          <div className="mt-6 flex flex-wrap items-center justify-center gap-x-12 gap-y-4 text-muted-foreground/40">
-            <span className="font-heading text-2xl font-bold">Caracas</span>
-            <span className="font-heading text-2xl font-bold">Bogota</span>
-            <span className="font-heading text-2xl font-bold">CDMX</span>
-            <span className="font-heading text-2xl font-bold">Santiago</span>
-            <span className="font-heading text-2xl font-bold">Lima</span>
-            <span className="font-heading text-2xl font-bold">Panama</span>
-          </div>
-        </div>
-      </section>
-
-      {/* Features */}
-      <section id="features" className="relative z-10 py-24 md:py-32">
-        <div className="mx-auto max-w-7xl px-5 md:px-8">
-          <div className="text-center mb-16">
-            <span className="inline-block text-sm font-semibold text-primary uppercase tracking-widest mb-3">
-              Funciones
-            </span>
-            <h2 className="font-heading text-4xl font-extrabold tracking-tight md:text-5xl">
-              Todo lo que tu condominio necesita
-            </h2>
-            <p className="mt-4 text-lg text-muted-foreground max-w-2xl mx-auto">
-              Sin complejidad. Sin curva de aprendizaje. Si sabes usar WhatsApp, sabes usar CondoApp.
-            </p>
-          </div>
-
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {features.map((feature, idx) => (
-              <div
-                key={feature.title}
-                className="group relative rounded-2xl border bg-card p-7 transition-all duration-500 hover:shadow-xl hover:shadow-black/5 hover:-translate-y-1 hover:border-primary/20"
-              >
-                <div className={`mb-5 flex h-14 w-14 items-center justify-center rounded-xl bg-gradient-to-br ${feature.color} ${feature.iconColor} transition-transform duration-500 group-hover:scale-110`}>
-                  {feature.icon}
-                </div>
-                <h3 className="font-heading text-xl font-bold mb-2">{feature.title}</h3>
-                <p className="text-[15px] text-muted-foreground leading-relaxed">
-                  {feature.description}
-                </p>
               </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* How it works */}
-      <section id="how" className="relative z-10 py-24 md:py-32 bg-gradient-to-b from-muted/50 to-background">
-        <div className="mx-auto max-w-7xl px-5 md:px-8">
-          <div className="text-center mb-16">
-            <span className="inline-block text-sm font-semibold text-primary uppercase tracking-widest mb-3">
-              Como funciona
-            </span>
-            <h2 className="font-heading text-4xl font-extrabold tracking-tight md:text-5xl">
-              Listo en 3 pasos
-            </h2>
-            <p className="mt-4 text-lg text-muted-foreground max-w-xl mx-auto">
-              Tu condominio operando de forma digital en menos de 5 minutos.
-            </p>
-          </div>
-
-          <div className="grid gap-8 md:grid-cols-3">
-            {steps.map((step, idx) => (
-              <div key={step.step} className="relative text-center md:text-left">
-                <div className="mb-5 inline-flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-teal-500 to-emerald-600 text-white font-heading text-xl font-extrabold shadow-lg shadow-teal-500/20">
-                  {step.step}
-                </div>
-                {idx < 2 && (
-                  <div className="hidden md:block absolute top-8 left-[calc(50%+40px)] w-[calc(100%-80px)] h-px bg-gradient-to-r from-primary/30 to-transparent" />
-                )}
-                <h3 className="font-heading text-xl font-bold mb-2">{step.title}</h3>
-                <p className="text-[15px] text-muted-foreground leading-relaxed">
-                  {step.description}
-                </p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* QR Feature highlight */}
-      <section className="relative z-10 py-24 md:py-32 overflow-hidden">
-        <div className="mx-auto max-w-7xl px-5 md:px-8">
-          <div className="grid gap-12 md:grid-cols-2 items-center">
-            <div>
-              <span className="inline-block text-sm font-semibold text-violet-600 uppercase tracking-widest mb-3">
-                Nuevo
+              <span className="text-[17px] font-bold tracking-tight" style={{fontFamily:'Outfit,sans-serif'}}>
+                condo<span className="text-[#0D9488]">app</span>
               </span>
-              <h2 className="font-heading text-4xl font-extrabold tracking-tight md:text-5xl mb-6">
-                Acceso QR para{" "}
-                <span className="text-gradient">visitantes</span>
-              </h2>
-              <p className="text-lg text-muted-foreground leading-relaxed mb-8">
-                Tu visitante recibe un QR por WhatsApp. Llega a la puerta, el vigilante lo escanea y tiene nombre, cedula y apartamento al instante. Sin llamadas, sin esperas, sin papel.
+            </div>
+            <div className="hidden md:flex items-center gap-1 text-[13px] font-medium text-[#64748B]">
+              <a href="#problema" className="px-3 py-1.5 rounded-lg hover:text-[#0F172A] hover:bg-black/[0.03] transition-all">El problema</a>
+              <a href="#solucion" className="px-3 py-1.5 rounded-lg hover:text-[#0F172A] hover:bg-black/[0.03] transition-all">Solucion</a>
+              <a href="#precio" className="px-3 py-1.5 rounded-lg hover:text-[#0F172A] hover:bg-black/[0.03] transition-all">Precio</a>
+            </div>
+            <Link href="/login">
+              <button className="bg-[#0F172A] text-white text-[13px] font-semibold px-5 py-2.5 rounded-xl hover:bg-[#1E293B] transition-colors">
+                Entrar
+              </button>
+            </Link>
+          </div>
+        </div>
+      </nav>
+
+      {/* ═══ HERO — asymmetric, product-forward ═══ */}
+      <section className="relative pt-32 pb-20 md:pt-40 md:pb-32">
+        {/* Subtle grid bg */}
+        <div className="absolute inset-0 opacity-[0.03]" style={{backgroundImage:'radial-gradient(#0F172A 1px, transparent 1px)',backgroundSize:'24px 24px'}} />
+
+        <div className="relative mx-auto max-w-7xl px-5 md:px-8">
+          <div className="grid md:grid-cols-12 gap-8 md:gap-4 items-center">
+            {/* Left — Copy */}
+            <div className="md:col-span-6 lg:col-span-5">
+              <div className="inline-flex items-center gap-2 bg-[#F0FDFA] border border-[#99F6E4] rounded-full px-3.5 py-1.5 mb-6">
+                <span className="h-1.5 w-1.5 rounded-full bg-[#0D9488] animate-pulse" />
+                <span className="text-[12px] font-semibold text-[#0F766E] tracking-wide uppercase">Disponible ahora</span>
+              </div>
+
+              <h1 className="text-[clamp(2.5rem,5.5vw,4.5rem)] font-extrabold leading-[1.05] tracking-[-0.03em] text-[#0F172A]" style={{fontFamily:'Outfit,sans-serif'}}>
+                La app que tu condominio{" "}
+                <span className="relative inline-block">
+                  <span className="relative z-10">merece</span>
+                  <span className="absolute bottom-1 left-0 right-0 h-3 md:h-4 bg-[#99F6E4]/60 -z-0 rounded-sm" />
+                </span>
+              </h1>
+
+              <p className="mt-5 text-[17px] leading-[1.7] text-[#475569] max-w-lg">
+                Pagos transparentes. Mantenimiento con foto y seguimiento. Acceso QR para visitantes. Sin contrasenas. Sin caos.
               </p>
-              <div className="space-y-4">
-                {[
-                  "Propietario ingresa nombre y cedula del visitante",
-                  "QR se genera y se envia por WhatsApp automaticamente",
-                  "Vigilante escanea, verifica cedula y da acceso",
-                  "Propietario recibe notificacion cuando su visitante ingresa",
-                ].map((item, idx) => (
-                  <div key={idx} className="flex items-start gap-3">
-                    <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-teal-100 text-teal-700 text-sm font-bold mt-0.5">
-                      {idx + 1}
-                    </div>
-                    <span className="text-[15px] leading-relaxed">{item}</span>
+
+              <div className="mt-8 flex flex-wrap items-center gap-3">
+                <Link href="/login">
+                  <button className="group bg-[#0F172A] text-white text-[15px] font-semibold pl-7 pr-5 py-4 rounded-2xl hover:bg-[#1E293B] transition-all duration-300 flex items-center gap-3 shadow-[0_4px_24px_rgba(15,23,42,0.15)] hover:shadow-[0_8px_32px_rgba(15,23,42,0.2)] hover:-translate-y-0.5">
+                    Empezar gratis
+                    <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/10 group-hover:bg-white/20 transition-colors">
+                      <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12h15m0 0l-6.75-6.75M19.5 12l-6.75 6.75" />
+                      </svg>
+                    </span>
+                  </button>
+                </Link>
+                <span className="text-[13px] text-[#94A3B8]">Gratis hasta 15 unidades</span>
+              </div>
+
+              {/* Trust badges */}
+              <div className="mt-10 flex items-center gap-6">
+                <div className="flex items-center gap-2">
+                  <div className="flex -space-x-2">
+                    {["#0D9488","#F59E0B","#6366F1","#EC4899"].map((c,i) => (
+                      <div key={i} className="h-8 w-8 rounded-full border-2 border-white flex items-center justify-center text-white text-[10px] font-bold" style={{background:c}}>
+                        {["RM","JL","AC","MV"][i]}
+                      </div>
+                    ))}
                   </div>
-                ))}
+                  <div className="text-[12px] leading-tight text-[#64748B]">
+                    <span className="font-semibold text-[#0F172A]">Condominios</span><br/>ya conectados
+                  </div>
+                </div>
               </div>
             </div>
-            <div className="relative flex items-center justify-center">
-              <div className="relative w-72 h-72 md:w-80 md:h-80">
-                {/* QR visual */}
-                <div className="absolute inset-0 rounded-3xl bg-gradient-to-br from-violet-100 to-teal-50 border-2 border-violet-200/50 shadow-2xl shadow-violet-500/10 flex items-center justify-center">
-                  <div className="text-center">
-                    <div className="mx-auto mb-4 grid grid-cols-5 gap-1.5 w-32">
-                      {Array.from({ length: 25 }).map((_, i) => (
-                        <div
-                          key={i}
-                          className={`h-5 w-5 rounded-sm ${
-                            [0,1,2,4,5,6,8,10,12,14,16,18,20,22,23,24].includes(i)
-                              ? "bg-foreground/80"
-                              : "bg-transparent"
-                          }`}
-                        />
+
+            {/* Right — Phone mockup showing the real app */}
+            <div className="md:col-span-6 lg:col-span-7 flex justify-center md:justify-end">
+              <div className="relative">
+                {/* Phone frame */}
+                <div className="relative w-[280px] md:w-[320px] rounded-[2.5rem] bg-[#0F172A] p-3 shadow-[0_40px_100px_-20px_rgba(15,23,42,0.35)]">
+                  <div className="rounded-[2rem] bg-white overflow-hidden">
+                    {/* Status bar */}
+                    <div className="flex items-center justify-between px-6 py-2.5 bg-[#F8FAFC]">
+                      <span className="text-[11px] font-semibold text-[#0F172A]">9:41</span>
+                      <div className="flex gap-1">
+                        <div className="w-4 h-2 rounded-sm bg-[#0F172A]"/>
+                      </div>
+                    </div>
+                    {/* App header */}
+                    <div className="px-5 pt-4 pb-3 bg-white border-b border-[#F1F5F9]">
+                      <p className="text-[11px] text-[#94A3B8] font-medium">Residencias Los Robles</p>
+                      <p className="text-[18px] font-bold text-[#0F172A] mt-0.5" style={{fontFamily:'Outfit,sans-serif'}}>Hola, Rafael</p>
+                    </div>
+                    {/* Balance card */}
+                    <div className="px-5 pt-4">
+                      <div className="rounded-2xl bg-gradient-to-br from-[#0F172A] to-[#1E293B] p-5 text-white">
+                        <p className="text-[11px] opacity-60 font-medium">Saldo pendiente</p>
+                        <p className="text-[28px] font-extrabold mt-1" style={{fontFamily:'Outfit,sans-serif'}}>$85.00</p>
+                        <div className="flex items-center justify-between mt-4">
+                          <span className="text-[10px] opacity-50">Vence 15 Abr</span>
+                          <button className="bg-[#2DD4BF] text-[#042F2E] text-[11px] font-bold px-4 py-1.5 rounded-lg">
+                            Pagar
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                    {/* Quick actions */}
+                    <div className="px-5 pt-4 pb-2">
+                      <div className="grid grid-cols-4 gap-2">
+                        {[
+                          {icon:"💳",label:"Pagar"},
+                          {icon:"📸",label:"Reportar"},
+                          {icon:"🔑",label:"QR"},
+                          {icon:"📋",label:"Avisos"},
+                        ].map((a) => (
+                          <div key={a.label} className="flex flex-col items-center gap-1.5 py-2.5">
+                            <div className="h-10 w-10 rounded-xl bg-[#F1F5F9] flex items-center justify-center text-base">{a.icon}</div>
+                            <span className="text-[10px] font-medium text-[#64748B]">{a.label}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                    {/* Recent activity */}
+                    <div className="px-5 pt-3 pb-6">
+                      <p className="text-[11px] font-semibold text-[#94A3B8] uppercase tracking-wider mb-2.5">Actividad</p>
+                      {[
+                        {title:"Fuga de agua", status:"En progreso", color:"#F59E0B", dot:"bg-amber-400"},
+                        {title:"Asamblea 25 Abr", status:"Urgente", color:"#EF4444", dot:"bg-red-400"},
+                        {title:"Cuota marzo", status:"Pagado", color:"#10B981", dot:"bg-emerald-400"},
+                      ].map((item) => (
+                        <div key={item.title} className="flex items-center gap-3 py-2.5 border-b border-[#F8FAFC] last:border-0">
+                          <div className={`h-2 w-2 rounded-full ${item.dot}`} />
+                          <div className="flex-1 min-w-0">
+                            <p className="text-[13px] font-medium text-[#0F172A] truncate">{item.title}</p>
+                          </div>
+                          <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full" style={{color:item.color, background:`${item.color}15`}}>
+                            {item.status}
+                          </span>
+                        </div>
                       ))}
                     </div>
-                    <p className="text-sm font-bold text-foreground">QR Visitante</p>
-                    <p className="text-xs text-muted-foreground mt-1">Valido por 24 horas</p>
                   </div>
                 </div>
-                {/* Floating badge */}
-                <div className="absolute -top-4 -right-4 glass rounded-xl px-4 py-2.5 shadow-lg animate-float">
-                  <div className="flex items-center gap-2">
-                    <div className="h-2.5 w-2.5 rounded-full bg-emerald-500" />
-                    <span className="text-xs font-semibold">Acceso verificado</span>
+
+                {/* Floating cards around phone */}
+                <div className="absolute -left-16 top-20 hidden lg:block animate-fade-in-up delay-300">
+                  <div className="bg-white rounded-2xl shadow-[0_8px_40px_rgba(0,0,0,0.08)] border border-black/[0.04] p-4 w-48">
+                    <div className="flex items-center gap-2 mb-2">
+                      <div className="h-6 w-6 rounded-lg bg-[#DCFCE7] flex items-center justify-center">
+                        <svg className="h-3.5 w-3.5 text-[#16A34A]" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                        </svg>
+                      </div>
+                      <span className="text-[11px] font-semibold text-[#16A34A]">Pago confirmado</span>
+                    </div>
+                    <p className="text-[20px] font-extrabold text-[#0F172A]" style={{fontFamily:'Outfit,sans-serif'}}>$85.00</p>
+                    <p className="text-[11px] text-[#94A3B8] mt-0.5">Cuota abril — Apto 1-A</p>
                   </div>
                 </div>
-                <div className="absolute -bottom-4 -left-4 glass rounded-xl px-4 py-2.5 shadow-lg animate-float delay-300">
-                  <div className="flex items-center gap-2">
-                    <svg className="h-4 w-4 text-primary" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z" />
-                    </svg>
-                    <span className="text-xs font-semibold">Seguridad garantizada</span>
+
+                <div className="absolute -right-12 bottom-32 hidden lg:block animate-fade-in-up delay-500">
+                  <div className="bg-white rounded-2xl shadow-[0_8px_40px_rgba(0,0,0,0.08)] border border-black/[0.04] p-4 w-52">
+                    <div className="flex items-center gap-2 mb-2">
+                      <div className="h-6 w-6 rounded-lg bg-[#F0FDFA] flex items-center justify-center">
+                        <svg className="h-3.5 w-3.5 text-[#0D9488]" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 4.875c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5A1.125 1.125 0 013.75 9.375v-4.5z" />
+                        </svg>
+                      </div>
+                      <span className="text-[11px] font-semibold text-[#0D9488]">Visitante verificado</span>
+                    </div>
+                    <p className="text-[13px] font-bold text-[#0F172A]">Maria Garcia</p>
+                    <p className="text-[11px] text-[#94A3B8]">V-18.456.789 → Apto 1-A</p>
                   </div>
                 </div>
               </div>
@@ -365,191 +194,382 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Transparency section */}
-      <section className="relative z-10 py-24 md:py-32 bg-gradient-to-b from-slate-900 to-slate-800 text-white overflow-hidden">
-        <div className="absolute inset-0 bg-mesh-dark" />
-        <div className="absolute inset-0 opacity-30">
-          <div className="absolute top-1/4 left-1/4 h-64 w-64 rounded-full bg-teal-500/20 blur-3xl" />
-          <div className="absolute bottom-1/4 right-1/4 h-64 w-64 rounded-full bg-amber-500/10 blur-3xl" />
-        </div>
-        <div className="relative z-10 mx-auto max-w-7xl px-5 md:px-8 text-center">
-          <span className="inline-block text-sm font-semibold text-teal-400 uppercase tracking-widest mb-3">
-            El killer feature
-          </span>
-          <h2 className="font-heading text-4xl font-extrabold tracking-tight md:text-5xl text-white mb-6">
-            Transparencia financiera total
-          </h2>
-          <p className="text-lg text-slate-300 max-w-2xl mx-auto mb-12 leading-relaxed">
-            La queja #1 en condominios de Latinoamerica: "A donde va mi dinero?"
-            Con CondoApp, cada residente ve cada ingreso y cada gasto. Con recibo. Sin excusas.
-          </p>
-          <div className="grid gap-6 md:grid-cols-3 max-w-4xl mx-auto">
+      {/* ═══ PROBLEM STATEMENT — emotional, relatable ═══ */}
+      <section id="problema" className="py-20 md:py-28 bg-[#0F172A] text-white relative overflow-hidden">
+        <div className="absolute inset-0 opacity-[0.03]" style={{backgroundImage:'radial-gradient(#fff 1px, transparent 1px)',backgroundSize:'32px 32px'}} />
+        <div className="relative mx-auto max-w-7xl px-5 md:px-8">
+          <div className="max-w-3xl">
+            <span className="text-[12px] font-bold text-[#F87171] uppercase tracking-[0.2em]">El problema real</span>
+            <h2 className="mt-4 text-[clamp(2rem,4vw,3.5rem)] font-extrabold leading-[1.1] tracking-[-0.02em]" style={{fontFamily:'Outfit,sans-serif'}}>
+              Tu condominio funciona con un grupo de WhatsApp, una planilla de Excel y mucha desconfianza.
+            </h2>
+            <p className="mt-6 text-[18px] text-[#94A3B8] leading-relaxed max-w-2xl">
+              Nadie sabe a donde va el dinero. Los reportes de mantenimiento se pierden. Las visitas son un caos en la puerta. Y la junta esta agotada de hacer todo manual.
+            </p>
+          </div>
+
+          <div className="mt-14 grid md:grid-cols-3 gap-6">
             {[
-              { icon: "chart", title: "Ingresos vs gastos", desc: "Dashboard en tiempo real visible para todos los residentes" },
-              { icon: "receipt", title: "Cada gasto documentado", desc: "Foto de factura adjunta a cada gasto. Auditoria permanente" },
-              { icon: "pdf", title: "Reporte mensual PDF", desc: "Auto-generado, exportable, listo para la asamblea. Ahorra horas" },
-            ].map((item) => (
-              <div key={item.title} className="glass-dark rounded-2xl p-6 text-left">
-                <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-teal-500/20 text-teal-400">
-                  {item.icon === "chart" && (
-                    <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75z" />
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625z" />
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z" />
-                    </svg>
-                  )}
-                  {item.icon === "receipt" && (
-                    <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 14.25l6-6m4.5-3.493V21.75l-3.75-1.5-3.75 1.5-3.75-1.5-3.75 1.5V4.757c0-1.108.806-2.057 1.907-2.185a48.507 48.507 0 0111.186 0c1.1.128 1.907 1.077 1.907 2.185zM9.75 9h.008v.008H9.75V9zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm4.125 4.5h.008v.008h-.008V13.5zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
-                    </svg>
-                  )}
-                  {item.icon === "pdf" && (
-                    <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
-                    </svg>
-                  )}
-                </div>
-                <h3 className="font-heading text-lg font-bold text-white mb-1">{item.title}</h3>
-                <p className="text-sm text-slate-400 leading-relaxed">{item.desc}</p>
+              { number: "73%", text: "de residentes en Latam no confian en como se administra su condominio", icon: "🔒" },
+              { number: "45min", text: "promedio que gasta un admin respondiendo en el grupo de WhatsApp diariamente", icon: "⏱️" },
+              { number: "15-40%", text: "de morosidad promedio en condominios sin sistema digital de cobro", icon: "📉" },
+            ].map((stat) => (
+              <div key={stat.number} className="rounded-2xl bg-white/[0.04] border border-white/[0.06] p-6">
+                <span className="text-3xl mb-3 block">{stat.icon}</span>
+                <p className="text-[32px] font-extrabold text-[#F87171]" style={{fontFamily:'Outfit,sans-serif'}}>{stat.number}</p>
+                <p className="mt-2 text-[14px] text-[#94A3B8] leading-relaxed">{stat.text}</p>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* Pricing teaser */}
-      <section id="pricing" className="relative z-10 py-24 md:py-32">
-        <div className="mx-auto max-w-7xl px-5 md:px-8 text-center">
-          <span className="inline-block text-sm font-semibold text-primary uppercase tracking-widest mb-3">
-            Precios
-          </span>
-          <h2 className="font-heading text-4xl font-extrabold tracking-tight md:text-5xl mb-4">
-            Empieza gratis, crece sin limites
-          </h2>
-          <p className="text-lg text-muted-foreground max-w-xl mx-auto mb-12">
-            Sin setup fee. Sin contrato anual. Cancela cuando quieras.
-          </p>
+      {/* ═══ SOLUTION — narrative scroll, alternating ═══ */}
+      <section id="solucion" className="py-20 md:py-28">
+        <div className="mx-auto max-w-7xl px-5 md:px-8">
+          <div className="text-center mb-16 md:mb-24">
+            <span className="text-[12px] font-bold text-[#0D9488] uppercase tracking-[0.2em]">La solucion</span>
+            <h2 className="mt-4 text-[clamp(2rem,4vw,3rem)] font-extrabold leading-[1.1] tracking-[-0.02em] text-[#0F172A]" style={{fontFamily:'Outfit,sans-serif'}}>
+              Todo lo que tu condominio necesita.<br className="hidden md:block"/> Nada que no necesite.
+            </h2>
+          </div>
 
-          <div className="grid gap-6 md:grid-cols-3 max-w-4xl mx-auto">
-            {/* Free */}
-            <div className="rounded-2xl border-2 border-border bg-card p-8 text-left">
-              <div className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-2">Starter</div>
-              <div className="flex items-baseline gap-1 mb-1">
-                <span className="font-heading text-5xl font-extrabold">$0</span>
+          {/* Feature 1 — Payments */}
+          <div className="grid md:grid-cols-2 gap-12 md:gap-20 items-center mb-24 md:mb-32">
+            <div>
+              <div className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-[#F0FDFA] text-[#0D9488] mb-5">
+                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 004.5 19.5z" />
+                </svg>
               </div>
-              <p className="text-sm text-muted-foreground mb-6">Hasta 15 unidades, gratis para siempre</p>
-              <Link href="/login">
-                <Button variant="outline" className="w-full rounded-full font-semibold">Empezar gratis</Button>
-              </Link>
-              <ul className="mt-6 space-y-3 text-sm">
-                {["Pagos y estado de cuenta", "Mantenimiento con tracking", "Comunicados", "QR visitantes", "1 condominio"].map((f) => (
-                  <li key={f} className="flex items-center gap-2">
-                    <svg className="h-4 w-4 text-primary shrink-0" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor">
+              <h3 className="text-[28px] md:text-[32px] font-extrabold text-[#0F172A] leading-tight tracking-[-0.02em]" style={{fontFamily:'Outfit,sans-serif'}}>
+                Cobrar dejo de ser un dolor de cabeza
+              </h3>
+              <p className="mt-4 text-[16px] text-[#64748B] leading-relaxed">
+                Cada residente ve cuanto debe, con desglose. Paga con Pago Movil, Zelle o transferencia. Sube el comprobante. El admin recibe notificacion. La morosidad baja sin perseguir a nadie.
+              </p>
+              <ul className="mt-6 space-y-3">
+                {["Estado de cuenta siempre actualizado","Recordatorio automatico pre-vencimiento","Comprobante con foto del pago","Admin ve quien pago y quien no en tiempo real"].map((item) => (
+                  <li key={item} className="flex items-start gap-2.5 text-[14px] text-[#475569]">
+                    <svg className="h-5 w-5 text-[#0D9488] shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
                     </svg>
-                    {f}
+                    {item}
                   </li>
                 ))}
               </ul>
             </div>
+            <div className="bg-[#F8FAFC] rounded-3xl p-8 md:p-10 border border-[#E2E8F0]">
+              <div className="space-y-4">
+                {/* Mini payment UI */}
+                <div className="bg-white rounded-2xl p-5 shadow-sm border border-black/[0.04]">
+                  <div className="flex items-center justify-between mb-3">
+                    <div>
+                      <p className="text-[13px] font-bold text-[#0F172A]">Cuota Abril 2026</p>
+                      <p className="text-[11px] text-[#94A3B8]">Vence 15 de abril</p>
+                    </div>
+                    <span className="text-[11px] font-bold text-[#F59E0B] bg-[#FEF3C7] px-2.5 py-1 rounded-full">Pendiente</span>
+                  </div>
+                  <div className="flex items-end justify-between">
+                    <p className="text-[32px] font-extrabold text-[#0F172A]" style={{fontFamily:'Outfit,sans-serif'}}>$85<span className="text-[18px] text-[#94A3B8]">.00</span></p>
+                    <button className="bg-[#0F172A] text-white text-[12px] font-bold px-5 py-2.5 rounded-xl">Pagar ahora</button>
+                  </div>
+                </div>
+                <div className="bg-white rounded-2xl p-5 shadow-sm border border-black/[0.04] opacity-60">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-[13px] font-bold text-[#0F172A]">Cuota Marzo 2026</p>
+                      <p className="text-[11px] text-[#94A3B8]">Pagado 10 de marzo</p>
+                    </div>
+                    <span className="text-[11px] font-bold text-[#16A34A] bg-[#DCFCE7] px-2.5 py-1 rounded-full">Pagado</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
 
-            {/* Pro — highlighted */}
-            <div className="relative rounded-2xl border-2 border-primary bg-card p-8 text-left shadow-xl shadow-primary/10">
-              <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 rounded-full bg-gradient-to-r from-teal-600 to-emerald-600 px-4 py-1 text-xs font-bold text-white shadow-lg">
-                POPULAR
+          {/* Feature 2 — Maintenance (reversed) */}
+          <div className="grid md:grid-cols-2 gap-12 md:gap-20 items-center mb-24 md:mb-32">
+            <div className="md:order-2">
+              <div className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-[#FEF3C7] text-[#D97706] mb-5">
+                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M11.42 15.17l-5.384 3.024a.75.75 0 01-1.089-.65V5.462a2.25 2.25 0 011.636-2.169l3.926-1.099A2.25 2.25 0 0112 4.386v.924m0 0a2.25 2.25 0 00-.875.179L9.75 6m2.25-1.312L14.4 5.55a2.25 2.25 0 01.875.179V21m0 0a2.25 2.25 0 01-2.25 0M15 21V5.73" />
+                </svg>
               </div>
-              <div className="text-sm font-semibold text-primary uppercase tracking-wider mb-2">Pro</div>
-              <div className="flex items-baseline gap-1 mb-1">
-                <span className="font-heading text-5xl font-extrabold">$2.50</span>
-                <span className="text-muted-foreground text-sm">/unidad/mes</span>
-              </div>
-              <p className="text-sm text-muted-foreground mb-6">Para condominios que quieren todo</p>
-              <Link href="/login">
-                <Button className="w-full rounded-full font-semibold shadow-lg shadow-primary/25">Empezar prueba gratis</Button>
-              </Link>
-              <ul className="mt-6 space-y-3 text-sm">
-                {["Todo del plan Starter", "Transparencia financiera", "Reserva de areas comunes", "Multi-moneda (Bs + USD)", "Reportes PDF automaticos", "Unidades ilimitadas"].map((f) => (
-                  <li key={f} className="flex items-center gap-2">
-                    <svg className="h-4 w-4 text-primary shrink-0" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor">
+              <h3 className="text-[28px] md:text-[32px] font-extrabold text-[#0F172A] leading-tight tracking-[-0.02em]" style={{fontFamily:'Outfit,sans-serif'}}>
+                "Lo reporte hace 3 meses y nadie hizo nada" — nunca mas
+              </h3>
+              <p className="mt-4 text-[16px] text-[#64748B] leading-relaxed">
+                El residente toma foto, describe el problema y envia. El admin asigna responsable. Cada cambio de status genera notificacion. Nadie puede decir "no sabia".
+              </p>
+              <ul className="mt-6 space-y-3">
+                {["Reporte con fotos del problema","Tracking visual: nuevo → en revision → resuelto","Notificacion automatica en cada cambio","Historial completo auditable"].map((item) => (
+                  <li key={item} className="flex items-start gap-2.5 text-[14px] text-[#475569]">
+                    <svg className="h-5 w-5 text-[#D97706] shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
                     </svg>
-                    {f}
+                    {item}
                   </li>
                 ))}
               </ul>
+            </div>
+            <div className="md:order-1 bg-[#FFFBEB] rounded-3xl p-8 md:p-10 border border-[#FEF3C7]">
+              {/* Maintenance tracking mockup */}
+              <div className="bg-white rounded-2xl p-5 shadow-sm border border-black/[0.04]">
+                <div className="flex items-start gap-3 mb-4">
+                  <div className="h-10 w-10 rounded-xl bg-[#FEF3C7] flex items-center justify-center shrink-0">📸</div>
+                  <div>
+                    <p className="text-[14px] font-bold text-[#0F172A]">Fuga de agua — Bano piso 1</p>
+                    <p className="text-[11px] text-[#94A3B8]">Reportado hace 2 dias por Rafael M.</p>
+                  </div>
+                </div>
+                {/* Progress bar */}
+                <div className="flex gap-1.5 mb-3">
+                  <div className="h-1.5 flex-1 rounded-full bg-[#0F172A]"/>
+                  <div className="h-1.5 flex-1 rounded-full bg-[#0F172A]"/>
+                  <div className="h-1.5 flex-1 rounded-full bg-[#F59E0B]"/>
+                  <div className="h-1.5 flex-1 rounded-full bg-[#E2E8F0]"/>
+                </div>
+                <div className="flex justify-between text-[10px] text-[#94A3B8]">
+                  <span className="font-semibold text-[#0F172A]">Nuevo</span>
+                  <span className="font-semibold text-[#0F172A]">Revision</span>
+                  <span className="font-semibold text-[#F59E0B]">En progreso</span>
+                  <span>Resuelto</span>
+                </div>
+                <div className="mt-4 pt-4 border-t border-[#F1F5F9] flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="h-6 w-6 rounded-full bg-[#0D9488] text-white text-[9px] font-bold flex items-center justify-center">JP</div>
+                    <span className="text-[11px] text-[#64748B]">Asignado a Juan Plomero</span>
+                  </div>
+                  <span className="text-[11px] font-semibold text-[#F59E0B]">En progreso</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Feature 3 — QR Access */}
+          <div className="grid md:grid-cols-2 gap-12 md:gap-20 items-center mb-24 md:mb-32">
+            <div>
+              <div className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-[#EDE9FE] text-[#7C3AED] mb-5">
+                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 4.875c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5A1.125 1.125 0 013.75 9.375v-4.5z" />
+                </svg>
+              </div>
+              <h3 className="text-[28px] md:text-[32px] font-extrabold text-[#0F172A] leading-tight tracking-[-0.02em]" style={{fontFamily:'Outfit,sans-serif'}}>
+                Tus visitantes entran con un QR, no con una llamada
+              </h3>
+              <p className="mt-4 text-[16px] text-[#64748B] leading-relaxed">
+                Ingresa nombre y cedula de tu visitante. Le llega un QR por WhatsApp. El vigilante lo escanea y tiene todo: nombre, cedula, apartamento. Sin llamadas, sin esperas, sin cuadernos.
+              </p>
+              <ul className="mt-6 space-y-3">
+                {["QR generado en segundos, enviado por WhatsApp","Vigilante escanea y verifica identidad al instante","Registro automatico de cada acceso","Te notificamos cuando tu visitante llega"].map((item) => (
+                  <li key={item} className="flex items-start gap-2.5 text-[14px] text-[#475569]">
+                    <svg className="h-5 w-5 text-[#7C3AED] shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                    </svg>
+                    {item}
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <div className="bg-[#FAF5FF] rounded-3xl p-8 md:p-10 border border-[#EDE9FE] flex items-center justify-center">
+              {/* QR scan mockup */}
+              <div className="w-full max-w-[260px]">
+                <div className="bg-white rounded-2xl p-6 shadow-sm border border-black/[0.04] text-center">
+                  <div className="mx-auto w-36 h-36 bg-[#FAF5FF] rounded-2xl border-2 border-dashed border-[#C4B5FD] flex items-center justify-center mb-4">
+                    <div className="grid grid-cols-5 gap-1">
+                      {Array.from({length:25}).map((_,i) => (
+                        <div key={i} className={`h-4 w-4 rounded-[3px] ${[0,1,2,4,5,6,8,10,12,14,16,18,20,22,23,24].includes(i) ? "bg-[#0F172A]" : "bg-[#F8FAFC]"}`} />
+                      ))}
+                    </div>
+                  </div>
+                  <p className="text-[14px] font-bold text-[#0F172A]">Maria Garcia Lopez</p>
+                  <p className="text-[12px] text-[#94A3B8] mt-0.5">V-18.456.789</p>
+                  <div className="mt-3 pt-3 border-t border-[#F1F5F9]">
+                    <div className="flex items-center justify-center gap-1.5 text-[11px] text-[#16A34A] font-semibold">
+                      <span className="h-1.5 w-1.5 rounded-full bg-[#16A34A]"/>
+                      Pase valido — Apto 1-A
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Feature 4 — Transparency */}
+          <div className="grid md:grid-cols-2 gap-12 md:gap-20 items-center">
+            <div className="md:order-2">
+              <div className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-[#DCFCE7] text-[#16A34A] mb-5">
+                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+              </div>
+              <h3 className="text-[28px] md:text-[32px] font-extrabold text-[#0F172A] leading-tight tracking-[-0.02em]" style={{fontFamily:'Outfit,sans-serif'}}>
+                "A donde va mi dinero?" — ahora lo puedes ver
+              </h3>
+              <p className="mt-4 text-[16px] text-[#64748B] leading-relaxed">
+                Cada residente ve ingresos y gastos del condominio. Cada gasto tiene recibo. Reporte mensual automatico en PDF listo para la asamblea. Cero opacidad.
+              </p>
+              <div className="mt-6 inline-flex items-center gap-2 bg-[#F0FDF4] border border-[#BBF7D0] rounded-xl px-4 py-3">
+                <svg className="h-5 w-5 text-[#16A34A]" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z" />
+                </svg>
+                <span className="text-[13px] font-semibold text-[#16A34A]">Condominios con transparencia reducen morosidad hasta 30%</span>
+              </div>
+            </div>
+            <div className="md:order-1 bg-[#F0FDF4] rounded-3xl p-8 md:p-10 border border-[#BBF7D0]">
+              <div className="bg-white rounded-2xl p-5 shadow-sm border border-black/[0.04]">
+                <p className="text-[13px] font-bold text-[#0F172A] mb-4" style={{fontFamily:'Outfit,sans-serif'}}>Finanzas — Marzo 2026</p>
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between py-2">
+                    <span className="text-[13px] text-[#64748B]">Cuotas recaudadas</span>
+                    <span className="text-[14px] font-bold text-[#16A34A]">+$510.00</span>
+                  </div>
+                  <div className="flex items-center justify-between py-2 border-t border-[#F1F5F9]">
+                    <span className="text-[13px] text-[#64748B]">Limpieza mensual</span>
+                    <span className="text-[14px] font-bold text-[#EF4444]">-$200.00</span>
+                  </div>
+                  <div className="flex items-center justify-between py-2 border-t border-[#F1F5F9]">
+                    <span className="text-[13px] text-[#64748B]">Vigilancia</span>
+                    <span className="text-[14px] font-bold text-[#EF4444]">-$450.00</span>
+                  </div>
+                  <div className="flex items-center justify-between py-2 border-t border-[#F1F5F9]">
+                    <span className="text-[13px] text-[#64748B]">Reparacion bomba</span>
+                    <span className="text-[14px] font-bold text-[#EF4444]">-$350.00</span>
+                  </div>
+                  <div className="flex items-center justify-between py-3 border-t-2 border-[#0F172A]">
+                    <span className="text-[14px] font-bold text-[#0F172A]">Balance</span>
+                    <span className="text-[16px] font-extrabold text-[#0F172A]" style={{fontFamily:'Outfit,sans-serif'}}>-$490.00</span>
+                  </div>
+                </div>
+                <button className="mt-4 w-full text-center text-[12px] font-semibold text-[#0D9488] bg-[#F0FDFA] rounded-xl py-2.5 border border-[#99F6E4]">
+                  Descargar PDF del mes
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ═══ PRICING — clean, decisive ═══ */}
+      <section id="precio" className="py-20 md:py-28 bg-[#F8FAFC]">
+        <div className="mx-auto max-w-7xl px-5 md:px-8">
+          <div className="text-center mb-14">
+            <span className="text-[12px] font-bold text-[#0D9488] uppercase tracking-[0.2em]">Precio</span>
+            <h2 className="mt-4 text-[clamp(2rem,4vw,3rem)] font-extrabold leading-tight tracking-[-0.02em] text-[#0F172A]" style={{fontFamily:'Outfit,sans-serif'}}>
+              Empieza gratis. Crece sin limites.
+            </h2>
+            <p className="mt-3 text-[16px] text-[#64748B]">Sin setup. Sin contrato. Cancela cuando quieras.</p>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-5 max-w-4xl mx-auto">
+            {/* Starter */}
+            <div className="rounded-2xl bg-white border border-[#E2E8F0] p-7">
+              <p className="text-[12px] font-bold text-[#94A3B8] uppercase tracking-wider">Starter</p>
+              <p className="mt-3 text-[40px] font-extrabold text-[#0F172A]" style={{fontFamily:'Outfit,sans-serif'}}>Gratis</p>
+              <p className="text-[13px] text-[#94A3B8] mt-1">Hasta 15 unidades, para siempre</p>
+              <Link href="/login">
+                <button className="mt-6 w-full py-3 rounded-xl border-2 border-[#E2E8F0] text-[13px] font-semibold text-[#0F172A] hover:border-[#CBD5E1] transition-colors">
+                  Crear cuenta gratis
+                </button>
+              </Link>
+              <div className="mt-6 pt-6 border-t border-[#F1F5F9] space-y-3">
+                {["Pagos y estado de cuenta","Mantenimiento con tracking","Comunicados oficiales","QR para visitantes"].map((f) => (
+                  <div key={f} className="flex items-center gap-2 text-[13px] text-[#475569]">
+                    <svg className="h-4 w-4 text-[#0D9488] shrink-0" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5"/></svg>
+                    {f}
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Pro */}
+            <div className="rounded-2xl bg-[#0F172A] text-white p-7 relative shadow-[0_20px_60px_rgba(15,23,42,0.2)]">
+              <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-[#2DD4BF] text-[#042F2E] text-[10px] font-extrabold px-3 py-1 rounded-full uppercase tracking-wider">Popular</div>
+              <p className="text-[12px] font-bold text-[#2DD4BF] uppercase tracking-wider">Pro</p>
+              <div className="mt-3 flex items-baseline gap-1">
+                <span className="text-[40px] font-extrabold" style={{fontFamily:'Outfit,sans-serif'}}>$2.50</span>
+                <span className="text-[14px] text-[#94A3B8]">/ud/mes</span>
+              </div>
+              <p className="text-[13px] text-[#94A3B8] mt-1">Todo incluido</p>
+              <Link href="/login">
+                <button className="mt-6 w-full py-3 rounded-xl bg-[#2DD4BF] text-[#042F2E] text-[13px] font-bold hover:bg-[#5EEAD4] transition-colors">
+                  Iniciar prueba gratis
+                </button>
+              </Link>
+              <div className="mt-6 pt-6 border-t border-white/10 space-y-3">
+                {["Todo de Starter","Transparencia financiera","Reserva de areas comunes","Multi-moneda Bs + USD","Reportes PDF automaticos","Unidades ilimitadas"].map((f) => (
+                  <div key={f} className="flex items-center gap-2 text-[13px] text-[#CBD5E1]">
+                    <svg className="h-4 w-4 text-[#2DD4BF] shrink-0" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5"/></svg>
+                    {f}
+                  </div>
+                ))}
+              </div>
             </div>
 
             {/* Business */}
-            <div className="rounded-2xl border-2 border-border bg-card p-8 text-left">
-              <div className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-2">Business</div>
-              <div className="flex items-baseline gap-1 mb-1">
-                <span className="font-heading text-5xl font-extrabold">$3.50</span>
-                <span className="text-muted-foreground text-sm">/unidad/mes</span>
+            <div className="rounded-2xl bg-white border border-[#E2E8F0] p-7">
+              <p className="text-[12px] font-bold text-[#94A3B8] uppercase tracking-wider">Business</p>
+              <div className="mt-3 flex items-baseline gap-1">
+                <span className="text-[40px] font-extrabold text-[#0F172A]" style={{fontFamily:'Outfit,sans-serif'}}>$3.50</span>
+                <span className="text-[14px] text-[#94A3B8]">/ud/mes</span>
               </div>
-              <p className="text-sm text-muted-foreground mb-6">Para grandes condominios y administradoras</p>
+              <p className="text-[13px] text-[#94A3B8] mt-1">Administradoras profesionales</p>
               <Link href="/login">
-                <Button variant="outline" className="w-full rounded-full font-semibold">Contactar ventas</Button>
+                <button className="mt-6 w-full py-3 rounded-xl border-2 border-[#E2E8F0] text-[13px] font-semibold text-[#0F172A] hover:border-[#CBD5E1] transition-colors">
+                  Contactar ventas
+                </button>
               </Link>
-              <ul className="mt-6 space-y-3 text-sm">
-                {["Todo del plan Pro", "Votaciones digitales", "SLAs y escalamiento", "WhatsApp Business API", "Soporte prioritario", "Multi-propiedad"].map((f) => (
-                  <li key={f} className="flex items-center gap-2">
-                    <svg className="h-4 w-4 text-primary shrink-0" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
-                    </svg>
+              <div className="mt-6 pt-6 border-t border-[#F1F5F9] space-y-3">
+                {["Todo de Pro","Votaciones digitales","WhatsApp Business API","SLAs y escalamiento","Soporte prioritario","Multi-propiedad"].map((f) => (
+                  <div key={f} className="flex items-center gap-2 text-[13px] text-[#475569]">
+                    <svg className="h-4 w-4 text-[#0D9488] shrink-0" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5"/></svg>
                     {f}
-                  </li>
+                  </div>
                 ))}
-              </ul>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Final CTA */}
-      <section className="relative z-10 py-24 md:py-32">
-        <div className="mx-auto max-w-7xl px-5 md:px-8">
-          <div className="relative rounded-3xl bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-12 md:p-20 text-center text-white overflow-hidden">
-            <div className="absolute inset-0 opacity-20">
-              <div className="absolute top-0 left-1/3 h-48 w-48 rounded-full bg-teal-400 blur-3xl" />
-              <div className="absolute bottom-0 right-1/3 h-48 w-48 rounded-full bg-amber-400 blur-3xl" />
-            </div>
-            <div className="relative z-10">
-              <h2 className="font-heading text-4xl font-extrabold tracking-tight md:text-5xl text-white mb-4">
-                Tu condominio merece algo mejor
-              </h2>
-              <p className="text-lg text-slate-300 max-w-xl mx-auto mb-10">
-                Unete a los condominios que ya dejaron el caos de WhatsApp y las planillas de Excel.
-              </p>
-              <Link href="/login">
-                <Button
-                  size="lg"
-                  className="rounded-full text-base px-12 py-6 font-bold bg-white text-slate-900 hover:bg-slate-100 shadow-2xl transition-all duration-300 hover:-translate-y-1"
-                >
-                  Empezar gratis ahora
-                  <svg className="ml-2 h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
-                  </svg>
-                </Button>
-              </Link>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Footer */}
-      <footer className="relative z-10 border-t py-12">
-        <div className="mx-auto max-w-7xl px-5 md:px-8">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-            <div className="flex items-center gap-3">
-              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-teal-500 to-emerald-600 text-white font-bold text-sm shadow-md">
-                C
               </div>
-              <span className="text-lg font-bold font-heading">CondoApp</span>
             </div>
-            <p className="text-sm text-muted-foreground">
-              Gestion de condominios simple, transparente e inteligente.
-            </p>
           </div>
+        </div>
+      </section>
+
+      {/* ═══ FINAL CTA — bold, single-minded ═══ */}
+      <section className="py-20 md:py-28">
+        <div className="mx-auto max-w-4xl px-5 md:px-8 text-center">
+          <h2 className="text-[clamp(2rem,5vw,3.5rem)] font-extrabold leading-[1.1] tracking-[-0.03em] text-[#0F172A]" style={{fontFamily:'Outfit,sans-serif'}}>
+            Dale a tu condominio<br/>la app que se merece.
+          </h2>
+          <p className="mt-5 text-[17px] text-[#64748B] max-w-lg mx-auto">
+            2 minutos para registrarte. Sin tarjeta. Sin contrato. Gratis hasta 15 unidades.
+          </p>
+          <div className="mt-10">
+            <Link href="/login">
+              <button className="group bg-[#0F172A] text-white text-[16px] font-bold pl-8 pr-6 py-5 rounded-2xl hover:bg-[#1E293B] transition-all duration-300 inline-flex items-center gap-4 shadow-[0_8px_32px_rgba(15,23,42,0.18)] hover:shadow-[0_12px_48px_rgba(15,23,42,0.24)] hover:-translate-y-1" style={{fontFamily:'Outfit,sans-serif'}}>
+                Empezar gratis ahora
+                <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/10 group-hover:bg-white/20 transition-colors">
+                  <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12h15m0 0l-6.75-6.75M19.5 12l-6.75 6.75" />
+                  </svg>
+                </span>
+              </button>
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* ═══ FOOTER ═══ */}
+      <footer className="border-t border-[#F1F5F9] py-10">
+        <div className="mx-auto max-w-7xl px-5 md:px-8 flex flex-col md:flex-row items-center justify-between gap-4">
+          <div className="flex items-center gap-2.5">
+            <div className="h-8 w-8 rounded-lg bg-[#0F172A] flex items-center justify-center">
+              <svg viewBox="0 0 24 24" className="h-4 w-4 text-[#2DD4BF]" fill="currentColor">
+                <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </div>
+            <span className="text-[14px] font-bold text-[#0F172A]" style={{fontFamily:'Outfit,sans-serif'}}>condoapp</span>
+          </div>
+          <p className="text-[13px] text-[#94A3B8]">Gestion de condominios simple, transparente e inteligente.</p>
         </div>
       </footer>
     </div>
