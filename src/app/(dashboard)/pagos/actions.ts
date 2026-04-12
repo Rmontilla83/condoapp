@@ -63,17 +63,18 @@ export async function submitPaymentReceipt(formData: FormData) {
 
 export async function approvePayment(transactionId: string) {
   const profile = await getCurrentProfile();
-  if (!profile || (profile.role !== "admin" && profile.role !== "super_admin")) {
+  if (!profile?.organization_id || (profile.role !== "admin" && profile.role !== "super_admin")) {
     return { error: "No autorizado" };
   }
 
   const supabase = await createClient();
 
-  // Get transaction to find invoice
+  // Get transaction — verify it belongs to this org via invoice
   const { data: tx } = await supabase
     .from("transactions")
-    .select("invoice_id")
+    .select("invoice_id, invoices!inner(organization_id)")
     .eq("id", transactionId)
+    .eq("invoices.organization_id", profile.organization_id)
     .single();
 
   if (!tx) return { error: "Transaccion no encontrada" };
@@ -102,11 +103,22 @@ export async function approvePayment(transactionId: string) {
 
 export async function rejectPayment(transactionId: string) {
   const profile = await getCurrentProfile();
-  if (!profile || (profile.role !== "admin" && profile.role !== "super_admin")) {
+  if (!profile?.organization_id || (profile.role !== "admin" && profile.role !== "super_admin")) {
     return { error: "No autorizado" };
   }
 
   const supabase = await createClient();
+
+  // Verify transaction belongs to this org
+  const { data: check } = await supabase
+    .from("transactions")
+    .select("id, invoices!inner(organization_id)")
+    .eq("id", transactionId)
+    .eq("invoices.organization_id", profile.organization_id)
+    .single();
+
+  if (!check) return { error: "Transaccion no encontrada" };
+
   const { error } = await supabase
     .from("transactions")
     .update({ status: "rejected" })
