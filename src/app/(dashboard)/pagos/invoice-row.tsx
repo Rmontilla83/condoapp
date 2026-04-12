@@ -11,7 +11,7 @@ const statusConfig = {
   cancelled: { label: "Cancelado", className: "border-gray-300 text-gray-700 bg-gray-50" },
 };
 
-export function InvoiceRow({ invoice }: { invoice: Invoice }) {
+export function InvoiceRow({ invoice, rate = 0 }: { invoice: Invoice; rate?: number }) {
   const config = statusConfig[invoice.status as keyof typeof statusConfig] ?? statusConfig.pending;
   const isPaid = invoice.status === "paid";
   const isOverdue = invoice.status === "overdue";
@@ -43,7 +43,9 @@ export function InvoiceRow({ invoice }: { invoice: Invoice }) {
       <div className="flex items-center gap-3">
         <div className="text-right">
           <p className="text-sm font-bold">${Number(invoice.amount).toFixed(2)}</p>
-          <p className="text-xs text-muted-foreground">{invoice.currency}</p>
+          {rate > 0 && (
+            <p className="text-[11px] text-muted-foreground">Bs {(Number(invoice.amount) * rate).toFixed(2)}</p>
+          )}
         </div>
         {isPending ? (
           <PayDialog

@@ -193,3 +193,18 @@ export async function getOrganization(orgId: string) {
 
   return data;
 }
+
+// ── Exchange Rate ───────────────────────────────────────
+
+export async function getCurrentRate(orgId: string) {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("exchange_rates")
+    .select("rate, effective_date, source")
+    .eq("organization_id", orgId)
+    .order("effective_date", { ascending: false })
+    .limit(1)
+    .single();
+
+  return data ?? { rate: 0, effective_date: "", source: "bcv" };
+}

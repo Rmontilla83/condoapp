@@ -1,9 +1,10 @@
 import { redirect } from "next/navigation";
-import { getCurrentProfile, getAdminStats, getOrgMaintenance } from "@/lib/queries";
+import { getCurrentProfile, getAdminStats, getOrgMaintenance, getCurrentRate } from "@/lib/queries";
 import { createClient } from "@/lib/supabase/server";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { RequestManager } from "./request-manager";
 import { PaymentReviewer } from "./payment-reviewer";
+import { RateUpdater } from "./rate-updater";
 
 export default async function AdminPage() {
   const profile = await getCurrentProfile();
@@ -14,6 +15,8 @@ export default async function AdminPage() {
   }
 
   const supabase = await createClient();
+
+  const rateData = await getCurrentRate(profile.organization_id);
 
   const [stats, maintenance, pendingPaymentsRes, morosRes] = await Promise.all([
     getAdminStats(profile.organization_id),
@@ -86,6 +89,9 @@ export default async function AdminPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Tasa BCV */}
+      <RateUpdater currentRate={Number(rateData.rate)} effectiveDate={rateData.effective_date} />
 
       <div className="grid gap-6 lg:grid-cols-2">
         {/* Comprobantes pendientes de aprobación */}
