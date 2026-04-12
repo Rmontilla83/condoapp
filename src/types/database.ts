@@ -84,6 +84,31 @@ export interface MaintenanceRequest {
   created_at: string;
 }
 
+export type PassStatus = "active" | "used" | "expired" | "cancelled";
+
+export interface AccessPass {
+  id: string;
+  organization_id: string;
+  created_by: string;
+  visitor_name: string;
+  visitor_id_number: string | null;
+  qr_code: string;
+  unit_number: string | null;
+  status: PassStatus;
+  valid_from: string;
+  valid_until: string;
+  used_at: string | null;
+  created_at: string;
+}
+
+export interface AccessLog {
+  id: string;
+  pass_id: string;
+  scanned_at: string;
+  action: "granted" | "denied";
+  notes: string | null;
+}
+
 export interface Announcement {
   id: string;
   organization_id: string;
