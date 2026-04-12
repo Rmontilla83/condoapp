@@ -5,6 +5,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { RequestManager } from "./request-manager";
 import { PaymentReviewer } from "./payment-reviewer";
 import { RateUpdater } from "./rate-updater";
+import { GenerateInvoicesDialog } from "./generate-invoices-dialog";
+import { AddUnitDialog } from "./add-unit-dialog";
 
 export default async function AdminPage() {
   const profile = await getCurrentProfile();
@@ -90,8 +92,24 @@ export default async function AdminPage() {
         </Card>
       </div>
 
-      {/* Tasa BCV */}
-      <RateUpdater currentRate={Number(rateData.rate)} effectiveDate={rateData.effective_date} />
+      {/* Acciones rápidas admin */}
+      <div className="grid gap-4 md:grid-cols-3">
+        <RateUpdater currentRate={Number(rateData.rate)} effectiveDate={rateData.effective_date} />
+        <div className="rounded-xl border bg-card p-4 flex flex-col justify-between gap-3">
+          <div>
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Cobranza</p>
+            <p className="text-sm text-muted-foreground mt-1">Genera cuotas para todas las unidades de un mes</p>
+          </div>
+          <GenerateInvoicesDialog />
+        </div>
+        <div className="rounded-xl border bg-card p-4 flex flex-col justify-between gap-3">
+          <div>
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Unidades</p>
+            <p className="text-sm text-muted-foreground mt-1">{stats.totalUnits} unidades registradas</p>
+          </div>
+          <AddUnitDialog />
+        </div>
+      </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
         {/* Comprobantes pendientes de aprobación */}

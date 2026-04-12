@@ -1,6 +1,7 @@
 import { getCurrentProfile, getAnnouncements } from "@/lib/queries";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { NewAnnouncementDialog } from "./new-announcement-dialog";
 
 const priorityConfig = {
   normal: { label: "Info", className: "border-blue-300 text-blue-700 bg-blue-50" },
@@ -16,9 +17,14 @@ export default async function ComunicadosPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">Comunicados</h1>
-        <p className="text-muted-foreground">Noticias y avisos de tu comunidad</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight" style={{ fontFamily: "Outfit, sans-serif" }}>Comunicados</h1>
+          <p className="text-muted-foreground">Noticias y avisos de tu comunidad</p>
+        </div>
+        {(profile.role === "admin" || profile.role === "super_admin") && (
+          <NewAnnouncementDialog />
+        )}
       </div>
 
       {announcements.length === 0 ? (
