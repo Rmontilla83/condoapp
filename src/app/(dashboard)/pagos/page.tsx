@@ -11,16 +11,8 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import type { Invoice } from "@/types/database";
+import { InvoiceRow } from "./invoice-row";
 
-const statusConfig = {
-  pending: { label: "Pendiente", className: "border-amber-300 text-amber-700 bg-amber-50" },
-  paid: { label: "Pagado", className: "border-emerald-300 text-emerald-700 bg-emerald-50" },
-  overdue: { label: "Vencido", className: "border-red-300 text-red-700 bg-red-50" },
-  cancelled: { label: "Cancelado", className: "border-gray-300 text-gray-700 bg-gray-50" },
-};
 
 export default async function PagosPage() {
   const profile = await getCurrentProfile();
@@ -90,17 +82,14 @@ export default async function PagosPage() {
         </Card>
       </div>
 
-      {/* Boton de pago */}
+      {/* Alerta de pagos pendientes */}
       {pendingTotal > 0 && (
         <Card className="border-primary/20 bg-primary/5">
-          <CardContent className="flex items-center justify-between p-4">
-            <div>
-              <p className="font-medium">Tienes pagos pendientes</p>
-              <p className="text-sm text-muted-foreground">
-                {pendingInvoices.length} cuota{pendingInvoices.length > 1 ? "s" : ""} — ${pendingTotal.toFixed(2)} USD
-              </p>
-            </div>
-            <Button size="lg">Pagar ${pendingTotal.toFixed(2)}</Button>
+          <CardContent className="p-4">
+            <p className="font-medium">Tienes {pendingInvoices.length} cuota{pendingInvoices.length > 1 ? "s" : ""} pendiente{pendingInvoices.length > 1 ? "s" : ""}</p>
+            <p className="text-sm text-muted-foreground">
+              Total: ${pendingTotal.toFixed(2)} USD — Toca &ldquo;Reportar pago&rdquo; en cada cuota para enviar tu comprobante
+            </p>
           </CardContent>
         </Card>
       )}
@@ -147,43 +136,3 @@ export default async function PagosPage() {
   );
 }
 
-function InvoiceRow({ invoice }: { invoice: Invoice }) {
-  const config = statusConfig[invoice.status as keyof typeof statusConfig] ?? statusConfig.pending;
-  const isPaid = invoice.status === "paid";
-  const isOverdue = invoice.status === "overdue";
-
-  return (
-    <div className="flex items-center justify-between rounded-lg border p-4">
-      <div className="flex items-center gap-4">
-        <div className={`flex h-10 w-10 items-center justify-center rounded-full ${
-          isPaid ? "bg-emerald-100" : isOverdue ? "bg-red-100" : "bg-amber-100"
-        }`}>
-          {isPaid ? (
-            <svg className="h-5 w-5 text-emerald-600" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
-            </svg>
-          ) : (
-            <svg className={`h-5 w-5 ${isOverdue ? "text-red-600" : "text-amber-600"}`} fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-          )}
-        </div>
-        <div>
-          <p className="text-sm font-medium">{invoice.description}</p>
-          <p className="text-xs text-muted-foreground">
-            Vence: {new Date(invoice.due_date).toLocaleDateString("es")}
-          </p>
-        </div>
-      </div>
-      <div className="flex items-center gap-3">
-        <div className="text-right">
-          <p className="text-sm font-bold">${Number(invoice.amount).toFixed(2)}</p>
-          <p className="text-xs text-muted-foreground">{invoice.currency}</p>
-        </div>
-        <Badge variant="outline" className={config.className}>
-          {config.label}
-        </Badge>
-      </div>
-    </div>
-  );
-}
