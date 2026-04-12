@@ -1,0 +1,25 @@
+{
+  "name": "CondoApp — Gestion de Condominios",
+  "short_name": "CondoApp",
+  "description": "Pagos, mantenimiento, QR visitantes, transparencia financiera",
+  "start_url": "/dashboard",
+  "display": "standalone",
+  "background_color": "#FAFBFC",
+  "theme_color": "#0D9488",
+  "orientation": "portrait",
+  "scope": "/",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

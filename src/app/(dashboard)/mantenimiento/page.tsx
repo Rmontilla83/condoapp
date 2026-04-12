@@ -59,6 +59,15 @@ export default async function MantenimientoPage() {
                         </Badge>
                       </div>
                       <p className="text-sm text-muted-foreground mb-3">{request.description}</p>
+                      {request.photo_urls && request.photo_urls.length > 0 && (
+                        <div className="flex gap-2 mb-3">
+                          {request.photo_urls.map((url, idx) => (
+                            <a key={idx} href={url} target="_blank" rel="noopener noreferrer" className="block h-16 w-16 rounded-lg overflow-hidden border hover:opacity-80 transition-opacity">
+                              <img src={url} alt={`Foto ${idx + 1}`} className="h-full w-full object-cover" />
+                            </a>
+                          ))}
+                        </div>
+                      )}
                       <div className="flex flex-wrap gap-3 text-xs text-muted-foreground">
                         <span className="flex items-center gap-1">
                           <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">

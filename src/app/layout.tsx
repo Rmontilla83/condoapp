@@ -53,6 +53,8 @@ export default function RootLayout({
   return (
     <html lang="es" className="h-full antialiased">
       <head>
+        <link rel="manifest" href="/manifest.json" />
+        <link rel="apple-touch-icon" href="/icon-192.png" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link
           rel="preconnect"
@@ -64,6 +66,9 @@ export default function RootLayout({
         {children}
         <Script id="font-loader" strategy="afterInteractive">
           {`(function(){var l=document.createElement('link');l.rel='stylesheet';l.href='https://fonts.googleapis.com/css2?family=Outfit:wght@600;700;800;900&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&display=swap';document.head.appendChild(l)})();`}
+        </Script>
+        <Script id="sw-register" strategy="afterInteractive">
+          {`if('serviceWorker' in navigator){navigator.serviceWorker.register('/sw.js')}`}
         </Script>
       </body>
     </html>

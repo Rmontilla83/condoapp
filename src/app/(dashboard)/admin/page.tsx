@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { getCurrentProfile, getAdminStats, getOrgMaintenance } from "@/lib/queries";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { RequestManager } from "./request-manager";
 
 const statusLabels: Record<string, { label: string; className: string }> = {
   new: { label: "Nuevo", className: "border-blue-300 text-blue-700 bg-blue-50" },
@@ -64,38 +64,14 @@ export default async function AdminPage() {
         </Card>
       </div>
 
-      {/* Solicitudes pendientes */}
+      {/* Solicitudes — gestión interactiva */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">Solicitudes de mantenimiento pendientes</CardTitle>
-          <CardDescription>{pendingRequests.length} requieren atencion</CardDescription>
+          <CardTitle className="text-lg">Solicitudes de mantenimiento</CardTitle>
+          <CardDescription>{pendingRequests.length} pendientes — toca una para gestionar</CardDescription>
         </CardHeader>
         <CardContent>
-          {pendingRequests.length === 0 ? (
-            <p className="py-4 text-center text-sm text-muted-foreground">No hay solicitudes pendientes</p>
-          ) : (
-            <div className="space-y-3">
-              {pendingRequests.map((req) => (
-                <div key={req.id} className="flex items-center justify-between rounded-lg border p-3">
-                  <div className="flex items-center gap-3">
-                    <div className={`h-2 w-2 rounded-full ${
-                      req.priority === "urgent" || req.priority === "high" ? "bg-red-500" : "bg-amber-500"
-                    }`} />
-                    <div>
-                      <p className="text-sm font-medium">{req.title}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {new Date(req.created_at).toLocaleDateString("es")}
-                        {req.assigned_to ? ` — Asignado a: ${req.assigned_to}` : ""}
-                      </p>
-                    </div>
-                  </div>
-                  <Badge variant="outline" className={statusLabels[req.status]?.className ?? ""}>
-                    {statusLabels[req.status]?.label ?? req.status}
-                  </Badge>
-                </div>
-              ))}
-            </div>
-          )}
+          <RequestManager requests={maintenance} />
         </CardContent>
       </Card>
 
