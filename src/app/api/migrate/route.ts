@@ -365,7 +365,7 @@ export async function POST(request: Request) {
     results.push("RLS policies completed!");
 
     const tables = await sql`SELECT tablename FROM pg_tables WHERE schemaname = 'public' ORDER BY tablename`;
-    results.push(`Tables created: ${tables.map((t: { tablename: string }) => t.tablename).join(", ")}`);
+    results.push(`Tables created: ${tables.map((t) => (t as Record<string, string>).tablename).join(", ")}`);
 
     await sql.end();
     return NextResponse.json({ success: true, results });
