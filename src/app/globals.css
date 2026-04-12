@@ -48,7 +48,6 @@
   --radius-4xl: calc(var(--radius) * 2.6);
 }
 
-/* CondoApp Brand — "Warm Fintech" */
 :root {
   --background: #FAFBFC;
   --foreground: #0F172A;
@@ -128,139 +127,74 @@
   }
 }
 
-html {
-  scroll-behavior: smooth;
-}
+html { scroll-behavior: smooth; }
 
-/* ═══ Emil Kowalski-style animations ═══
-   Spring-based easing, purposeful motion, staggered reveals.
-   CSS-only for zero JS overhead on the animation itself. */
-
-/* Spring easing — approximates a spring with damping */
+/* ═══ Spring easing tokens ═══ */
 :root {
   --ease-spring: cubic-bezier(0.22, 1, 0.36, 1);
-  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
   --ease-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
-/* Scroll-triggered reveal — starts hidden, animates when .revealed is added */
+/* ═══ Scroll reveal — CSS transition, toggled by JS ═══ */
 .reveal-on-scroll {
   opacity: 0;
   transform: translateY(28px);
-  transition:
-    opacity 0.8s var(--ease-spring),
-    transform 0.8s var(--ease-spring);
-  will-change: opacity, transform;
+  transition: opacity 0.7s var(--ease-spring), transform 0.7s var(--ease-spring);
 }
-
 .reveal-on-scroll.revealed {
   opacity: 1;
-  transform: translateY(0);
+  transform: none;
 }
 
-/* Hero load animations — CSS only, no JS needed */
+/* ═══ Hero entrance — CSS animations, no JS ═══ */
 @keyframes hero-enter {
-  from {
-    opacity: 0;
-    transform: translateY(32px) scale(0.98);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
+  from { opacity: 0; transform: translateY(24px); }
+  to { opacity: 1; transform: none; }
 }
-
 @keyframes hero-phone-enter {
-  from {
-    opacity: 0;
-    transform: translateY(48px) scale(0.95) rotate(2deg);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1) rotate(0deg);
-  }
+  from { opacity: 0; transform: translateY(40px) rotate(1deg); }
+  to { opacity: 1; transform: none; }
 }
-
 @keyframes card-float-in {
-  from {
-    opacity: 0;
-    transform: translateY(16px) scale(0.92);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
+  from { opacity: 0; transform: translateY(12px) scale(0.95); }
+  to { opacity: 1; transform: none; }
 }
-
 @keyframes float-gentle {
   0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-8px); }
+  50% { transform: translateY(-6px); }
 }
-
 @keyframes badge-pop {
-  0% { opacity: 0; transform: scale(0.8); }
-  60% { transform: scale(1.05); }
-  100% { opacity: 1; transform: scale(1); }
+  0% { opacity: 0; transform: scale(0.85); }
+  60% { transform: scale(1.04); }
+  100% { opacity: 1; transform: none; }
 }
 
-.hero-text {
-  animation: hero-enter 0.9s var(--ease-spring) both;
-}
+.hero-text { animation: hero-enter 0.8s var(--ease-spring) both; }
+.hero-text-d1 { animation-delay: 60ms; }
+.hero-text-d2 { animation-delay: 120ms; }
+.hero-text-d3 { animation-delay: 200ms; }
+.hero-text-d4 { animation-delay: 320ms; }
 
-.hero-text-d1 { animation-delay: 80ms; }
-.hero-text-d2 { animation-delay: 160ms; }
-.hero-text-d3 { animation-delay: 240ms; }
-.hero-text-d4 { animation-delay: 360ms; }
-.hero-text-d5 { animation-delay: 480ms; }
+.hero-phone { animation: hero-phone-enter 1s var(--ease-spring) 150ms both; }
 
-.hero-phone {
-  animation: hero-phone-enter 1.1s var(--ease-spring) 200ms both;
-}
+.hero-card-float { animation: card-float-in 0.6s var(--ease-spring) both; }
+.hero-card-float-d1 { animation-delay: 500ms; }
+.hero-card-float-d2 { animation-delay: 700ms; }
 
-.hero-card-float {
-  animation: card-float-in 0.7s var(--ease-spring) both;
-}
+.float-gentle { animation: float-gentle 5s ease-in-out infinite; }
+.float-gentle-d1 { animation: float-gentle 5s ease-in-out 1.5s infinite; }
 
-.hero-card-float-d1 { animation-delay: 600ms; }
-.hero-card-float-d2 { animation-delay: 800ms; }
+.badge-pop { animation: badge-pop 0.4s var(--ease-bounce) both; }
+.badge-pop-d1 { animation-delay: 350ms; }
 
-.float-gentle {
-  animation: float-gentle 5s ease-in-out infinite;
-}
-
-.float-gentle-d1 {
-  animation: float-gentle 5s ease-in-out 1.5s infinite;
-}
-
-.badge-pop {
-  animation: badge-pop 0.5s var(--ease-bounce) both;
-}
-
-.badge-pop-d1 { animation-delay: 400ms; }
-
-/* Hover micro-interactions — spring feel */
+/* ═══ Micro-interactions ═══ */
 .hover-lift {
-  transition: transform 0.4s var(--ease-spring), box-shadow 0.4s var(--ease-spring);
+  transition: transform 0.35s var(--ease-spring), box-shadow 0.35s var(--ease-spring);
 }
 .hover-lift:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 12px 40px rgba(0,0,0,0.08);
+  transform: translateY(-3px);
+  box-shadow: 0 10px 32px rgba(0,0,0,0.07);
 }
-
-.hover-scale {
-  transition: transform 0.3s var(--ease-spring);
-}
-.hover-scale:hover {
-  transform: scale(1.02);
-}
-
-/* Button press — natural spring back */
-.btn-press:active {
-  transform: scale(0.97);
-  transition: transform 0.1s ease;
-}
-
-/* Nav scroll state */
-.nav-scrolled {
-  box-shadow: 0 4px 24px rgba(0,0,0,0.06);
-}
+.hover-scale { transition: transform 0.25s var(--ease-spring); }
+.hover-scale:hover { transform: scale(1.02); }
+.btn-press:active { transform: scale(0.97); transition: transform 0.08s ease; }
