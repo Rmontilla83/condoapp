@@ -1,6 +1,7 @@
 import { getCurrentProfile } from "@/lib/queries";
 import { createClient } from "@/lib/supabase/server";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { NewExpenseDialog } from "./new-expense-dialog";
 
 export default async function FinanzasPage() {
   const profile = await getCurrentProfile();
@@ -15,7 +16,7 @@ export default async function FinanzasPage() {
       .eq("organization_id", profile.organization_id),
     supabase
       .from("expense_records")
-      .select("category, description, amount, expense_date")
+      .select("category, description, amount, expense_date, receipt_url")
       .eq("organization_id", profile.organization_id)
       .order("expense_date", { ascending: false }),
     supabase
@@ -51,13 +52,18 @@ export default async function FinanzasPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight" style={{ fontFamily: "Outfit, sans-serif" }}>
-          Transparencia financiera
-        </h1>
-        <p className="text-muted-foreground">
-          Aqui puedes ver exactamente en que se gasta el dinero de tu condominio
-        </p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight" style={{ fontFamily: "Outfit, sans-serif" }}>
+            Transparencia financiera
+          </h1>
+          <p className="text-muted-foreground">
+            Aqui puedes ver exactamente en que se gasta el dinero de tu condominio
+          </p>
+        </div>
+        {(profile.role === "admin" || profile.role === "super_admin") && (
+          <NewExpenseDialog />
+        )}
       </div>
 
       {/* Summary cards */}
@@ -153,7 +159,14 @@ export default async function FinanzasPage() {
                       </p>
                     </div>
                   </div>
-                  <span className="text-sm font-bold text-red-600">-${Number(expense.amount).toFixed(2)}</span>
+                  <div className="flex items-center gap-2 shrink-0">
+                    {expense.receipt_url && (
+                      <a href={expense.receipt_url} target="_blank" rel="noopener noreferrer" className="block h-8 w-8 rounded border overflow-hidden hover:opacity-80">
+                        <img src={expense.receipt_url} alt="Recibo" className="h-full w-full object-cover" />
+                      </a>
+                    )}
+                    <span className="text-sm font-bold text-red-600">-${Number(expense.amount).toFixed(2)}</span>
+                  </div>
                 </div>
               ))}
             </div>
