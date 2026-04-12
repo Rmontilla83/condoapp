@@ -340,21 +340,47 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "SUPABASE_DB_PASSWORD not set" }, { status: 500 });
   }
 
-  const sql = postgres({
-    host: "db.mjvusvhyugcckfxxednp.supabase.co",
-    port: 5432,
-    database: "postgres",
-    username: "postgres",
-    password: dbPassword,
-    ssl: "require",
-    connect_timeout: 15,
-  });
+  // Try multiple connection methods
+  const configs = [
+    { host: "aws-0-us-east-1.pooler.supabase.com", port: 6543, username: "postgres.mjvusvhyugcckfxxednp" },
+    { host: "aws-0-us-east-2.pooler.supabase.com", port: 6543, username: "postgres.mjvusvhyugcckfxxednp" },
+    { host: "aws-0-sa-east-1.pooler.supabase.com", port: 6543, username: "postgres.mjvusvhyugcckfxxednp" },
+    { host: "aws-0-us-west-1.pooler.supabase.com", port: 6543, username: "postgres.mjvusvhyugcckfxxednp" },
+    { host: "aws-0-eu-west-1.pooler.supabase.com", port: 6543, username: "postgres.mjvusvhyugcckfxxednp" },
+    { host: "aws-0-ap-southeast-1.pooler.supabase.com", port: 6543, username: "postgres.mjvusvhyugcckfxxednp" },
+  ];
+
+  let sql: ReturnType<typeof postgres> | null = null;
+  let connectedHost = "";
+
+  for (const cfg of configs) {
+    try {
+      const attempt = postgres({
+        host: cfg.host,
+        port: cfg.port,
+        database: "postgres",
+        username: cfg.username,
+        password: dbPassword,
+        ssl: "require",
+        connect_timeout: 8,
+      });
+      await attempt`SELECT 1`;
+      sql = attempt;
+      connectedHost = cfg.host;
+      break;
+    } catch {
+      continue;
+    }
+  }
+
+  if (!sql) {
+    return NextResponse.json({ error: "Could not connect to any Supabase pooler region", results: configs.map(c => c.host) }, { status: 500 });
+  }
 
   const results: string[] = [];
 
   try {
-    const test = await sql`SELECT current_database() as db`;
-    results.push(`Connected to: ${test[0].db}`);
+    results.push(`Connected via: ${connectedHost}`);
 
     results.push("Running schema migration...");
     await sql.unsafe(MIGRATION_SQL);
