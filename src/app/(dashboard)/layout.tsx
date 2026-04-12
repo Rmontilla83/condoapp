@@ -14,9 +14,7 @@ export default async function DashboardLayout({
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
-  if (!user) {
-    redirect("/login");
-  }
+  if (!user) redirect("/login");
 
   const profile = await getCurrentProfile();
 
@@ -25,12 +23,13 @@ export default async function DashboardLayout({
   }
 
   const effectiveRole = profile ? getEffectiveRole(profile) : "resident";
+  const isAdmin = effectiveRole === "admin" || effectiveRole === "super_admin";
   const isSuperAdmin = profile?.role === "super_admin";
   const viewingAs = profile?.view_as;
 
   return (
     <div className="flex h-screen">
-      <Sidebar />
+      <Sidebar isAdmin={isAdmin} />
       <div className="flex flex-1 flex-col overflow-hidden">
         <Header
           userEmail={user.email ?? ""}
@@ -38,7 +37,6 @@ export default async function DashboardLayout({
           viewingAs={viewingAs ?? null}
         />
         <main className="flex-1 overflow-y-auto pb-20 md:pb-0">
-          {/* View-as indicator */}
           {isSuperAdmin && viewingAs && (
             <div className={`px-4 py-1.5 text-center text-xs font-semibold text-white ${viewingAs === "admin" ? "bg-primary" : "bg-blue-600"}`}>
               Viendo como: {viewingAs === "admin" ? "Admin" : "Residente"} — <a href="/super-admin" className="underline">Volver a Super Admin</a>
@@ -49,7 +47,7 @@ export default async function DashboardLayout({
           </div>
         </main>
       </div>
-      <BottomNav />
+      <BottomNav isAdmin={isAdmin} />
     </div>
   );
 }

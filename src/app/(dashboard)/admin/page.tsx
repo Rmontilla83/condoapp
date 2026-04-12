@@ -13,7 +13,7 @@ export default async function AdminPage() {
 
   if (!profile?.organization_id) return null;
   const effectiveRole = getEffectiveRole(profile);
-  if (effectiveRole !== "admin" && effectiveRole !== "super_admin" && profile.role !== "super_admin") {
+  if (effectiveRole !== "admin" && effectiveRole !== "super_admin") {
     redirect("/dashboard");
   }
 

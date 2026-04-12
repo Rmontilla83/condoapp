@@ -1,4 +1,4 @@
-import { getCurrentProfile, getAnnouncements } from "@/lib/queries";
+import { getCurrentProfile, getEffectiveRole, getAnnouncements } from "@/lib/queries";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { NewAnnouncementDialog } from "./new-announcement-dialog";
@@ -22,7 +22,7 @@ export default async function ComunicadosPage() {
           <h1 className="text-2xl font-bold tracking-tight" style={{ fontFamily: "Outfit, sans-serif" }}>Comunicados</h1>
           <p className="text-muted-foreground">Noticias y avisos de tu comunidad</p>
         </div>
-        {(profile.role === "admin" || profile.role === "super_admin") && (
+        {(getEffectiveRole(profile) === "admin" || getEffectiveRole(profile) === "super_admin") && (
           <NewAnnouncementDialog />
         )}
       </div>

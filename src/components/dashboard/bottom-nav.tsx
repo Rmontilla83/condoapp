@@ -43,18 +43,20 @@ const mainItems = [
   },
 ];
 
-const moreItems = [
-  { href: "/comunicados", label: "Comunicados" },
-  { href: "/finanzas", label: "Finanzas" },
-  { href: "/reservas", label: "Reservas" },
-  { href: "/votaciones", label: "Votaciones" },
-  { href: "/admin", label: "Admin" },
-  { href: "/perfil", label: "Mi perfil" },
+const moreItemsBase = [
+  { href: "/comunicados", label: "Comunicados", adminOnly: false },
+  { href: "/finanzas", label: "Finanzas", adminOnly: false },
+  { href: "/reservas", label: "Reservas", adminOnly: false },
+  { href: "/votaciones", label: "Votaciones", adminOnly: false },
+  { href: "/admin", label: "Admin", adminOnly: true },
+  { href: "/perfil", label: "Mi perfil", adminOnly: false },
 ];
 
-export function BottomNav() {
+export function BottomNav({ isAdmin = false }: { isAdmin?: boolean }) {
   const pathname = usePathname();
   const [showMore, setShowMore] = useState(false);
+
+  const moreItems = moreItemsBase.filter((item) => !item.adminOnly || isAdmin);
 
   const isMoreActive = moreItems.some(
     (item) => pathname === item.href || pathname.startsWith(item.href + "/")

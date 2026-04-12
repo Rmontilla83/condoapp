@@ -68,7 +68,7 @@ const iconMap: Record<string, React.ReactNode> = {
   ),
 };
 
-export function Sidebar() {
+export function Sidebar({ isAdmin = false }: { isAdmin?: boolean }) {
   const pathname = usePathname();
 
   return (
@@ -97,6 +97,7 @@ export function Sidebar() {
             </Link>
           );
         })}
+        {isAdmin && (<>
         <div className="my-4 border-t" />
         {adminItems.map((item) => {
           const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
@@ -115,6 +116,7 @@ export function Sidebar() {
             </Link>
           );
         })}
+        </>)}
       </nav>
     </aside>
   );

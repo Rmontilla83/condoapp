@@ -1,4 +1,4 @@
-import { getCurrentProfile } from "@/lib/queries";
+import { getCurrentProfile, getEffectiveRole } from "@/lib/queries";
 import { createClient } from "@/lib/supabase/server";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { NewExpenseDialog } from "./new-expense-dialog";
@@ -62,7 +62,7 @@ export default async function FinanzasPage() {
             Aqui puedes ver exactamente en que se gasta el dinero de tu condominio
           </p>
         </div>
-        {(profile.role === "admin" || profile.role === "super_admin") && (
+        {(getEffectiveRole(profile) === "admin" || getEffectiveRole(profile) === "super_admin") && (
           <NewExpenseDialog />
         )}
       </div>

@@ -1,4 +1,4 @@
-import { getCurrentProfile } from "@/lib/queries";
+import { getCurrentProfile, getEffectiveRole } from "@/lib/queries";
 import { createClient } from "@/lib/supabase/server";
 import { NewPollDialog } from "./new-poll-dialog";
 import { PollCard } from "./poll-card";
@@ -7,7 +7,8 @@ export default async function VotacionesPage() {
   const profile = await getCurrentProfile();
   if (!profile?.organization_id) return null;
 
-  const isAdmin = profile.role === "admin" || profile.role === "super_admin";
+  const effectiveRole = getEffectiveRole(profile);
+  const isAdmin = effectiveRole === "admin" || effectiveRole === "super_admin";
   const supabase = await createClient();
 
   const { data } = await supabase
