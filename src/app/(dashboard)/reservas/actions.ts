@@ -56,11 +56,15 @@ export async function createReservation(formData: FormData) {
 }
 
 export async function cancelReservation(reservationId: string) {
+  const profile = await getCurrentProfile();
+  if (!profile) return { error: "No autenticado" };
+
   const supabase = await createClient();
   const { error } = await supabase
     .from("reservations")
     .update({ status: "cancelled" })
-    .eq("id", reservationId);
+    .eq("id", reservationId)
+    .eq("reserved_by", profile.id);
 
   if (error) return { error: error.message };
   revalidatePath("/reservas");

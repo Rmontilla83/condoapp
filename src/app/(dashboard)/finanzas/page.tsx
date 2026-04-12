@@ -21,7 +21,8 @@ export default async function FinanzasPage() {
       .order("expense_date", { ascending: false }),
     supabase
       .from("transactions")
-      .select("amount, paid_at")
+      .select("amount, paid_at, invoices!inner(organization_id)")
+      .eq("invoices.organization_id", profile.organization_id)
       .order("paid_at", { ascending: false }),
   ]);
 

@@ -57,13 +57,18 @@ export async function createAccessPass(formData: FormData) {
 }
 
 export async function cancelPass(passId: string) {
+  const profile = await getCurrentProfile();
+  if (!profile) return { error: "No autenticado" };
+
   const supabase = await createClient();
   const { error } = await supabase
     .from("access_passes")
     .update({ status: "cancelled" })
-    .eq("id", passId);
+    .eq("id", passId)
+    .eq("created_by", profile.id);
 
   if (error) return { error: error.message };
   revalidatePath("/visitantes");
+  revalidatePath("/dashboard");
   return { success: true };
 }

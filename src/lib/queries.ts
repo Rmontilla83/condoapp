@@ -121,7 +121,8 @@ export async function getAdminStats(orgId: string) {
         .eq("organization_id", orgId),
       supabase
         .from("transactions")
-        .select("amount, paid_at, invoice_id")
+        .select("amount, paid_at, invoice_id, invoices!inner(organization_id)")
+        .eq("invoices.organization_id", orgId)
         .order("paid_at", { ascending: false }),
     ]);
 
