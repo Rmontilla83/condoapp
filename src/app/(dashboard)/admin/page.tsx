@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { getCurrentProfile, getAdminStats, getOrgMaintenance, getCurrentRate } from "@/lib/queries";
+import { getCurrentProfile, getEffectiveRole, getAdminStats, getOrgMaintenance, getCurrentRate } from "@/lib/queries";
 import { createClient } from "@/lib/supabase/server";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { RequestManager } from "./request-manager";
@@ -12,13 +12,21 @@ export default async function AdminPage() {
   const profile = await getCurrentProfile();
 
   if (!profile?.organization_id) return null;
-  if (profile.role !== "admin" && profile.role !== "super_admin") {
+  const effectiveRole = getEffectiveRole(profile);
+  if (effectiveRole !== "admin" && effectiveRole !== "super_admin" && profile.role !== "super_admin") {
     redirect("/dashboard");
   }
 
   const supabase = await createClient();
 
   const rateData = await getCurrentRate(profile.organization_id);
+
+  // Get org invite code
+  const { data: org } = await supabase
+    .from("organizations")
+    .select("invite_code")
+    .eq("id", profile.organization_id)
+    .single();
 
   const [stats, maintenance, pendingPaymentsRes, morosRes] = await Promise.all([
     getAdminStats(profile.organization_id),
@@ -110,6 +118,19 @@ export default async function AdminPage() {
           <AddUnitDialog />
         </div>
       </div>
+
+      {/* Invite code */}
+      {org?.invite_code && (
+        <Card>
+          <CardContent className="p-4 flex items-center justify-between">
+            <div>
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Codigo de invitacion para residentes</p>
+              <p className="text-2xl font-mono font-extrabold text-primary mt-1">{org.invite_code}</p>
+              <p className="text-xs text-muted-foreground mt-0.5">Comparte este codigo por WhatsApp para que los residentes se unan</p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       <div className="grid gap-6 lg:grid-cols-2">
         {/* Comprobantes pendientes de aprobación */}

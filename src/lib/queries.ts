@@ -21,7 +21,15 @@ export async function getCurrentProfile() {
     .eq("id", user.id)
     .single();
 
-  return data as Profile | null;
+  return data as (Profile & { view_as?: string | null }) | null;
+}
+
+export function getEffectiveRole(profile: Profile & { view_as?: string | null }): string {
+  // Super admin can impersonate other roles for testing
+  if (profile.role === "super_admin" && profile.view_as) {
+    return profile.view_as === "admin" ? "admin" : "resident";
+  }
+  return profile.role;
 }
 
 export async function getUserUnitIds(profileId: string) {

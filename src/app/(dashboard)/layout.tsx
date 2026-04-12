@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { getCurrentProfile } from "@/lib/queries";
+import { getCurrentProfile, getEffectiveRole } from "@/lib/queries";
 import { Sidebar } from "@/components/dashboard/sidebar";
 import { BottomNav } from "@/components/dashboard/bottom-nav";
 import { Header } from "@/components/dashboard/header";
@@ -24,12 +24,26 @@ export default async function DashboardLayout({
     return <Onboarding userEmail={user.email ?? ""} />;
   }
 
+  const effectiveRole = profile ? getEffectiveRole(profile) : "resident";
+  const isSuperAdmin = profile?.role === "super_admin";
+  const viewingAs = profile?.view_as;
+
   return (
     <div className="flex h-screen">
       <Sidebar />
       <div className="flex flex-1 flex-col overflow-hidden">
-        <Header userEmail={user.email ?? ""} />
+        <Header
+          userEmail={user.email ?? ""}
+          isSuperAdmin={isSuperAdmin}
+          viewingAs={viewingAs ?? null}
+        />
         <main className="flex-1 overflow-y-auto pb-20 md:pb-0">
+          {/* View-as indicator */}
+          {isSuperAdmin && viewingAs && (
+            <div className={`px-4 py-1.5 text-center text-xs font-semibold text-white ${viewingAs === "admin" ? "bg-primary" : "bg-blue-600"}`}>
+              Viendo como: {viewingAs === "admin" ? "Admin" : "Residente"} — <a href="/super-admin" className="underline">Volver a Super Admin</a>
+            </div>
+          )}
           <div className="mx-auto max-w-6xl p-4 md:p-6">
             {children}
           </div>

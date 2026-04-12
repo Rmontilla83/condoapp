@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -9,176 +9,209 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
 export function Onboarding({ userEmail }: { userEmail: string }) {
-  const [mode, setMode] = useState<"choose" | "create" | "join">("choose");
+  const [step, setStep] = useState<"code" | "unit">("code");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [orgData, setOrgData] = useState<{ id: string; name: string } | null>(null);
+  const [units, setUnits] = useState<{ id: string; unit_number: string; type: string }[]>([]);
+  const [checkingInvite, setCheckingInvite] = useState(true);
   const router = useRouter();
 
-  async function handleCreate(e: React.FormEvent<HTMLFormElement>) {
+  // Check if user has a pending admin invitation
+  useEffect(() => {
+    async function checkInvite() {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      // Check admin invitations
+      const { data: invite } = await supabase
+        .from("admin_invitations")
+        .select("organization_id, organizations(name)")
+        .eq("email", user.email!)
+        .is("accepted_at", null)
+        .limit(1)
+        .single();
+
+      if (invite) {
+        // Auto-accept admin invitation
+        const orgName = Array.isArray(invite.organizations) ? invite.organizations[0]?.name : (invite.organizations as any)?.name;
+
+        await supabase.from("profiles").update({
+          organization_id: invite.organization_id,
+          role: "admin",
+        }).eq("id", user.id);
+
+        await supabase.from("admin_invitations").update({
+          accepted_at: new Date().toISOString(),
+        }).eq("organization_id", invite.organization_id).eq("email", user.email!);
+
+        router.refresh();
+        return;
+      }
+
+      setCheckingInvite(false);
+    }
+    checkInvite();
+  }, [router]);
+
+  async function handleCodeSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setLoading(true);
     setError("");
 
     const form = new FormData(e.currentTarget);
-    const name = form.get("name") as string;
-    const address = form.get("address") as string;
-    const city = form.get("city") as string;
+    const code = (form.get("code") as string).trim().toUpperCase();
+
+    if (!code) { setError("Ingresa el codigo"); setLoading(false); return; }
 
     const supabase = createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
 
-    // Create org
-    const { data: org, error: orgError } = await supabase
-      .from("organizations")
-      .insert({ name, address, city })
-      .select("id")
-      .single();
-
-    if (orgError || !org) {
-      setError(orgError?.message ?? "Error al crear la organizacion");
-      setLoading(false);
-      return;
-    }
-
-    // Assign user as admin of this org
-    const { error: profileError } = await supabase
-      .from("profiles")
-      .update({ organization_id: org.id, role: "admin" })
-      .eq("id", user.id);
-
-    if (profileError) {
-      setError(profileError.message);
-      setLoading(false);
-      return;
-    }
-
-    router.refresh();
-  }
-
-  async function handleJoin(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    setLoading(true);
-    setError("");
-
-    const form = new FormData(e.currentTarget);
-    const code = (form.get("code") as string).trim();
-
-    const supabase = createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
-
-    // Try to find org by ID (simplified — in production this would be an invite code)
     const { data: org } = await supabase
       .from("organizations")
       .select("id, name")
-      .eq("id", code)
+      .eq("invite_code", code)
+      .eq("is_active", true)
       .single();
 
     if (!org) {
-      setError("Codigo de condominio no encontrado. Verifica con tu administrador.");
+      setError("Codigo no valido. Verifica con tu administrador.");
       setLoading(false);
       return;
     }
 
+    // Get available units
+    const { data: orgUnits } = await supabase
+      .from("units")
+      .select("id, unit_number, type")
+      .eq("organization_id", org.id)
+      .order("unit_number");
+
+    setOrgData(org);
+    setUnits(orgUnits ?? []);
+    setStep("unit");
+    setLoading(false);
+  }
+
+  async function handleUnitSelect(unitId: string) {
+    setLoading(true);
+    setError("");
+
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user || !orgData) return;
+
+    // Join the organization
     const { error: profileError } = await supabase
       .from("profiles")
-      .update({ organization_id: org.id })
+      .update({ organization_id: orgData.id, role: "resident" })
       .eq("id", user.id);
 
-    if (profileError) {
-      setError(profileError.message);
-      setLoading(false);
-      return;
+    if (profileError) { setError(profileError.message); setLoading(false); return; }
+
+    // Link to unit
+    if (unitId !== "none") {
+      await supabase.from("unit_residents").insert({
+        unit_id: unitId,
+        profile_id: user.id,
+        is_owner: false,
+      });
     }
 
     router.refresh();
   }
 
+  if (checkingInvite) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-[#FAFBFC] p-4">
+        <p className="text-muted-foreground">Verificando acceso...</p>
+      </div>
+    );
+  }
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-muted/30 p-4">
+    <div className="flex min-h-screen items-center justify-center bg-[#FAFBFC] p-4">
       <div className="w-full max-w-md space-y-6">
         <div className="text-center">
-          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-primary text-primary-foreground font-bold text-lg">C</div>
-          <h1 className="text-2xl font-bold">Bienvenido a CondoApp</h1>
-          <p className="mt-1 text-muted-foreground">{userEmail}</p>
+          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-[#0F172A]">
+            <svg viewBox="0 0 24 24" className="h-6 w-6 text-[#2DD4BF]" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+            </svg>
+          </div>
+          <h1 className="text-2xl font-bold" style={{ fontFamily: "Outfit, sans-serif" }}>Bienvenido a CondoApp</h1>
+          <p className="mt-1 text-muted-foreground text-sm">{userEmail}</p>
         </div>
 
-        {mode === "choose" && (
+        {step === "code" && (
           <Card>
             <CardHeader>
-              <CardTitle>Configura tu cuenta</CardTitle>
+              <CardTitle>Unirse a un condominio</CardTitle>
               <CardDescription>
-                Para empezar, crea un nuevo condominio o unete a uno existente.
+                Ingresa el codigo que te dio tu administrador o junta de condominio.
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-3">
-              <Button className="w-full" size="lg" onClick={() => setMode("create")}>
-                Crear nuevo condominio
-              </Button>
-              <Button className="w-full" size="lg" variant="outline" onClick={() => setMode("join")}>
-                Unirme a un condominio
-              </Button>
-            </CardContent>
-          </Card>
-        )}
-
-        {mode === "create" && (
-          <Card>
-            <CardHeader>
-              <CardTitle>Crear condominio</CardTitle>
-              <CardDescription>Seras el administrador de este condominio.</CardDescription>
-            </CardHeader>
             <CardContent>
-              <form onSubmit={handleCreate} className="space-y-4">
+              <form onSubmit={handleCodeSubmit} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="name">Nombre del condominio</Label>
-                  <Input id="name" name="name" placeholder="Ej: Residencias Los Robles" required />
+                  <Label htmlFor="code">Codigo de invitacion</Label>
+                  <Input
+                    id="code"
+                    name="code"
+                    placeholder="Ej: ABC1-2026"
+                    className="text-center text-lg font-mono font-bold tracking-widest uppercase"
+                    maxLength={12}
+                    autoFocus
+                    required
+                  />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="address">Direccion</Label>
-                  <Input id="address" name="address" placeholder="Av. Principal, Edif. Los Robles" required />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="city">Ciudad</Label>
-                  <Input id="city" name="city" placeholder="Caracas" required />
-                </div>
-                {error && <p className="text-sm text-destructive">{error}</p>}
-                <div className="flex gap-2">
-                  <Button type="button" variant="outline" onClick={() => { setMode("choose"); setError(""); }} disabled={loading}>
-                    Atras
-                  </Button>
-                  <Button type="submit" className="flex-1" disabled={loading}>
-                    {loading ? "Creando..." : "Crear condominio"}
-                  </Button>
-                </div>
+                {error && <p className="text-sm text-destructive text-center">{error}</p>}
+                <Button type="submit" className="w-full" size="lg" disabled={loading}>
+                  {loading ? "Verificando..." : "Continuar"}
+                </Button>
+                <p className="text-xs text-muted-foreground text-center">
+                  No tienes codigo? Pidelo al administrador de tu condominio.
+                </p>
               </form>
             </CardContent>
           </Card>
         )}
 
-        {mode === "join" && (
+        {step === "unit" && orgData && (
           <Card>
             <CardHeader>
-              <CardTitle>Unirme a condominio</CardTitle>
-              <CardDescription>Ingresa el codigo que te dio tu administrador.</CardDescription>
+              <CardTitle>{orgData.name}</CardTitle>
+              <CardDescription>Selecciona tu unidad (apartamento, casa o local)</CardDescription>
             </CardHeader>
             <CardContent>
-              <form onSubmit={handleJoin} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="code">Codigo del condominio</Label>
-                  <Input id="code" name="code" placeholder="Codigo proporcionado por el admin" required />
-                </div>
-                {error && <p className="text-sm text-destructive">{error}</p>}
-                <div className="flex gap-2">
-                  <Button type="button" variant="outline" onClick={() => { setMode("choose"); setError(""); }} disabled={loading}>
-                    Atras
-                  </Button>
-                  <Button type="submit" className="flex-1" disabled={loading}>
-                    {loading ? "Uniendome..." : "Unirme"}
-                  </Button>
-                </div>
-              </form>
+              {error && <p className="text-sm text-destructive text-center mb-3">{error}</p>}
+              <div className="space-y-2 max-h-64 overflow-y-auto">
+                {units.map((unit) => (
+                  <button
+                    key={unit.id}
+                    onClick={() => handleUnitSelect(unit.id)}
+                    disabled={loading}
+                    className="w-full text-left rounded-xl border p-3 hover:border-primary hover:bg-primary/5 transition-colors disabled:opacity-50 flex items-center justify-between"
+                  >
+                    <div>
+                      <p className="font-semibold">Apto {unit.unit_number}</p>
+                      <p className="text-xs text-muted-foreground capitalize">{unit.type}</p>
+                    </div>
+                    <svg className="h-4 w-4 text-muted-foreground" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+                    </svg>
+                  </button>
+                ))}
+                <button
+                  onClick={() => handleUnitSelect("none")}
+                  disabled={loading}
+                  className="w-full text-center text-sm text-muted-foreground py-2 hover:text-foreground transition-colors"
+                >
+                  No encuentro mi unidad / seleccionar despues
+                </button>
+              </div>
+              <Button variant="ghost" className="w-full mt-3" onClick={() => { setStep("code"); setError(""); }}>
+                ← Cambiar codigo
+              </Button>
             </CardContent>
           </Card>
         )}
