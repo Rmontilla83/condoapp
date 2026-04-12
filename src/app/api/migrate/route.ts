@@ -1,11 +1,10 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
+import postgres from "postgres";
 
 const MIGRATION_SECRET = "condoapp-migrate-2026";
 
-const MIGRATION_001 = `
+const MIGRATION_SQL = `
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
-CREATE EXTENSION IF NOT EXISTS "btree_gist";
 
 CREATE TABLE IF NOT EXISTS organizations (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -225,11 +224,7 @@ CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$
 BEGIN
   INSERT INTO public.profiles (id, email, full_name)
-  VALUES (
-    NEW.id,
-    NEW.email,
-    COALESCE(NEW.raw_user_meta_data->>'full_name', '')
-  );
+  VALUES (NEW.id, NEW.email, COALESCE(NEW.raw_user_meta_data->>'full_name', ''));
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
@@ -255,9 +250,7 @@ DROP TRIGGER IF EXISTS set_updated_at_invoices ON invoices;
 CREATE TRIGGER set_updated_at_invoices BEFORE UPDATE ON invoices FOR EACH ROW EXECUTE FUNCTION update_updated_at();
 DROP TRIGGER IF EXISTS set_updated_at_maintenance ON maintenance_requests;
 CREATE TRIGGER set_updated_at_maintenance BEFORE UPDATE ON maintenance_requests FOR EACH ROW EXECUTE FUNCTION update_updated_at();
-`;
 
-const MIGRATION_002 = `
 ALTER TABLE organizations ENABLE ROW LEVEL SECURITY;
 ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE units ENABLE ROW LEVEL SECURITY;
@@ -285,7 +278,9 @@ CREATE OR REPLACE FUNCTION auth.user_role()
 RETURNS TEXT AS $$
   SELECT role FROM public.profiles WHERE id = auth.uid()
 $$ LANGUAGE sql SECURITY DEFINER STABLE;
+`;
 
+const RLS_POLICIES = `
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Users can view own profile') THEN
     CREATE POLICY "Users can view own profile" ON profiles FOR SELECT USING (id = auth.uid());
@@ -296,14 +291,8 @@ DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Users can update own profile') THEN
     CREATE POLICY "Users can update own profile" ON profiles FOR UPDATE USING (id = auth.uid());
   END IF;
-  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Admins can update profiles in their org') THEN
-    CREATE POLICY "Admins can update profiles in their org" ON profiles FOR UPDATE USING (organization_id = auth.user_org_id() AND auth.user_role() IN ('admin', 'super_admin'));
-  END IF;
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Users can view their org') THEN
     CREATE POLICY "Users can view their org" ON organizations FOR SELECT USING (id = auth.user_org_id());
-  END IF;
-  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Admins can update their org') THEN
-    CREATE POLICY "Admins can update their org" ON organizations FOR UPDATE USING (id = auth.user_org_id() AND auth.user_role() IN ('admin', 'super_admin'));
   END IF;
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Users can view units in their org') THEN
     CREATE POLICY "Users can view units in their org" ON units FOR SELECT USING (organization_id = auth.user_org_id());
@@ -335,91 +324,55 @@ DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Users can view passes in their org') THEN
     CREATE POLICY "Users can view passes in their org" ON access_passes FOR SELECT USING (organization_id = auth.user_org_id());
   END IF;
-  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Users can create passes') THEN
-    CREATE POLICY "Users can create passes" ON access_passes FOR INSERT WITH CHECK (organization_id = auth.user_org_id() AND created_by = auth.uid());
-  END IF;
 END $$;
 `;
 
 export async function POST(request: Request) {
-  const { searchParams } = new URL(request.url);
-  const secret = searchParams.get("secret");
+  const url = new URL(request.url);
+  const secret = url.searchParams.get("secret");
 
   if (secret !== MIGRATION_SECRET) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-  if (!serviceKey) {
-    return NextResponse.json({ error: "SUPABASE_SERVICE_ROLE_KEY not set" }, { status: 500 });
+  const dbPassword = process.env.SUPABASE_DB_PASSWORD;
+  if (!dbPassword) {
+    return NextResponse.json({ error: "SUPABASE_DB_PASSWORD not set" }, { status: 500 });
   }
+
+  const sql = postgres({
+    host: "db.mjvusvhyugcckfxxednp.supabase.co",
+    port: 5432,
+    database: "postgres",
+    username: "postgres",
+    password: dbPassword,
+    ssl: "require",
+    connect_timeout: 15,
+  });
 
   const results: string[] = [];
 
   try {
-    // Use Supabase Management API via pg_query
-    const pgUrl = `${supabaseUrl}/pg`;
+    const test = await sql`SELECT current_database() as db`;
+    results.push(`Connected to: ${test[0].db}`);
 
-    // Migration 1: Core schema
-    results.push("Running migration 001...");
-    const res1 = await fetch(`${supabaseUrl}/rest/v1/rpc/`, {
-      method: "POST",
-      headers: {
-        apikey: serviceKey,
-        Authorization: `Bearer ${serviceKey}`,
-        "Content-Type": "application/json",
-      },
-    });
+    results.push("Running schema migration...");
+    await sql.unsafe(MIGRATION_SQL);
+    results.push("Schema migration completed!");
 
-    // Direct SQL via the database HTTP API
-    const dbRes1 = await fetch(
-      `https://mjvusvhyugcckfxxednp.supabase.co/pg/query`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${serviceKey}`,
-        },
-        body: JSON.stringify({ query: MIGRATION_001 }),
-      }
-    );
-    const body1 = await dbRes1.text();
-    results.push(`Migration 001 status: ${dbRes1.status} - ${body1.substring(0, 200)}`);
+    results.push("Running RLS policies...");
+    await sql.unsafe(RLS_POLICIES);
+    results.push("RLS policies completed!");
 
-    // Migration 2: RLS policies
-    results.push("Running migration 002...");
-    const dbRes2 = await fetch(
-      `https://mjvusvhyugcckfxxednp.supabase.co/pg/query`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${serviceKey}`,
-        },
-        body: JSON.stringify({ query: MIGRATION_002 }),
-      }
-    );
-    const body2 = await dbRes2.text();
-    results.push(`Migration 002 status: ${dbRes2.status} - ${body2.substring(0, 200)}`);
+    const tables = await sql`SELECT tablename FROM pg_tables WHERE schemaname = 'public' ORDER BY tablename`;
+    results.push(`Tables created: ${tables.map((t: { tablename: string }) => t.tablename).join(", ")}`);
 
-    // Verify tables
-    const verifyRes = await fetch(
-      `${supabaseUrl}/rest/v1/`,
-      {
-        headers: {
-          apikey: serviceKey,
-          Authorization: `Bearer ${serviceKey}`,
-        },
-      }
-    );
-    const tables = await verifyRes.json();
-    results.push(`Tables visible via REST: ${JSON.stringify(Object.keys(tables || {})).substring(0, 500)}`);
-
+    await sql.end();
     return NextResponse.json({ success: true, results });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "Unknown error";
+    results.push(`Error: ${message}`);
+    await sql.end();
     return NextResponse.json({ error: message, results }, { status: 500 });
   }
 }
