@@ -41,7 +41,6 @@ export interface Profile {
   avatar_url: string | null;
   role: UserRole;
   organization_id: string | null;
-  unit_id: string | null;
   created_at: string;
 }
 

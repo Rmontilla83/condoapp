@@ -1,26 +1,66 @@
-import { createClient } from "@/lib/supabase/server";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  getCurrentProfile,
+  getUserUnitIds,
+  getInvoicesForUser,
+  getAnnouncements,
+  getMaintenanceForUser,
+} from "@/lib/queries";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 
+const statusLabels: Record<string, string> = {
+  new: "Nuevo",
+  in_review: "En revision",
+  in_progress: "En progreso",
+  resolved: "Resuelto",
+};
+
+const statusColors: Record<string, string> = {
+  new: "bg-blue-100 text-blue-800",
+  in_review: "bg-yellow-100 text-yellow-800",
+  in_progress: "bg-orange-100 text-orange-800",
+  resolved: "bg-emerald-100 text-emerald-800",
+};
+
 export default async function DashboardPage() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const profile = await getCurrentProfile();
+  if (!profile?.organization_id) return null;
+
+  const unitIds = await getUserUnitIds(profile.id);
+  const [invoices, announcements, requests] = await Promise.all([
+    getInvoicesForUser(unitIds),
+    getAnnouncements(profile.organization_id),
+    getMaintenanceForUser(profile.id),
+  ]);
+
+  const pendingTotal = invoices
+    .filter((i) => i.status === "pending" || i.status === "overdue")
+    .reduce((sum, i) => sum + Number(i.amount), 0);
+
+  const recentAnnouncements = announcements.slice(0, 3);
+  const recentRequests = requests.slice(0, 3);
 
   return (
     <div className="space-y-6">
       {/* Saludo */}
       <div>
         <h1 className="text-2xl font-bold tracking-tight">
-          Bienvenido a tu condominio
+          Hola, {profile.full_name || "vecino"}
         </h1>
         <p className="text-muted-foreground">
-          Aquí tienes un resumen de lo que pasa en tu comunidad.
+          Aqui tienes un resumen de lo que pasa en tu comunidad.
         </p>
       </div>
 
-      {/* Acciones rápidas — máximo 2 toques */}
+      {/* Acciones rapidas */}
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
         <Link href="/pagos">
           <Card className="cursor-pointer transition-all hover:shadow-md hover:border-primary/30">
@@ -81,62 +121,97 @@ export default async function DashboardPage() {
           <div className="flex items-center justify-between rounded-lg border p-4">
             <div>
               <p className="text-sm text-muted-foreground">Saldo pendiente</p>
-              <p className="text-3xl font-bold text-primary">$0.00</p>
+              <p className={`text-3xl font-bold ${pendingTotal > 0 ? "text-destructive" : "text-primary"}`}>
+                ${pendingTotal.toFixed(2)}
+              </p>
               <p className="text-xs text-muted-foreground">USD</p>
             </div>
-            <Link href="/pagos">
-              <Button>Pagar ahora</Button>
-            </Link>
+            {pendingTotal > 0 && (
+              <Link href="/pagos">
+                <Button>Pagar ahora</Button>
+              </Link>
+            )}
           </div>
-          <p className="mt-3 text-center text-sm text-emerald-600 font-medium">
-            Estas al día con tus pagos
-          </p>
+          {pendingTotal === 0 && (
+            <p className="mt-3 text-center text-sm text-emerald-600 font-medium">
+              Estas al dia con tus pagos
+            </p>
+          )}
         </CardContent>
       </Card>
 
-      {/* Últimos comunicados */}
+      {/* Ultimos comunicados */}
       <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">Últimos comunicados</CardTitle>
-          <CardDescription>Noticias de tu comunidad</CardDescription>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <div>
+            <CardTitle className="text-lg">Ultimos comunicados</CardTitle>
+            <CardDescription>Noticias de tu comunidad</CardDescription>
+          </div>
+          <Link href="/comunicados">
+            <Button variant="ghost" size="sm">Ver todos</Button>
+          </Link>
         </CardHeader>
         <CardContent>
-          <div className="space-y-3">
-            <div className="flex items-start gap-3 rounded-lg border p-3">
-              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-blue-100">
-                <svg className="h-4 w-4 text-blue-600" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z" />
-                </svg>
-              </div>
-              <div className="flex-1">
-                <p className="text-sm font-medium">Bienvenido a CondoApp</p>
-                <p className="text-xs text-muted-foreground">
-                  Tu comunidad ahora es digital. Paga, reporta y mantente informado desde aquí.
-                </p>
-              </div>
+          {recentAnnouncements.length === 0 ? (
+            <p className="py-4 text-center text-sm text-muted-foreground">No hay comunicados aun</p>
+          ) : (
+            <div className="space-y-3">
+              {recentAnnouncements.map((a) => (
+                <div key={a.id} className="flex items-start gap-3 rounded-lg border p-3">
+                  <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${
+                    a.priority === "urgent" ? "bg-red-100" : a.priority === "important" ? "bg-yellow-100" : "bg-blue-100"
+                  }`}>
+                    <div className={`h-2.5 w-2.5 rounded-full ${
+                      a.priority === "urgent" ? "bg-red-500" : a.priority === "important" ? "bg-yellow-500" : "bg-blue-500"
+                    }`} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium truncate">{a.title}</p>
+                    <p className="text-xs text-muted-foreground line-clamp-1">{a.content}</p>
+                  </div>
+                </div>
+              ))}
             </div>
-          </div>
+          )}
         </CardContent>
       </Card>
 
-      {/* Mis solicitudes recientes */}
+      {/* Mis solicitudes */}
       <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">Mis solicitudes</CardTitle>
-          <CardDescription>Seguimiento de tus reportes de mantenimiento</CardDescription>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <div>
+            <CardTitle className="text-lg">Mis solicitudes</CardTitle>
+            <CardDescription>Seguimiento de tus reportes</CardDescription>
+          </div>
+          <Link href="/mantenimiento">
+            <Button variant="ghost" size="sm">Ver todas</Button>
+          </Link>
         </CardHeader>
         <CardContent>
-          <div className="flex flex-col items-center justify-center py-8 text-center">
-            <svg className="h-12 w-12 text-muted-foreground/30 mb-3" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 002.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 00-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 00.75-.75 2.25 2.25 0 00-.1-.664m-5.8 0A2.251 2.251 0 0113.5 2.25H15a2.25 2.25 0 012.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m0 0H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V9.375c0-.621-.504-1.125-1.125-1.125H8.25zM6.75 12h.008v.008H6.75V12zm0 3h.008v.008H6.75V15zm0 3h.008v.008H6.75V18z" />
-            </svg>
-            <p className="text-sm text-muted-foreground">No tienes solicitudes aún</p>
-            <Link href="/mantenimiento">
-              <Button variant="outline" size="sm" className="mt-3">
-                Crear un reporte
-              </Button>
-            </Link>
-          </div>
+          {recentRequests.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-8 text-center">
+              <p className="text-sm text-muted-foreground">No tienes solicitudes aun</p>
+              <Link href="/mantenimiento">
+                <Button variant="outline" size="sm" className="mt-3">Crear un reporte</Button>
+              </Link>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {recentRequests.map((r) => (
+                <div key={r.id} className="flex items-center justify-between rounded-lg border p-3">
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-medium truncate">{r.title}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {new Date(r.created_at).toLocaleDateString("es")}
+                    </p>
+                  </div>
+                  <Badge className={statusColors[r.status] ?? ""} variant="secondary">
+                    {statusLabels[r.status] ?? r.status}
+                  </Badge>
+                </div>
+              ))}
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

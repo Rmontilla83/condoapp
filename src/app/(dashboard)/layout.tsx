@@ -1,8 +1,10 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { getCurrentProfile } from "@/lib/queries";
 import { Sidebar } from "@/components/dashboard/sidebar";
 import { BottomNav } from "@/components/dashboard/bottom-nav";
 import { Header } from "@/components/dashboard/header";
+import { Onboarding } from "@/components/onboarding";
 
 export default async function DashboardLayout({
   children,
@@ -14,6 +16,12 @@ export default async function DashboardLayout({
 
   if (!user) {
     redirect("/login");
+  }
+
+  const profile = await getCurrentProfile();
+
+  if (!profile?.organization_id) {
+    return <Onboarding userEmail={user.email ?? ""} />;
   }
 
   return (
