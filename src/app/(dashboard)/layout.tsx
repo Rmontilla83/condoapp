@@ -18,7 +18,7 @@ export default async function DashboardLayout({
 
   const profile = await getCurrentProfile();
 
-  if (profile?.role === "super_admin") {
+  if (profile?.role === "super_admin" && !profile.view_as) {
     redirect("/super-admin");
   }
 
