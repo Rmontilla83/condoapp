@@ -1,6 +1,7 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { getCurrentProfile } from "@/lib/queries";
 import { revalidatePath } from "next/cache";
 
@@ -8,6 +9,27 @@ function requireSuperAdmin(profile: { role: string } | null) {
   if (!profile || profile.role !== "super_admin") {
     throw new Error("No autorizado");
   }
+}
+
+function siteUrl() {
+  return process.env.NEXT_PUBLIC_SITE_URL ?? "https://condoapp-wine.vercel.app";
+}
+
+async function logAuthEvent(params: {
+  organization_id?: string | null;
+  actor_id?: string | null;
+  target_email?: string | null;
+  event: string;
+  payload?: Record<string, unknown>;
+}) {
+  const admin = createAdminClient();
+  await admin.from("auth_events").insert({
+    organization_id: params.organization_id ?? null,
+    actor_id: params.actor_id ?? null,
+    target_email: params.target_email ?? null,
+    event: params.event,
+    payload: params.payload ?? {},
+  });
 }
 
 export async function createOrganization(formData: FormData) {
@@ -20,8 +42,10 @@ export async function createOrganization(formData: FormData) {
 
   if (!name || !address || !city) return { error: "Completa todos los campos" };
 
-  // Generate invite code: 4 random chars + year
-  const code = Math.random().toString(36).substring(2, 6).toUpperCase() + "-" + new Date().getFullYear();
+  const code =
+    Math.random().toString(36).substring(2, 6).toUpperCase() +
+    "-" +
+    new Date().getFullYear();
 
   const supabase = await createClient();
   const { data, error } = await supabase
@@ -45,42 +69,121 @@ export async function inviteAdmin(formData: FormData) {
 
   if (!email || !orgId) return { error: "Email y condominio requeridos" };
 
-  const supabase = await createClient();
+  const admin = createAdminClient();
 
-  // Create invitation record
-  const { error: invError } = await supabase.from("admin_invitations").insert({
-    organization_id: orgId,
-    email,
-    invited_by: profile!.id,
-  });
+  // B9: si el email ya es super_admin, no tocarlo
+  const { data: existing } = await admin
+    .from("profiles")
+    .select("id, role")
+    .ilike("email", email)
+    .maybeSingle();
+
+  if (existing?.role === "super_admin") {
+    return { error: "Este email ya es super administrador — no se puede degradar" };
+  }
+
+  // Upsert invitación (si ya existe pendiente, mantenerla; si estaba aceptada, resetear)
+  const { error: invError } = await admin
+    .from("admin_invitations")
+    .upsert(
+      {
+        organization_id: orgId,
+        email,
+        invited_by: profile!.id,
+        accepted_at: null,
+        accepted_by: null,
+      },
+      { onConflict: "organization_id,email" }
+    );
 
   if (invError) {
-    if (invError.code === "23505") return { error: "Ya existe una invitacion para este email" };
-    return { error: invError.message };
+    await logAuthEvent({
+      organization_id: orgId,
+      actor_id: profile!.id,
+      target_email: email,
+      event: "admin_invite_insert_failed",
+      payload: { error: invError.message },
+    });
+    return { error: `Error guardando invitación: ${invError.message}` };
   }
 
-  // If user already exists, upgrade to admin
-  const { data: existingUser } = await supabase
-    .from("profiles")
-    .select("id")
-    .eq("email", email)
-    .single();
+  // Enviar magic link. signInWithOtp con shouldCreateUser:true crea user si no existe.
+  // El trigger handle_new_user hará la promoción a admin cuando entre.
+  const { error: otpError } = await admin.auth.signInWithOtp({
+    email,
+    options: {
+      shouldCreateUser: true,
+      emailRedirectTo: `${siteUrl()}/auth/confirm`,
+    },
+  });
 
-  if (existingUser) {
-    await supabase
-      .from("profiles")
-      .update({ organization_id: orgId, role: "admin" })
-      .eq("id", existingUser.id);
-
-    await supabase
-      .from("admin_invitations")
-      .update({ accepted_at: new Date().toISOString() })
-      .eq("organization_id", orgId)
-      .eq("email", email);
+  if (otpError) {
+    await logAuthEvent({
+      organization_id: orgId,
+      actor_id: profile!.id,
+      target_email: email,
+      event: "admin_invite_email_failed",
+      payload: { error: otpError.message },
+    });
+    return { error: `Invitación guardada pero no pudimos enviar el email: ${otpError.message}` };
   }
+
+  await logAuthEvent({
+    organization_id: orgId,
+    actor_id: profile!.id,
+    target_email: email,
+    event: "admin_invite_sent",
+    payload: { existing_user: !!existing },
+  });
 
   revalidatePath("/super-admin");
-  return { success: true, alreadyRegistered: !!existingUser };
+  return { success: true, alreadyRegistered: !!existing };
+}
+
+export async function resendAdminInvite(invitationId: string) {
+  const profile = await getCurrentProfile();
+  requireSuperAdmin(profile);
+
+  const admin = createAdminClient();
+
+  const { data: inv, error } = await admin
+    .from("admin_invitations")
+    .select("id, organization_id, email, accepted_at")
+    .eq("id", invitationId)
+    .maybeSingle();
+
+  if (error || !inv) return { error: "Invitación no encontrada" };
+  if (inv.accepted_at) return { error: "Esta invitación ya fue aceptada" };
+
+  const { error: otpError } = await admin.auth.signInWithOtp({
+    email: inv.email,
+    options: {
+      shouldCreateUser: true,
+      emailRedirectTo: `${siteUrl()}/auth/confirm`,
+    },
+  });
+
+  if (otpError) {
+    await logAuthEvent({
+      organization_id: inv.organization_id,
+      actor_id: profile!.id,
+      target_email: inv.email,
+      event: "admin_invite_resend_failed",
+      payload: { error: otpError.message },
+    });
+    return { error: `No pudimos reenviar el email: ${otpError.message}` };
+  }
+
+  await logAuthEvent({
+    organization_id: inv.organization_id,
+    actor_id: profile!.id,
+    target_email: inv.email,
+    event: "admin_invite_resent",
+    payload: {},
+  });
+
+  revalidatePath("/super-admin");
+  return { success: true };
 }
 
 export async function switchViewAs(viewAs: string | null) {

@@ -35,9 +35,10 @@ export function getEffectiveRole(profile: Profile & { view_as?: string | null })
 export async function getUserUnitIds(profileId: string) {
   const supabase = await createClient();
   const { data } = await supabase
-    .from("unit_residents")
+    .from("unit_members")
     .select("unit_id")
-    .eq("profile_id", profileId);
+    .eq("profile_id", profileId)
+    .eq("active", true);
 
   return (data ?? []).map((r) => r.unit_id as string);
 }
