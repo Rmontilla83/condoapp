@@ -1,4 +1,6 @@
 export type UserRole = "super_admin" | "admin" | "resident";
+export type OwnershipMode = "owner_occupied" | "tenant_with_active_owner" | "tenant_only";
+export type MemberRole = "owner" | "tenant";
 
 export type MaintenanceStatus =
   | "new"
@@ -18,6 +20,11 @@ export interface Organization {
   currency: string;
   timezone: string;
   logo_url: string | null;
+  invite_code: string | null;
+  is_active: boolean;
+  tenant_can_vote: boolean;
+  tenant_can_see_delinquents: boolean;
+  tenant_can_reserve: boolean;
   created_at: string;
 }
 
@@ -30,6 +37,70 @@ export interface Unit {
   type: string;
   area_sqm: number | null;
   aliquot: number;
+  ownership_mode: OwnershipMode;
+  created_at: string;
+}
+
+export interface TenantPermissions {
+  can_see_fee?: boolean;
+  can_pay_fee?: boolean;
+}
+
+export interface UnitMember {
+  id: string;
+  unit_id: string;
+  profile_id: string;
+  role: MemberRole;
+  active: boolean;
+  permissions: TenantPermissions;
+  joined_at: string;
+  removed_at: string | null;
+  created_at: string;
+}
+
+export interface UnitAccessCode {
+  id: string;
+  code: string;
+  unit_id: string;
+  assigned_role: MemberRole;
+  created_by: string;
+  used_by: string | null;
+  used_at: string | null;
+  revoked_at: string | null;
+  expires_at: string;
+  created_at: string;
+}
+
+export interface UnitInvitation {
+  id: string;
+  unit_id: string;
+  email: string;
+  assigned_role: MemberRole;
+  invited_by: string;
+  permissions: TenantPermissions;
+  accepted_at: string | null;
+  accepted_by: string | null;
+  expires_at: string;
+  created_at: string;
+}
+
+export interface AdminInvitation {
+  id: string;
+  organization_id: string;
+  email: string;
+  invited_by: string;
+  accepted_at: string | null;
+  accepted_by: string | null;
+  created_at: string;
+}
+
+export interface AuthEvent {
+  id: string;
+  organization_id: string | null;
+  actor_id: string | null;
+  target_email: string | null;
+  event: string;
+  payload: Record<string, unknown>;
   created_at: string;
 }
 
