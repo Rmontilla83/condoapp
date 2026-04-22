@@ -60,6 +60,28 @@ export async function createOrganization(formData: FormData) {
   return { success: true, orgId: data.id, inviteCode: data.invite_code };
 }
 
+async function ensureUserExists(admin: ReturnType<typeof createAdminClient>, email: string) {
+  // Intenta crear el user con email ya confirmado.
+  // Si ya existe, Supabase devuelve error 422/duplicate — lo tratamos como ok.
+  const { error } = await admin.auth.admin.createUser({
+    email,
+    email_confirm: true,
+  });
+
+  if (!error) return { created: true };
+
+  const msg = (error.message ?? "").toLowerCase();
+  const isDuplicate =
+    error.status === 422 ||
+    msg.includes("already") ||
+    msg.includes("duplicate") ||
+    msg.includes("registered");
+
+  if (isDuplicate) return { created: false };
+
+  return { error };
+}
+
 export async function inviteAdmin(formData: FormData) {
   const profile = await getCurrentProfile();
   requireSuperAdmin(profile);
@@ -72,17 +94,17 @@ export async function inviteAdmin(formData: FormData) {
   const admin = createAdminClient();
 
   // B9: si el email ya es super_admin, no tocarlo
-  const { data: existing } = await admin
+  const { data: existingProfile } = await admin
     .from("profiles")
     .select("id, role")
     .ilike("email", email)
     .maybeSingle();
 
-  if (existing?.role === "super_admin") {
+  if (existingProfile?.role === "super_admin") {
     return { error: "Este email ya es super administrador — no se puede degradar" };
   }
 
-  // Upsert invitación (si ya existe pendiente, mantenerla; si estaba aceptada, resetear)
+  // 1. Upsert invitación
   const { error: invError } = await admin
     .from("admin_invitations")
     .upsert(
@@ -107,12 +129,40 @@ export async function inviteAdmin(formData: FormData) {
     return { error: `Error guardando invitación: ${invError.message}` };
   }
 
-  // Enviar magic link. signInWithOtp con shouldCreateUser:true crea user si no existe.
-  // El trigger handle_new_user hará la promoción a admin cuando entre.
+  // 2. Asegurar que el user existe. Si es nuevo, el trigger handle_new_user procesa
+  //    la invitación y promueve a admin. Si existe, promovemos manualmente.
+  const ensureRes = await ensureUserExists(admin, email);
+  if ("error" in ensureRes && ensureRes.error) {
+    await logAuthEvent({
+      organization_id: orgId,
+      actor_id: profile!.id,
+      target_email: email,
+      event: "admin_invite_create_user_failed",
+      payload: { error: ensureRes.error.message },
+    });
+    return { error: `No pudimos crear la cuenta: ${ensureRes.error.message}` };
+  }
+
+  // Si el user ya existía, promover a admin manualmente (el trigger no corre en ese caso)
+  if (!ensureRes.created && existingProfile) {
+    await admin
+      .from("profiles")
+      .update({ role: "admin", organization_id: orgId })
+      .eq("id", existingProfile.id);
+
+    await admin
+      .from("admin_invitations")
+      .update({ accepted_at: new Date().toISOString(), accepted_by: existingProfile.id })
+      .eq("organization_id", orgId)
+      .eq("email", email);
+  }
+
+  // 3. Enviar magic link. shouldCreateUser:false fuerza uso del template "Magic Link"
+  //    en vez de "Confirm signup" — el usuario ya existe por el paso 2.
   const { error: otpError } = await admin.auth.signInWithOtp({
     email,
     options: {
-      shouldCreateUser: true,
+      shouldCreateUser: false,
       emailRedirectTo: `${siteUrl()}/auth/confirm`,
     },
   });
@@ -133,11 +183,11 @@ export async function inviteAdmin(formData: FormData) {
     actor_id: profile!.id,
     target_email: email,
     event: "admin_invite_sent",
-    payload: { existing_user: !!existing },
+    payload: { new_user: ensureRes.created },
   });
 
   revalidatePath("/super-admin");
-  return { success: true, alreadyRegistered: !!existing };
+  return { success: true, alreadyRegistered: !ensureRes.created };
 }
 
 export async function resendAdminInvite(invitationId: string) {
@@ -155,10 +205,23 @@ export async function resendAdminInvite(invitationId: string) {
   if (error || !inv) return { error: "Invitación no encontrada" };
   if (inv.accepted_at) return { error: "Esta invitación ya fue aceptada" };
 
+  // Asegurar user existe para forzar template "Magic Link" (no "Confirm signup")
+  const ensureRes = await ensureUserExists(admin, inv.email);
+  if ("error" in ensureRes && ensureRes.error) {
+    await logAuthEvent({
+      organization_id: inv.organization_id,
+      actor_id: profile!.id,
+      target_email: inv.email,
+      event: "admin_invite_resend_create_user_failed",
+      payload: { error: ensureRes.error.message },
+    });
+    return { error: `No pudimos preparar la cuenta: ${ensureRes.error.message}` };
+  }
+
   const { error: otpError } = await admin.auth.signInWithOtp({
     email: inv.email,
     options: {
-      shouldCreateUser: true,
+      shouldCreateUser: false,
       emailRedirectTo: `${siteUrl()}/auth/confirm`,
     },
   });
