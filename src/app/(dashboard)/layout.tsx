@@ -18,6 +18,10 @@ export default async function DashboardLayout({
 
   const profile = await getCurrentProfile();
 
+  if (profile?.role === "super_admin") {
+    redirect("/super-admin");
+  }
+
   if (!profile?.organization_id) {
     return <Onboarding userEmail={user.email ?? ""} />;
   }
