@@ -249,14 +249,27 @@ export async function resendAdminInvite(invitationId: string) {
   return { success: true };
 }
 
-export async function switchViewAs(viewAs: string | null) {
+export async function switchViewAs(viewAs: string | null, orgId?: string | null) {
   const profile = await getCurrentProfile();
   requireSuperAdmin(profile);
 
   const supabase = await createClient();
+
+  // Para super_admin: organization_id se gestiona junto con view_as.
+  // - viewAs !== null → necesita organization_id (pasado o el ya existente)
+  // - viewAs === null → limpiar organization_id también (vuelve al estado global)
+  const patch: { view_as: string | null; organization_id?: string | null } = {
+    view_as: viewAs,
+  };
+  if (viewAs === null) {
+    patch.organization_id = null;
+  } else if (orgId !== undefined) {
+    patch.organization_id = orgId;
+  }
+
   await supabase
     .from("profiles")
-    .update({ view_as: viewAs })
+    .update(patch)
     .eq("id", profile!.id);
 
   revalidatePath("/");

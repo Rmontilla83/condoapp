@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { CreateOrgDialog } from "./create-org-dialog";
 import { InviteAdminDialog } from "./invite-admin-dialog";
 import { ViewSwitcher } from "./view-switcher";
+import { EnterOrgButton } from "./enter-org-button";
 
 export default async function SuperAdminPage() {
   const profile = await getCurrentProfile();
@@ -114,6 +115,7 @@ export default async function SuperAdminPage() {
                     <div className="mt-2">
                       <InviteAdminDialog orgId={org.id} orgName={org.name} />
                     </div>
+                    <EnterOrgButton orgId={org.id} />
                   </div>
                 ))}
               </div>
