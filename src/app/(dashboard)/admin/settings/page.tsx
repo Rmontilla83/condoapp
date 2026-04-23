@@ -23,8 +23,8 @@ export default async function AdminSettingsPage() {
   return (
     <div className="space-y-8">
       <div>
-        <span className="font-meta-loose text-steel">CONFIGURACIÓN</span>
-        <h1 className="mt-4 font-display text-[clamp(1.75rem,3.5vw,2.5rem)] leading-[1.1] tracking-[-0.03em] text-ink">
+        <span className="font-meta-loose text-cyan">CONFIGURACIÓN</span>
+        <h1 className="mt-4 font-display text-[clamp(1.75rem,3.5vw,2.5rem)] leading-[1.1] tracking-[-0.03em] text-marine-deep">
           <em className="font-editorial">{org.name}</em>
         </h1>
         <p className="mt-3 text-[15px] text-mute">
@@ -34,7 +34,7 @@ export default async function AdminSettingsPage() {
 
       <div className="rounded-2xl bg-card border border-border p-6 md:p-7">
         <p className="font-meta text-mute mb-2">POLÍTICAS PARA INQUILINOS</p>
-        <p className="text-[14px] text-ink/80 leading-relaxed mb-6">
+        <p className="text-[14px] text-marine-deep/80 leading-relaxed mb-6">
           Decide qué pueden hacer los inquilinos de tu condominio. Cada condominio tiene sus
           reglas; ajusta según corresponda a la ley local y al reglamento interno.
         </p>

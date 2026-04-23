@@ -68,7 +68,7 @@ export function BottomNav({ isAdmin = false }: { isAdmin?: boolean }) {
       {/* More menu overlay */}
       {showMore && (
         <div className="fixed inset-0 z-40 md:hidden" onClick={() => setShowMore(false)}>
-          <div className="absolute inset-0 bg-ink/30" />
+          <div className="absolute inset-0 bg-marine-deep/30" />
           <div className="absolute bottom-20 right-3 left-3 bg-card rounded-2xl border border-border shadow-2xl p-2 animate-in fade-in slide-in-from-bottom-4 duration-200">
             <div className="grid grid-cols-3 gap-1">
               {moreItems.map((item) => {
@@ -79,7 +79,7 @@ export function BottomNav({ isAdmin = false }: { isAdmin?: boolean }) {
                     href={item.href}
                     onClick={() => setShowMore(false)}
                     className={`flex items-center justify-center rounded-lg px-3 py-3 text-[12px] font-medium transition-colors ${
-                      isActive ? "bg-ink text-bone" : "text-ink/70 hover:bg-cloud/50"
+                      isActive ? "bg-marine-deep text-frost" : "text-marine-deep/70 hover:bg-cloud/50"
                     }`}
                   >
                     {item.label}
@@ -101,7 +101,7 @@ export function BottomNav({ isAdmin = false }: { isAdmin?: boolean }) {
                 key={item.href}
                 href={item.href}
                 className={`flex flex-col items-center gap-1 px-3 py-1.5 text-[10px] font-medium transition-colors ${
-                  isActive ? "text-sand" : "text-sidebar-foreground/60"
+                  isActive ? "text-ember" : "text-sidebar-foreground/60"
                 }`}
               >
                 {item.icon}
@@ -112,7 +112,7 @@ export function BottomNav({ isAdmin = false }: { isAdmin?: boolean }) {
           <button
             onClick={() => setShowMore(!showMore)}
             className={`flex flex-col items-center gap-1 px-3 py-1.5 text-[10px] font-medium transition-colors ${
-              isMoreActive || showMore ? "text-sand" : "text-sidebar-foreground/60"
+              isMoreActive || showMore ? "text-ember" : "text-sidebar-foreground/60"
             }`}
           >
             <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">

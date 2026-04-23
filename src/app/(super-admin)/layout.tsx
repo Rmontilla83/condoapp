@@ -24,34 +24,34 @@ export default async function SuperAdminLayout({
   if (profile?.role !== "super_admin") redirect("/dashboard");
 
   return (
-    <div className="min-h-screen flex flex-col bg-bone">
-      {/* Banner ink con hora/tasa + contexto super-admin */}
-      <div className="bg-ink text-bone">
+    <div className="min-h-screen flex flex-col bg-frost">
+      {/* Banner marine-deep con hora/tasa + contexto super-admin */}
+      <div className="bg-marine-deep text-frost">
         <div className="mx-auto max-w-7xl px-5 md:px-8 py-1.5 flex items-center justify-between gap-4 flex-wrap">
           <LiveStatusBar initialRate={null} initialDate={null} />
           <div className="flex items-center gap-3 font-meta">
-            <span className="text-sand hidden sm:inline">SUPER ADMIN</span>
-            <span className="text-bone/50 hidden md:inline">{user.email}</span>
+            <span className="text-ember hidden sm:inline">SUPER ADMIN</span>
+            <span className="text-frost/50 hidden md:inline">{user.email}</span>
           </div>
         </div>
       </div>
 
       {/* Nav */}
-      <header className="border-b border-border bg-bone">
+      <header className="border-b border-border bg-frost">
         <div className="mx-auto max-w-7xl px-5 md:px-8 h-16 flex items-center justify-between">
           <Link href="/super-admin" className="flex items-center">
-            <AtryumLogo variant="horizontal" tone="ink" className="h-6" />
+            <AtryumLogo variant="horizontal" tone="marine-deep" className="h-6" />
           </Link>
           <nav className="flex items-center gap-1 text-[13px]">
             <Link
               href="/super-admin"
-              className="px-3 py-1.5 rounded-lg text-ink/70 hover:text-ink hover:bg-ink/[0.04] transition-colors"
+              className="px-3 py-1.5 rounded-lg text-marine-deep/70 hover:text-marine-deep hover:bg-marine/10 transition-colors"
             >
               Resumen
             </Link>
             <Link
               href="/super-admin/invitations"
-              className="px-3 py-1.5 rounded-lg text-ink/70 hover:text-ink hover:bg-ink/[0.04] transition-colors"
+              className="px-3 py-1.5 rounded-lg text-marine-deep/70 hover:text-marine-deep hover:bg-marine/10 transition-colors"
             >
               Invitaciones
             </Link>

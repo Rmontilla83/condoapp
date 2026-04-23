@@ -34,15 +34,15 @@ export default async function PagosPage() {
     <div className="space-y-8">
       <div className="flex items-start justify-between gap-5">
         <div>
-          <span className="font-meta-loose text-steel">CUOTAS · ATRYUM</span>
-          <h1 className="mt-4 font-display text-[clamp(1.75rem,3.5vw,2.5rem)] leading-[1.1] tracking-[-0.03em] text-ink">
-            Tu estado de <em className="font-editorial text-steel">cuenta</em>
+          <span className="font-meta-loose text-cyan">CUOTAS · ATRYUM</span>
+          <h1 className="mt-4 font-display text-[clamp(1.75rem,3.5vw,2.5rem)] leading-[1.1] tracking-[-0.03em] text-marine-deep">
+            Tu estado de <em className="font-editorial text-cyan">cuenta</em>
           </h1>
         </div>
         {rate > 0 && (
           <div className="text-right shrink-0">
             <p className="font-meta text-mute">TASA BCV</p>
-            <p className="mt-1 font-display text-[20px] text-ink">
+            <p className="mt-1 font-display text-[20px] text-marine-deep">
               Bs {rate.toFixed(2)}
               <span className="text-mute text-sm">/$</span>
             </p>
@@ -57,7 +57,7 @@ export default async function PagosPage() {
           <p className="font-meta text-mute">SALDO PENDIENTE</p>
           <p
             className={`mt-3 font-display text-[32px] leading-none tracking-[-0.02em] ${
-              pendingTotal > 0 ? "text-ink" : "text-steel"
+              pendingTotal > 0 ? "text-marine-deep" : "text-cyan"
             }`}
           >
             ${pendingTotal.toFixed(2)}
@@ -66,14 +66,14 @@ export default async function PagosPage() {
             <p className="mt-2 text-[13px] text-mute">Bs {pendingTotalBs.toFixed(2)}</p>
           )}
           {pendingTotal === 0 && (
-            <p className="mt-2 font-meta text-steel">AL DÍA</p>
+            <p className="mt-2 font-meta text-cyan">AL DÍA</p>
           )}
         </div>
         <div className="rounded-2xl bg-card border border-border p-5">
           <p className="font-meta text-mute">ÚLTIMO PAGO</p>
           {lastPaid ? (
             <>
-              <p className="mt-3 font-display text-[32px] leading-none tracking-[-0.02em] text-ink">
+              <p className="mt-3 font-display text-[32px] leading-none tracking-[-0.02em] text-marine-deep">
                 ${Number(lastPaid.amount).toFixed(2)}
               </p>
               <p className="mt-2 text-[13px] text-mute truncate">{lastPaid.description}</p>
@@ -86,7 +86,7 @@ export default async function PagosPage() {
           <p className="font-meta text-mute">PRÓXIMO VENCIMIENTO</p>
           {nextDue ? (
             <>
-              <p className="mt-3 font-display text-[28px] leading-none tracking-[-0.02em] text-ink">
+              <p className="mt-3 font-display text-[28px] leading-none tracking-[-0.02em] text-marine-deep">
                 {new Date(nextDue.due_date).toLocaleDateString("es", { day: "numeric", month: "long" })}
               </p>
               <p className="mt-2 text-[13px] text-mute">
@@ -102,13 +102,13 @@ export default async function PagosPage() {
 
       {/* Métodos de pago */}
       {pendingTotal > 0 && (
-        <div className="rounded-2xl bg-ink text-bone p-6 md:p-7">
-          <p className="font-meta text-sand">MÉTODOS DISPONIBLES</p>
+        <div className="rounded-2xl bg-marine-deep text-frost p-6 md:p-7">
+          <p className="font-meta text-ember">MÉTODOS DISPONIBLES</p>
           <p className="mt-3 font-display text-[20px] leading-tight">
             Tienes {pendingInvoices.length} cuota{pendingInvoices.length > 1 ? "s" : ""}{" "}
-            <em className="font-editorial text-sand">pendiente{pendingInvoices.length > 1 ? "s" : ""}</em>
+            <em className="font-editorial text-ember">pendiente{pendingInvoices.length > 1 ? "s" : ""}</em>
           </p>
-          <p className="mt-1 text-[13px] text-bone/60">
+          <p className="mt-1 text-[13px] text-frost/60">
             Total: ${pendingTotal.toFixed(2)}{rate > 0 ? ` (Bs ${pendingTotalBs.toFixed(2)})` : ""}
           </p>
           <div className="mt-5 flex flex-wrap gap-2">
@@ -117,7 +117,7 @@ export default async function PagosPage() {
               "Stripe (USD)",
               "Transferencia + comprobante",
             ].map((method) => (
-              <span key={method} className="font-meta bg-bone/5 border border-bone/10 text-bone/80 px-3 py-1.5 rounded-md">
+              <span key={method} className="font-meta bg-frost/5 border border-frost/10 text-frost/80 px-3 py-1.5 rounded-md">
                 {method.toUpperCase()}
               </span>
             ))}
@@ -130,7 +130,7 @@ export default async function PagosPage() {
         <div className="flex items-center justify-between mb-5">
           <div>
             <p className="font-meta text-mute">HISTORIAL</p>
-            <p className="mt-2 text-[15px] font-medium text-ink">
+            <p className="mt-2 text-[15px] font-medium text-marine-deep">
               {invoices.length} cuota{invoices.length !== 1 ? "s" : ""} registrada{invoices.length !== 1 ? "s" : ""}
             </p>
           </div>
@@ -150,7 +150,7 @@ export default async function PagosPage() {
       {feeBreakdown.length > 0 && (
         <div className="rounded-2xl bg-card border border-border p-6">
           <p className="font-meta text-mute">DESGLOSE MENSUAL</p>
-          <p className="mt-2 text-[15px] font-medium text-ink mb-5">
+          <p className="mt-2 text-[15px] font-medium text-marine-deep mb-5">
             Referencia en USD · equivalente en Bs a tasa BCV
           </p>
           <div className="space-y-0">
@@ -158,7 +158,7 @@ export default async function PagosPage() {
               <div key={fee.id} className="flex items-center justify-between py-3 border-b border-border last:border-0">
                 <span className="text-[14px] text-mute">{fee.concept}</span>
                 <div className="text-right">
-                  <span className="text-[14px] font-medium text-ink">${Number(fee.amount).toFixed(2)}</span>
+                  <span className="text-[14px] font-medium text-marine-deep">${Number(fee.amount).toFixed(2)}</span>
                   {rate > 0 && (
                     <span className="font-meta text-mute ml-3">
                       BS {(Number(fee.amount) * rate).toFixed(2)}
@@ -168,9 +168,9 @@ export default async function PagosPage() {
               </div>
             ))}
             <div className="flex items-center justify-between py-4 mt-1">
-              <span className="text-[14px] font-medium text-ink">Total</span>
+              <span className="text-[14px] font-medium text-marine-deep">Total</span>
               <div className="text-right">
-                <span className="font-display text-[20px] text-ink">${feeTotal.toFixed(2)}</span>
+                <span className="font-display text-[20px] text-marine-deep">${feeTotal.toFixed(2)}</span>
                 {rate > 0 && (
                   <span className="font-meta text-mute ml-3">BS {(feeTotal * rate).toFixed(2)}</span>
                 )}

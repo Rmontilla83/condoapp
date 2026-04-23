@@ -77,9 +77,9 @@ export default async function ReservasPage() {
     <div className="space-y-8">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <span className="font-meta-loose text-steel">ÁREAS COMUNES</span>
-          <h1 className="mt-4 font-display text-[clamp(1.75rem,3.5vw,2.5rem)] leading-[1.1] tracking-[-0.03em] text-ink">
-            Reserva <em className="font-editorial text-steel">espacios</em>
+          <span className="font-meta-loose text-cyan">ÁREAS COMUNES</span>
+          <h1 className="mt-4 font-display text-[clamp(1.75rem,3.5vw,2.5rem)] leading-[1.1] tracking-[-0.03em] text-marine-deep">
+            Reserva <em className="font-editorial text-cyan">espacios</em>
           </h1>
         </div>
         <ReserveDialog areas={areas} />
@@ -91,10 +91,10 @@ export default async function ReservasPage() {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           {areas.map((area) => (
             <div key={area.id} className="rounded-2xl bg-card border border-border p-5">
-              <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-ink text-bone mb-4">
+              <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-marine-deep text-frost mb-4">
                 <AreaIcon name={area.name} />
               </span>
-              <p className="text-[14px] font-medium text-ink">{area.name}</p>
+              <p className="text-[14px] font-medium text-marine-deep">{area.name}</p>
               {area.capacity && (
                 <p className="mt-1 font-meta text-mute">CAP. {area.capacity} PERSONAS</p>
               )}
@@ -108,7 +108,7 @@ export default async function ReservasPage() {
         <div className="flex items-center justify-between mb-5">
           <div>
             <p className="font-meta text-mute">MIS RESERVAS</p>
-            <p className="mt-2 text-[15px] font-medium text-ink">Tus próximas reservas</p>
+            <p className="mt-2 text-[15px] font-medium text-marine-deep">Tus próximas reservas</p>
           </div>
         </div>
 
@@ -126,11 +126,11 @@ export default async function ReservasPage() {
                   className="flex items-center justify-between py-3.5 border-b border-border last:border-0 gap-3"
                 >
                   <div className="flex items-center gap-3 min-w-0">
-                    <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-cloud text-ink shrink-0">
+                    <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-cloud text-marine-deep shrink-0">
                       <AreaIcon name={areaName ?? ""} />
                     </span>
                     <div className="min-w-0">
-                      <p className="text-[14px] font-medium text-ink truncate">{areaName}</p>
+                      <p className="text-[14px] font-medium text-marine-deep truncate">{areaName}</p>
                       <p className="mt-0.5 font-meta text-mute">
                         {formatDate(r.start_time)} · {formatTime(r.start_time)} – {formatTime(r.end_time)}
                       </p>
@@ -153,7 +153,7 @@ export default async function ReservasPage() {
           <div className="flex items-center justify-between mb-5">
             <div>
               <p className="font-meta text-mute">PRÓXIMAS RESERVAS</p>
-              <p className="mt-2 text-[15px] font-medium text-ink">De otros residentes</p>
+              <p className="mt-2 text-[15px] font-medium text-marine-deep">De otros residentes</p>
             </div>
           </div>
           <ul className="space-y-0" role="list">
@@ -174,7 +174,7 @@ export default async function ReservasPage() {
                       <AreaIcon name={areaName ?? ""} />
                     </span>
                     <div className="min-w-0">
-                      <p className="text-[14px] font-medium text-ink truncate">{areaName}</p>
+                      <p className="text-[14px] font-medium text-marine-deep truncate">{areaName}</p>
                       <p className="mt-0.5 font-meta text-mute">
                         {formatDate(r.start_time)} · {formatTime(r.start_time)} – {formatTime(r.end_time)}
                       </p>

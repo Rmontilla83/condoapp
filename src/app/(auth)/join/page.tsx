@@ -70,17 +70,17 @@ export default function JoinPage() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-bone">
+    <div className="min-h-screen flex flex-col bg-frost">
       <header className="px-6 py-6 md:px-10 md:py-8">
-        <AtryumLogo variant="horizontal" tone="ink" className="h-6" />
+        <AtryumLogo variant="horizontal" tone="marine-deep" className="h-6" />
       </header>
 
       <main className="flex-1 flex items-center justify-center px-5 pb-12">
         <div className="w-full max-w-md">
           <div className="mb-8">
-            <span className="font-meta-loose text-steel">CÓDIGO DE ACCESO</span>
-            <h1 className="mt-5 font-display text-[clamp(1.75rem,4vw,2.5rem)] leading-[1.1] tracking-[-0.03em] text-ink">
-              Canjea tu <em className="font-editorial text-steel">código</em>.
+            <span className="font-meta-loose text-cyan">CÓDIGO DE ACCESO</span>
+            <h1 className="mt-5 font-display text-[clamp(1.75rem,4vw,2.5rem)] leading-[1.1] tracking-[-0.03em] text-marine-deep">
+              Canjea tu <em className="font-editorial text-cyan">código</em>.
             </h1>
             <p className="mt-3 text-[15px] text-mute leading-relaxed">
               Tu administrador o propietario te lo envió por WhatsApp o te lo entregó impreso.

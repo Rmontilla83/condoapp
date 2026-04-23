@@ -91,23 +91,23 @@ export default function ConfirmPage() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-bone">
+    <div className="min-h-screen flex flex-col bg-frost">
       <header className="px-6 py-6 md:px-10 md:py-8">
-        <AtryumLogo variant="horizontal" tone="ink" className="h-6" />
+        <AtryumLogo variant="horizontal" tone="marine-deep" className="h-6" />
       </header>
 
       <main className="flex-1 flex items-center justify-center px-5 pb-12">
         <div className="w-full max-w-sm">
           <div className="bg-card rounded-2xl border border-border p-8 text-center">
-            <AtryumSymbol tone="ink" className="h-10 w-10 mx-auto mb-5" />
+            <AtryumSymbol tone="marine-deep" className="h-10 w-10 mx-auto mb-5" />
 
-            <h1 className="font-display text-[24px] leading-tight tracking-[-0.03em] text-ink">
+            <h1 className="font-display text-[24px] leading-tight tracking-[-0.03em] text-marine-deep">
               {status === "success" ? (
-                <>Acceso <em className="font-editorial text-steel">confirmado</em></>
+                <>Acceso <em className="font-editorial text-cyan">confirmado</em></>
               ) : status === "error" ? (
                 "No pudimos entrar"
               ) : (
-                <>Confirma tu <em className="font-editorial text-steel">acceso</em></>
+                <>Confirma tu <em className="font-editorial text-cyan">acceso</em></>
               )}
             </h1>
 
@@ -130,15 +130,15 @@ export default function ConfirmPage() {
 
               {status === "loading" && (
                 <div className="py-4">
-                  <div className="mx-auto h-8 w-8 animate-spin rounded-full border-2 border-steel border-t-transparent" />
+                  <div className="mx-auto h-8 w-8 animate-spin rounded-full border-2 border-cyan border-t-transparent" />
                   <p className="text-[13px] text-mute mt-4">Verificando...</p>
                 </div>
               )}
 
               {status === "success" && (
                 <div className="py-3">
-                  <div className="mx-auto mb-3 flex h-11 w-11 items-center justify-center rounded-full bg-steel/10">
-                    <svg className="h-5 w-5 text-steel" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor">
+                  <div className="mx-auto mb-3 flex h-11 w-11 items-center justify-center rounded-full bg-cyan/10">
+                    <svg className="h-5 w-5 text-cyan" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
                     </svg>
                   </div>

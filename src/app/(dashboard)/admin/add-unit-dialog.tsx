@@ -92,7 +92,7 @@ export function AddUnitDialog() {
             </p>
           )}
           {success && (
-            <p className="rounded-md bg-steel/10 border border-steel/30 px-3 py-2 text-[13px] text-steel">
+            <p className="rounded-md bg-cyan/10 border border-cyan/30 px-3 py-2 text-[13px] text-cyan">
               ✓ {success}
             </p>
           )}

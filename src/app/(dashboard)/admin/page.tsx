@@ -61,9 +61,9 @@ export default async function AdminPage() {
   return (
     <div className="space-y-10">
       <div>
-        <span className="font-meta-loose text-steel">PANEL ADMINISTRADOR</span>
-        <h1 className="mt-4 font-display text-[clamp(2rem,4.5vw,3.25rem)] leading-[1.05] tracking-[-0.035em] text-ink">
-          Vista <em className="font-editorial text-steel">general</em>
+        <span className="font-meta-loose text-cyan">PANEL ADMINISTRADOR</span>
+        <h1 className="mt-4 font-display text-[clamp(2rem,4.5vw,3.25rem)] leading-[1.05] tracking-[-0.035em] text-marine-deep">
+          Vista <em className="font-editorial text-cyan">general</em>
         </h1>
         <p className="mt-3 text-[15px] text-mute">
           {stats.totalUnits} unidades · {stats.paymentRate}% de cobranza · {stats.openRequests} solicitudes abiertas
@@ -74,13 +74,13 @@ export default async function AdminPage() {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <div className="rounded-2xl bg-card border border-border p-5">
           <p className="font-meta text-mute">UNIDADES</p>
-          <p className="mt-3 font-display text-[32px] leading-none tracking-[-0.02em] text-ink">
+          <p className="mt-3 font-display text-[32px] leading-none tracking-[-0.02em] text-marine-deep">
             {stats.totalUnits}
           </p>
         </div>
         <div className="rounded-2xl bg-card border border-border p-5">
           <p className="font-meta text-mute">COBRANZA</p>
-          <p className="mt-3 font-display text-[32px] leading-none tracking-[-0.02em] text-steel">
+          <p className="mt-3 font-display text-[32px] leading-none tracking-[-0.02em] text-cyan">
             {stats.paymentRate}
             <span className="text-mute text-[20px]">%</span>
           </p>
@@ -93,7 +93,7 @@ export default async function AdminPage() {
         </div>
         <div className="rounded-2xl bg-card border border-border p-5">
           <p className="font-meta text-mute">SOLICITUDES</p>
-          <p className="mt-3 font-display text-[32px] leading-none tracking-[-0.02em] text-sand">
+          <p className="mt-3 font-display text-[32px] leading-none tracking-[-0.02em] text-ember">
             {stats.openRequests}
           </p>
         </div>
@@ -105,7 +105,7 @@ export default async function AdminPage() {
         <div className="rounded-2xl bg-card border border-border p-5 flex flex-col justify-between gap-4">
           <div>
             <p className="font-meta text-mute">COBRANZA</p>
-            <p className="mt-2 text-[14px] text-ink/80 leading-relaxed">
+            <p className="mt-2 text-[14px] text-marine-deep/80 leading-relaxed">
               Genera cuotas para todas las unidades de un mes.
             </p>
           </div>
@@ -114,7 +114,7 @@ export default async function AdminPage() {
         <div className="rounded-2xl bg-card border border-border p-5 flex flex-col justify-between gap-4">
           <div>
             <p className="font-meta text-mute">UNIDADES</p>
-            <p className="mt-2 text-[14px] text-ink/80 leading-relaxed">
+            <p className="mt-2 text-[14px] text-marine-deep/80 leading-relaxed">
               {stats.totalUnits} unidad{stats.totalUnits !== 1 ? "es" : ""} registrada{stats.totalUnits !== 1 ? "s" : ""}.
             </p>
           </div>
@@ -128,7 +128,7 @@ export default async function AdminPage() {
           <div className="flex items-center justify-between mb-5">
             <div>
               <p className="font-meta text-mute">COMPROBANTES POR REVISAR</p>
-              <p className="mt-2 text-[15px] font-medium text-ink">
+              <p className="mt-2 text-[15px] font-medium text-marine-deep">
                 {pendingPayments.length} pendiente{pendingPayments.length !== 1 ? "s" : ""} de aprobación
               </p>
             </div>
@@ -142,7 +142,7 @@ export default async function AdminPage() {
           <div className="flex items-center justify-between mb-5">
             <div>
               <p className="font-meta text-mute">MOROSOS</p>
-              <p className="mt-2 text-[15px] font-medium text-ink">
+              <p className="mt-2 text-[15px] font-medium text-marine-deep">
                 Unidades con cuotas pendientes
               </p>
             </div>
@@ -150,7 +150,7 @@ export default async function AdminPage() {
 
           {morosos.length === 0 ? (
             <div className="py-6 text-center">
-              <p className="font-meta text-steel">TODAS AL DÍA · GRACIAS</p>
+              <p className="font-meta text-cyan">TODAS AL DÍA · GRACIAS</p>
             </div>
           ) : (
             <div className="space-y-0">
@@ -160,7 +160,7 @@ export default async function AdminPage() {
                   className="flex items-center justify-between py-3.5 border-b border-border last:border-0 gap-3"
                 >
                   <div className="min-w-0">
-                    <p className="text-[14px] font-medium text-ink">Apto {m.unit}</p>
+                    <p className="text-[14px] font-medium text-marine-deep">Apto {m.unit}</p>
                     <p className="mt-0.5 font-meta text-mute truncate">
                       {m.count} CUOTA{m.count > 1 ? "S" : ""} ·{" "}
                       DESDE{" "}
@@ -191,7 +191,7 @@ export default async function AdminPage() {
       <div className="rounded-2xl bg-card border border-border p-6">
         <div className="mb-5">
           <p className="font-meta text-mute">SOLICITUDES DE MANTENIMIENTO</p>
-          <p className="mt-2 text-[15px] font-medium text-ink">
+          <p className="mt-2 text-[15px] font-medium text-marine-deep">
             Toca una para gestionar — asignar responsable, cambiar estado
           </p>
         </div>
@@ -204,13 +204,13 @@ export default async function AdminPage() {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           <div className="rounded-xl bg-cloud/40 border border-border p-4">
             <p className="font-meta text-mute">RECAUDADO</p>
-            <p className="mt-3 font-display text-[22px] leading-none text-steel">
+            <p className="mt-3 font-display text-[22px] leading-none text-cyan">
               ${stats.totalIncome.toFixed(2)}
             </p>
           </div>
           <div className="rounded-xl bg-cloud/40 border border-border p-4">
             <p className="font-meta text-mute">GASTOS</p>
-            <p className="mt-3 font-display text-[22px] leading-none text-ink">
+            <p className="mt-3 font-display text-[22px] leading-none text-marine-deep">
               ${stats.totalExpenses.toFixed(2)}
             </p>
           </div>
@@ -218,7 +218,7 @@ export default async function AdminPage() {
             <p className="font-meta text-mute">BALANCE</p>
             <p
               className={`mt-3 font-display text-[22px] leading-none ${
-                stats.balance >= 0 ? "text-ink" : "text-destructive"
+                stats.balance >= 0 ? "text-marine-deep" : "text-destructive"
               }`}
             >
               ${stats.balance.toFixed(2)}
@@ -226,7 +226,7 @@ export default async function AdminPage() {
           </div>
           <div className="rounded-xl bg-cloud/40 border border-border p-4">
             <p className="font-meta text-mute">COBRANZA</p>
-            <p className="mt-3 font-display text-[22px] leading-none text-ink">
+            <p className="mt-3 font-display text-[22px] leading-none text-marine-deep">
               {stats.paymentRate}
               <span className="text-mute text-[14px]">%</span>
             </p>

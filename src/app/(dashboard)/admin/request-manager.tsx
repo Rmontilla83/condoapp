@@ -8,10 +8,10 @@ import { updateRequestStatus } from "../mantenimiento/actions";
 import type { MaintenanceRequest } from "@/types/database";
 
 const statusConfig: Record<string, { label: string; tag: string }> = {
-  new: { label: "NUEVO", tag: "bg-steel/10 text-steel" },
-  in_review: { label: "EN REVISIÓN", tag: "bg-sand/15 text-sand" },
-  in_progress: { label: "EN CURSO", tag: "bg-sand/15 text-sand" },
-  resolved: { label: "RESUELTO", tag: "bg-steel/10 text-steel" },
+  new: { label: "NUEVO", tag: "bg-cyan/10 text-cyan" },
+  in_review: { label: "EN REVISIÓN", tag: "bg-ember/15 text-ember" },
+  in_progress: { label: "EN CURSO", tag: "bg-ember/15 text-ember" },
+  resolved: { label: "RESUELTO", tag: "bg-cyan/10 text-cyan" },
 };
 
 const statusFlow = ["new", "in_review", "in_progress", "resolved"] as const;
@@ -71,7 +71,7 @@ export function RequestManager({ requests }: { requests: MaintenanceRequest[] })
         const priorityDot =
           req.priority === "urgent" || req.priority === "high"
             ? "bg-destructive"
-            : "bg-sand";
+            : "bg-ember";
 
         return (
           <div key={req.id} className="rounded-xl bg-card border border-border overflow-hidden">
@@ -82,7 +82,7 @@ export function RequestManager({ requests }: { requests: MaintenanceRequest[] })
               <div className="flex items-center gap-3 min-w-0">
                 <span className={`h-2 w-2 rounded-full shrink-0 ${priorityDot}`} />
                 <div className="min-w-0">
-                  <p className="text-[14px] font-medium text-ink truncate">{req.title}</p>
+                  <p className="text-[14px] font-medium text-marine-deep truncate">{req.title}</p>
                   <p className="mt-0.5 font-meta text-mute truncate">
                     {new Date(req.created_at)
                       .toLocaleDateString("es", { day: "numeric", month: "short" })
@@ -109,7 +109,7 @@ export function RequestManager({ requests }: { requests: MaintenanceRequest[] })
 
             {isExpanded && (
               <div className="border-t border-border p-4 bg-cloud/20 space-y-4">
-                <p className="text-[13.5px] text-ink/80 leading-relaxed">{req.description}</p>
+                <p className="text-[13.5px] text-marine-deep/80 leading-relaxed">{req.description}</p>
 
                 {req.photo_urls && req.photo_urls.length > 0 && (
                   <div className="flex gap-2 flex-wrap">

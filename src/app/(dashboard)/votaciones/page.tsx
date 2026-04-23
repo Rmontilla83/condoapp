@@ -25,9 +25,9 @@ export default async function VotacionesPage() {
     <div className="space-y-8">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <span className="font-meta-loose text-steel">VOTACIONES</span>
-          <h1 className="mt-4 font-display text-[clamp(1.75rem,3.5vw,2.5rem)] leading-[1.1] tracking-[-0.03em] text-ink">
-            Decisiones de tu <em className="font-editorial text-steel">comunidad</em>
+          <span className="font-meta-loose text-cyan">VOTACIONES</span>
+          <h1 className="mt-4 font-display text-[clamp(1.75rem,3.5vw,2.5rem)] leading-[1.1] tracking-[-0.03em] text-marine-deep">
+            Decisiones de tu <em className="font-editorial text-cyan">comunidad</em>
           </h1>
         </div>
         {isAdmin && <NewPollDialog />}

@@ -65,24 +65,24 @@ export function Onboarding({ userEmail }: { userEmail: string }) {
 
   if (checking) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-bone">
+      <div className="flex min-h-screen items-center justify-center bg-frost">
         <p className="font-meta text-mute">VERIFICANDO ACCESO...</p>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-bone">
+    <div className="min-h-screen flex flex-col bg-frost">
       <header className="px-6 py-6 md:px-10 md:py-8">
-        <AtryumLogo variant="horizontal" tone="ink" className="h-6" />
+        <AtryumLogo variant="horizontal" tone="marine-deep" className="h-6" />
       </header>
 
       <main className="flex-1 flex items-center justify-center px-5 pb-12">
         <div className="w-full max-w-md">
           <div className="mb-8">
-            <span className="font-meta-loose text-steel">PRIMER ACCESO</span>
-            <h1 className="mt-5 font-display text-[clamp(1.75rem,4vw,2.5rem)] leading-[1.1] tracking-[-0.03em] text-ink">
-              Bienvenido a <em className="font-editorial text-steel">Atryum</em>.
+            <span className="font-meta-loose text-cyan">PRIMER ACCESO</span>
+            <h1 className="mt-5 font-display text-[clamp(1.75rem,4vw,2.5rem)] leading-[1.1] tracking-[-0.03em] text-marine-deep">
+              Bienvenido a <em className="font-editorial text-cyan">Atryum</em>.
             </h1>
             <p className="mt-3 text-[15px] text-mute leading-relaxed">
               El administrador de tu condominio te invitó por email o te dio un código.
@@ -96,14 +96,14 @@ export function Onboarding({ userEmail }: { userEmail: string }) {
           <div className="space-y-3">
             <button
               onClick={() => router.push("/join")}
-              className="group w-full rounded-2xl bg-card border border-border p-5 text-left hover:border-ink/20 transition-colors btn-press"
+              className="group w-full rounded-2xl bg-card border border-border p-5 text-left hover:border-marine/40 transition-colors btn-press"
             >
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-[15px] font-medium text-ink">Tengo un código</p>
+                  <p className="text-[15px] font-medium text-marine-deep">Tengo un código</p>
                   <p className="mt-1 font-meta text-mute">EJ: ABC1-2026-X7K2</p>
                 </div>
-                <svg className="h-4 w-4 text-mute group-hover:text-ink transition-colors" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                <svg className="h-4 w-4 text-mute group-hover:text-marine-deep transition-colors" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
                 </svg>
               </div>
@@ -112,18 +112,18 @@ export function Onboarding({ userEmail }: { userEmail: string }) {
             <button
               onClick={retryInvitations}
               disabled={retrying}
-              className="group w-full rounded-2xl bg-card border border-border p-5 text-left hover:border-ink/20 transition-colors btn-press disabled:opacity-60"
+              className="group w-full rounded-2xl bg-card border border-border p-5 text-left hover:border-marine/40 transition-colors btn-press disabled:opacity-60"
             >
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-[15px] font-medium text-ink">
+                  <p className="text-[15px] font-medium text-marine-deep">
                     {retrying ? "Buscando..." : "Fui invitado por email"}
                   </p>
                   <p className="mt-1 font-meta text-mute">
                     REVISAR INVITACIONES PENDIENTES
                   </p>
                 </div>
-                <svg className="h-4 w-4 text-mute group-hover:text-ink transition-colors" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                <svg className="h-4 w-4 text-mute group-hover:text-marine-deep transition-colors" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
                 </svg>
               </div>
@@ -147,7 +147,7 @@ export function Onboarding({ userEmail }: { userEmail: string }) {
                 await supabase.auth.signOut();
                 router.push("/login");
               }}
-              className="text-[13px] text-mute hover:text-ink"
+              className="text-[13px] text-mute hover:text-marine-deep"
             >
               Cerrar sesión
             </Button>

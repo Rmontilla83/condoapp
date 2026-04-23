@@ -43,8 +43,8 @@ export default async function FinanzasPage() {
   const categories = Object.entries(byCategory).sort((a, b) => b[1] - a[1]);
 
   const categoryAccent: Record<string, string> = {
-    Mantenimiento: "bg-sand",
-    Limpieza: "bg-steel",
+    Mantenimiento: "bg-ember",
+    Limpieza: "bg-cyan",
     Seguridad: "bg-destructive",
     Servicios: "bg-mute",
   };
@@ -53,9 +53,9 @@ export default async function FinanzasPage() {
     <div className="space-y-8">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <span className="font-meta-loose text-steel">FINANZAS</span>
-          <h1 className="mt-4 font-display text-[clamp(1.75rem,3.5vw,2.5rem)] leading-[1.1] tracking-[-0.03em] text-ink">
-            Transparencia <em className="font-editorial text-steel">financiera</em>
+          <span className="font-meta-loose text-cyan">FINANZAS</span>
+          <h1 className="mt-4 font-display text-[clamp(1.75rem,3.5vw,2.5rem)] leading-[1.1] tracking-[-0.03em] text-marine-deep">
+            Transparencia <em className="font-editorial text-cyan">financiera</em>
           </h1>
           <p className="mt-3 text-[15px] text-mute">
             Exactamente en qué se gasta el dinero de tu condominio.
@@ -70,13 +70,13 @@ export default async function FinanzasPage() {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <div className="rounded-2xl bg-card border border-border p-5">
           <p className="font-meta text-mute">RECAUDADO</p>
-          <p className="mt-3 font-display text-[28px] leading-none tracking-[-0.02em] text-steel">
+          <p className="mt-3 font-display text-[28px] leading-none tracking-[-0.02em] text-cyan">
             ${totalIncome.toFixed(2)}
           </p>
         </div>
         <div className="rounded-2xl bg-card border border-border p-5">
           <p className="font-meta text-mute">GASTOS</p>
-          <p className="mt-3 font-display text-[28px] leading-none tracking-[-0.02em] text-ink">
+          <p className="mt-3 font-display text-[28px] leading-none tracking-[-0.02em] text-marine-deep">
             ${totalExpenses.toFixed(2)}
           </p>
         </div>
@@ -84,7 +84,7 @@ export default async function FinanzasPage() {
           <p className="font-meta text-mute">BALANCE</p>
           <p
             className={`mt-3 font-display text-[28px] leading-none tracking-[-0.02em] ${
-              balance >= 0 ? "text-ink" : "text-destructive"
+              balance >= 0 ? "text-marine-deep" : "text-destructive"
             }`}
           >
             ${balance.toFixed(2)}
@@ -92,7 +92,7 @@ export default async function FinanzasPage() {
         </div>
         <div className="rounded-2xl bg-card border border-border p-5">
           <p className="font-meta text-mute">POR COBRAR</p>
-          <p className="mt-3 font-display text-[28px] leading-none tracking-[-0.02em] text-sand">
+          <p className="mt-3 font-display text-[28px] leading-none tracking-[-0.02em] text-ember">
             ${totalPending.toFixed(2)}
           </p>
         </div>
@@ -101,7 +101,7 @@ export default async function FinanzasPage() {
       {/* Gastos por categoría */}
       <div className="rounded-2xl bg-card border border-border p-6">
         <p className="font-meta text-mute">GASTOS POR CATEGORÍA</p>
-        <p className="mt-2 text-[15px] font-medium text-ink mb-6">
+        <p className="mt-2 text-[15px] font-medium text-marine-deep mb-6">
           Distribución del gasto total
         </p>
 
@@ -115,9 +115,9 @@ export default async function FinanzasPage() {
               return (
                 <div key={cat}>
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-[14px] font-medium text-ink">{cat}</span>
+                    <span className="text-[14px] font-medium text-marine-deep">{cat}</span>
                     <div>
-                      <span className="text-[14px] font-medium text-ink">${amount.toFixed(2)}</span>
+                      <span className="text-[14px] font-medium text-marine-deep">${amount.toFixed(2)}</span>
                       <span className="font-meta text-mute ml-3">{pct.toFixed(0)}%</span>
                     </div>
                   </div>
@@ -137,7 +137,7 @@ export default async function FinanzasPage() {
       {/* Detalle */}
       <div className="rounded-2xl bg-card border border-border p-6">
         <p className="font-meta text-mute">DETALLE</p>
-        <p className="mt-2 text-[15px] font-medium text-ink mb-5">
+        <p className="mt-2 text-[15px] font-medium text-marine-deep mb-5">
           Cada gasto documentado
         </p>
 
@@ -150,7 +150,7 @@ export default async function FinanzasPage() {
                 <div className="flex items-center gap-3 min-w-0">
                   <span className={`h-1.5 w-1.5 rounded-full shrink-0 ${categoryAccent[expense.category] ?? "bg-mute"}`} />
                   <div className="min-w-0">
-                    <p className="text-[14px] font-medium text-ink truncate">{expense.description}</p>
+                    <p className="text-[14px] font-medium text-marine-deep truncate">{expense.description}</p>
                     <p className="font-meta text-mute truncate">
                       {expense.category.toUpperCase()} ·{" "}
                       {new Date(expense.expense_date).toLocaleDateString("es", {
@@ -172,7 +172,7 @@ export default async function FinanzasPage() {
                       <img src={expense.receipt_url} alt="Recibo" className="h-full w-full object-cover" />
                     </a>
                   )}
-                  <span className="text-[14px] font-medium text-ink">
+                  <span className="text-[14px] font-medium text-marine-deep">
                     −${Number(expense.amount).toFixed(2)}
                   </span>
                 </div>

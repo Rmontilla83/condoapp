@@ -4,9 +4,9 @@ import { AtryumLogo } from "@/components/brand/atryum-logo";
 
 type PassStatus = "valid" | "used" | "cancelled" | "expired" | "not_found";
 
-const STATUS_COPY: Record<PassStatus, { label: string; tone: "steel" | "sand" | "destructive" }> = {
-  valid: { label: "PASE VÁLIDO", tone: "steel" },
-  used: { label: "PASE YA UTILIZADO", tone: "sand" },
+const STATUS_COPY: Record<PassStatus, { label: string; tone: "cyan" | "ember" | "destructive" }> = {
+  valid: { label: "PASE VÁLIDO", tone: "cyan" },
+  used: { label: "PASE YA UTILIZADO", tone: "ember" },
   cancelled: { label: "PASE CANCELADO", tone: "destructive" },
   expired: { label: "PASE EXPIRADO", tone: "destructive" },
   not_found: { label: "PASE NO ENCONTRADO", tone: "destructive" },
@@ -52,7 +52,7 @@ export default async function VerificarPage({
       <div className="mt-6 space-y-4">
         <div className="rounded-xl bg-cloud/40 border border-border p-4">
           <p className="font-meta text-mute">VISITANTE</p>
-          <p className="mt-2 font-display text-[20px] text-ink leading-tight">
+          <p className="mt-2 font-display text-[20px] text-marine-deep leading-tight">
             {pass.visitor_name}
           </p>
           <p className="mt-1 font-mono text-[13px] text-mute">{pass.visitor_id_number}</p>
@@ -61,19 +61,19 @@ export default async function VerificarPage({
         <div className="grid grid-cols-2 gap-3">
           <div className="rounded-xl bg-cloud/40 border border-border p-4">
             <p className="font-meta text-mute">DESTINO</p>
-            <p className="mt-2 text-[15px] font-medium text-ink">
+            <p className="mt-2 text-[15px] font-medium text-marine-deep">
               Apto {pass.unit_number || "—"}
             </p>
           </div>
           <div className="rounded-xl bg-cloud/40 border border-border p-4">
             <p className="font-meta text-mute">INVITADO POR</p>
-            <p className="mt-2 text-[15px] font-medium text-ink">{ownerName}</p>
+            <p className="mt-2 text-[15px] font-medium text-marine-deep">{ownerName}</p>
           </div>
         </div>
 
         <div className="rounded-xl bg-cloud/40 border border-border p-4">
           <p className="font-meta text-mute">VÁLIDO HASTA</p>
-          <p className="mt-2 text-[14px] font-medium text-ink">
+          <p className="mt-2 text-[14px] font-medium text-marine-deep">
             {validUntil.toLocaleDateString("es", {
               weekday: "long",
               day: "numeric",
@@ -99,16 +99,16 @@ function VerificarShell({
 }) {
   const copy = STATUS_COPY[status];
   const toneClasses =
-    copy.tone === "steel"
-      ? "bg-steel text-bone"
-      : copy.tone === "sand"
-      ? "bg-sand text-ink"
-      : "bg-destructive text-bone";
+    copy.tone === "cyan"
+      ? "bg-cyan text-frost"
+      : copy.tone === "ember"
+      ? "bg-ember text-marine-deep"
+      : "bg-destructive text-frost";
 
   return (
-    <div className="min-h-screen flex flex-col bg-bone">
+    <div className="min-h-screen flex flex-col bg-frost">
       <header className="px-6 py-6 md:px-10 md:py-8">
-        <AtryumLogo variant="horizontal" tone="ink" className="h-6" />
+        <AtryumLogo variant="horizontal" tone="marine-deep" className="h-6" />
       </header>
 
       <main className="flex-1 flex items-center justify-center px-5 pb-12">
@@ -129,7 +129,7 @@ function VerificarShell({
 
             <div className="border-t border-border px-6 py-3 text-center">
               <p className="font-meta text-mute">
-                VERIFICADO POR <span className="text-steel">ATRYUM</span>
+                VERIFICADO POR <span className="text-cyan">ATRYUM</span>
               </p>
             </div>
           </div>

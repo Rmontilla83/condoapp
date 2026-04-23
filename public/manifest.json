@@ -1,20 +1,14 @@
 {
-  "name": "Atryum — Gestion de Condominios",
+  "name": "Atryum — Gestión de Condominios",
   "short_name": "Atryum",
-  "description": "Pagos, mantenimiento, QR visitantes, transparencia financiera",
+  "description": "Acceso, comunidad y administración en una sola app",
   "start_url": "/dashboard",
   "display": "standalone",
-  "background_color": "#F5F2EC",
-  "theme_color": "#0E1116",
+  "background_color": "#F4F7FB",
+  "theme_color": "#0F2E5A",
   "orientation": "portrait",
   "scope": "/",
   "icons": [
-    {
-      "src": "/brand/02-appicon-sand.svg",
-      "sizes": "any",
-      "type": "image/svg+xml",
-      "purpose": "any"
-    },
     {
       "src": "/icon-192.png",
       "sizes": "192x192",

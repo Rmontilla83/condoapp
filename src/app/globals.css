@@ -3,18 +3,17 @@
 @import "shadcn/tailwind.css";
 
 @theme inline {
-  /* ═══ Atryum brand tokens ═══ */
-  --color-ink: #0E1116;
-  --color-ink-deep: #05070A;
-  --color-bone: #F5F2EC;
-  --color-cloud: #E8E5DE;
-  --color-steel: #3D5A80;
-  --color-steel-deep: #253A52;
-  --color-sand: #D4A574;
-  --color-sand-soft: #E6C89D;
-  --color-mute: #6B6F77;
+  /* ═══ Atryum V3 brand tokens (Manual de Marca v1.0 · Abril 2026) ═══ */
+  --color-marine: #1E4D8F;          /* Primario — acento azul marino del logotipo */
+  --color-marine-deep: #0F2E5A;     /* Fondo oscuro, texto principal */
+  --color-cyan: #2FB4E6;            /* Acento tech, enlaces, estados */
+  --color-ember: #E8732C;           /* Acento cálido, warnings, CTAs secundarios */
+  --color-frost: #F4F7FB;           /* Fondo claro (off-white azulado) */
+  --color-cloud: #EAEEF4;           /* Superficies elevadas, secondary bg */
+  --color-slate: #3B4A63;           /* Body copy dark alt */
+  --color-mute: #6B7A90;            /* Metadatos, captions */
 
-  /* ═══ Shadcn token mapping → Atryum ═══ */
+  /* ═══ Shadcn token mapping → Atryum V3 ═══ */
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -49,11 +48,11 @@
 
   /* ═══ Fonts — loaded via <link> in layout.tsx head ═══ */
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
-  --font-serif: "Instrument Serif", ui-serif, Georgia, "Times New Roman", serif;
+  --font-display: "Archivo", "Inter", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
-  --font-heading: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-heading: "Archivo", "Inter", ui-sans-serif, system-ui, sans-serif;
 
-  /* ═══ Radii — tighter than default, closer to manual ═══ */
+  /* ═══ Radii ═══ */
   --radius-sm: calc(var(--radius) * 0.5);
   --radius-md: calc(var(--radius) * 0.75);
   --radius-lg: var(--radius);
@@ -64,51 +63,51 @@
 }
 
 :root {
-  /* ═══ Light mode — Bone base ═══ */
-  --background: #F5F2EC;      /* Bone */
-  --foreground: #0E1116;      /* Ink */
+  /* ═══ Light mode — Frost base ═══ */
+  --background: #F4F7FB;          /* Frost */
+  --foreground: #0F2E5A;          /* Marine Deep — texto primario */
 
   --card: #FFFFFF;
-  --card-foreground: #0E1116;
+  --card-foreground: #0F2E5A;
 
   --popover: #FFFFFF;
-  --popover-foreground: #0E1116;
+  --popover-foreground: #0F2E5A;
 
-  --primary: #0E1116;         /* Ink */
-  --primary-foreground: #F5F2EC;
+  --primary: #1E4D8F;             /* Marine */
+  --primary-foreground: #FFFFFF;
 
-  --secondary: #E8E5DE;       /* Cloud */
-  --secondary-foreground: #0E1116;
+  --secondary: #EAEEF4;           /* Cloud */
+  --secondary-foreground: #0F2E5A;
 
-  --muted: #E8E5DE;           /* Cloud */
-  --muted-foreground: #6B6F77;
+  --muted: #EAEEF4;
+  --muted-foreground: #6B7A90;    /* Mute */
 
-  --accent: #3D5A80;          /* Steel */
-  --accent-foreground: #F5F2EC;
+  --accent: #2FB4E6;              /* Cyan */
+  --accent-foreground: #0F2E5A;
 
   --destructive: #B4402B;
 
-  --border: #DAD5CB;
-  --input: #DAD5CB;
-  --ring: #3D5A80;
+  --border: #D8DFEA;
+  --input: #D8DFEA;
+  --ring: #2FB4E6;                /* Cyan focus ring */
 
-  --chart-1: #3D5A80;  /* Steel */
-  --chart-2: #D4A574;  /* Sand */
-  --chart-3: #0E1116;  /* Ink */
-  --chart-4: #6B6F77;  /* Mute */
-  --chart-5: #253A52;  /* Steel Deep */
+  --chart-1: #1E4D8F;  /* Marine */
+  --chart-2: #2FB4E6;  /* Cyan */
+  --chart-3: #E8732C;  /* Ember */
+  --chart-4: #6B7A90;  /* Mute */
+  --chart-5: #0F2E5A;  /* Marine Deep */
 
   --radius: 0.625rem;
 
-  /* Sidebar is ink even in light — manual tablero 07 */
-  --sidebar: #0E1116;
-  --sidebar-foreground: #F5F2EC;
-  --sidebar-primary: #D4A574;
-  --sidebar-primary-foreground: #0E1116;
+  /* Sidebar en Marine Deep (manual: fondos oscuros premium) */
+  --sidebar: #0F2E5A;
+  --sidebar-foreground: #F4F7FB;
+  --sidebar-primary: #E8732C;                 /* Ember para item activo */
+  --sidebar-primary-foreground: #0F2E5A;
   --sidebar-accent: rgba(255, 255, 255, 0.06);
-  --sidebar-accent-foreground: #F5F2EC;
+  --sidebar-accent-foreground: #F4F7FB;
   --sidebar-border: rgba(255, 255, 255, 0.08);
-  --sidebar-ring: #D4A574;
+  --sidebar-ring: #2FB4E6;
 }
 
 /* ═══ Base ═══ */
@@ -129,36 +128,64 @@
   }
   h1, h2, h3, h4, h5, h6 {
     font-family: var(--font-heading);
-    letter-spacing: -0.02em;
+    letter-spacing: -0.01em;
+    font-weight: 700;
   }
 }
 
-/* ═══ Typographic utilities — Atryum voice ═══ */
+/* ═══ Typographic utilities — Atryum V3 voice ═══ */
 @layer utilities {
-  .font-editorial {
-    font-family: var(--font-serif);
-    font-style: italic;
-    font-weight: 400;
-    letter-spacing: -0.01em;
-  }
   .font-display {
-    font-family: var(--font-sans);
-    font-weight: 500;
-    letter-spacing: -0.03em;
+    font-family: var(--font-display);
+    font-weight: 800;
+    letter-spacing: -0.02em;
+  }
+  .font-heading {
+    font-family: var(--font-display);
+    font-weight: 700;
+    letter-spacing: -0.015em;
   }
   .font-meta {
     font-family: var(--font-mono);
-    font-weight: 400;
-    font-size: 0.75rem;
+    font-weight: 500;
+    font-size: 0.7rem;
     letter-spacing: 0.08em;
     text-transform: uppercase;
   }
   .font-meta-loose {
     font-family: var(--font-mono);
-    font-weight: 400;
-    font-size: 0.75rem;
+    font-weight: 500;
+    font-size: 0.7rem;
     letter-spacing: 0.2em;
     text-transform: uppercase;
+  }
+
+  /* Signature gradient — Cyan → Marine → Ember at 135°
+     Usar como accent dentro de un heading (bg-clip-text text-transparent) */
+  .text-signature {
+    background: linear-gradient(135deg, #2FB4E6 0%, #1E4D8F 50%, #E8732C 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .bg-signature {
+    background: linear-gradient(135deg, #2FB4E6 0%, #1E4D8F 50%, #E8732C 100%);
+  }
+
+  /* Alias retrocompatibles durante el redesign sweep.
+     font-editorial era italic serif en V2; en V3 lo mapeamos al gradient signature
+     sobre Archivo weight 800 para conservar la intención de "acento destacado". */
+  .font-editorial {
+    font-family: var(--font-display);
+    font-weight: 800;
+    font-style: normal;
+    background: linear-gradient(135deg, #2FB4E6 0%, #1E4D8F 50%, #E8732C 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    -webkit-text-fill-color: transparent;
   }
 }
 
@@ -226,20 +253,18 @@
 }
 .hover-lift:hover {
   transform: translateY(-3px);
-  box-shadow: 0 10px 32px rgba(14, 17, 22, 0.06);
+  box-shadow: 0 10px 32px rgba(15, 46, 90, 0.08);
 }
 .hover-scale { transition: transform 0.25s var(--ease-spring); }
 .hover-scale:hover { transform: scale(1.015); }
 .btn-press:active { transform: scale(0.97); transition: transform 0.08s ease; }
 
-/* ═══ Editorial dot separator (· inline) ═══ */
 .dot-sep::before {
   content: "·";
   margin: 0 0.5em;
   color: var(--color-mute);
 }
 
-/* ═══ Grain texture overlay (optional on ink sections) ═══ */
 .grain::after {
   content: "";
   position: absolute;

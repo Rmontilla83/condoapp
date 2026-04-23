@@ -86,7 +86,7 @@ export function Sidebar({ isAdmin = false }: { isAdmin?: boolean }) {
   return (
     <aside className="hidden md:flex md:w-60 md:flex-col bg-sidebar text-sidebar-foreground">
       <div className="flex h-20 items-center px-6">
-        <AtryumLogo variant="horizontal" tone="bone" className="h-6" />
+        <AtryumLogo variant="horizontal" tone="frost" className="h-6" />
       </div>
 
       <nav className="flex-1 space-y-0.5 px-3 pb-6">

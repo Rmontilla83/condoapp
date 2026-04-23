@@ -42,10 +42,10 @@ export default async function DashboardLayout({
       <Sidebar isAdmin={isAdmin} />
       <div className="flex flex-1 flex-col overflow-hidden">
         {/* Cintillo live: hora Venezuela + tasa BCV actualizada */}
-        <div className="bg-ink text-bone border-b border-bone/5">
+        <div className="bg-marine-deep text-frost border-b border-frost/5">
           <div className="px-4 md:px-6 py-1.5 flex items-center justify-between">
             <LiveStatusBar initialRate={initialRate} initialDate={initialDate} />
-            <span className="font-meta text-bone/30 hidden sm:inline">ATRYUM</span>
+            <span className="font-meta text-frost/30 hidden sm:inline">ATRYUM</span>
           </div>
         </div>
         <Header
@@ -56,7 +56,7 @@ export default async function DashboardLayout({
         {isSuperAdmin && viewingAs && (
           <div
             className={`px-5 py-2 text-center font-meta ${
-              viewingAs === "admin" ? "bg-sand text-ink" : "bg-steel text-bone"
+              viewingAs === "admin" ? "bg-ember text-marine-deep" : "bg-cyan text-frost"
             }`}
           >
             VIENDO COMO · {viewingAs === "admin" ? "ADMIN" : "RESIDENTE"}{" "}

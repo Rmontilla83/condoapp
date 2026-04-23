@@ -29,9 +29,9 @@ export default async function MiUnidadPage() {
     return (
       <div className="space-y-8">
         <div>
-          <span className="font-meta-loose text-steel">MI UNIDAD</span>
-          <h1 className="mt-4 font-display text-[clamp(1.75rem,3.5vw,2.5rem)] leading-[1.1] tracking-[-0.03em] text-ink">
-            Unidades a tu <em className="font-editorial text-steel">nombre</em>
+          <span className="font-meta-loose text-cyan">MI UNIDAD</span>
+          <h1 className="mt-4 font-display text-[clamp(1.75rem,3.5vw,2.5rem)] leading-[1.1] tracking-[-0.03em] text-marine-deep">
+            Unidades a tu <em className="font-editorial text-cyan">nombre</em>
           </h1>
         </div>
         <div className="rounded-2xl bg-card border border-border p-10 text-center">
@@ -70,9 +70,9 @@ export default async function MiUnidadPage() {
   return (
     <div className="space-y-8">
       <div>
-        <span className="font-meta-loose text-steel">MI UNIDAD</span>
-        <h1 className="mt-4 font-display text-[clamp(1.75rem,3.5vw,2.5rem)] leading-[1.1] tracking-[-0.03em] text-ink">
-          Gestiona tu <em className="font-editorial text-steel">inquilino</em> y permisos
+        <span className="font-meta-loose text-cyan">MI UNIDAD</span>
+        <h1 className="mt-4 font-display text-[clamp(1.75rem,3.5vw,2.5rem)] leading-[1.1] tracking-[-0.03em] text-marine-deep">
+          Gestiona tu <em className="font-editorial text-cyan">inquilino</em> y permisos
         </h1>
       </div>
 
@@ -95,14 +95,14 @@ export default async function MiUnidadPage() {
                       {unit.type.toUpperCase()}
                       {unit.floor != null && ` · PISO ${unit.floor}`}
                     </p>
-                    <h2 className="mt-3 font-display text-[28px] leading-tight text-ink">
+                    <h2 className="mt-3 font-display text-[28px] leading-tight text-marine-deep">
                       Apto {unit.unit_number}
                       {unit.block && (
                         <span className="text-mute"> · {unit.block}</span>
                       )}
                     </h2>
                   </div>
-                  <span className="shrink-0 font-meta bg-ink text-bone px-3 py-1.5 rounded-md">
+                  <span className="shrink-0 font-meta bg-marine-deep text-frost px-3 py-1.5 rounded-md">
                     {MODE_LABEL[mode]}
                   </span>
                 </div>

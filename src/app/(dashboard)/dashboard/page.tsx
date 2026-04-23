@@ -17,10 +17,10 @@ const statusLabels: Record<string, string> = {
 };
 
 const statusTone: Record<string, string> = {
-  new: "bg-steel/10 text-steel",
-  in_review: "bg-sand/15 text-sand",
-  in_progress: "bg-sand/15 text-sand",
-  resolved: "bg-steel/10 text-steel",
+  new: "bg-cyan/10 text-cyan",
+  in_review: "bg-ember/15 text-ember",
+  in_progress: "bg-ember/15 text-ember",
+  resolved: "bg-cyan/10 text-cyan",
   cancelled: "bg-mute/15 text-mute",
 };
 
@@ -55,8 +55,8 @@ export default async function DashboardPage() {
     <div className="space-y-10">
       {/* Saludo editorial */}
       <div>
-        <span className="font-meta-loose text-steel">{getGreeting()}</span>
-        <h1 className="mt-4 font-display text-[clamp(2rem,4.5vw,3.25rem)] leading-[1.02] tracking-[-0.035em] text-ink">
+        <span className="font-meta-loose text-cyan">{getGreeting()}</span>
+        <h1 className="mt-4 font-display text-[clamp(2rem,4.5vw,3.25rem)] leading-[1.02] tracking-[-0.035em] text-marine-deep">
           <em className="font-editorial">{firstName}</em>
         </h1>
         <p className="mt-3 text-[15px] text-mute">
@@ -71,13 +71,13 @@ export default async function DashboardPage() {
             <p className="font-meta text-mute">SALDO PENDIENTE · USD</p>
             <p
               className={`mt-4 font-display text-[clamp(2.75rem,6vw,4rem)] leading-none tracking-[-0.03em] ${
-                pendingTotal > 0 ? "text-ink" : "text-steel"
+                pendingTotal > 0 ? "text-marine-deep" : "text-cyan"
               }`}
             >
               ${pendingTotal.toFixed(2)}
             </p>
             {pendingTotal === 0 && (
-              <p className="mt-3 font-meta text-steel">AL DÍA · GRACIAS</p>
+              <p className="mt-3 font-meta text-cyan">AL DÍA · GRACIAS</p>
             )}
           </div>
           {pendingTotal > 0 && (
@@ -138,9 +138,9 @@ export default async function DashboardPage() {
           <div className="flex items-center justify-between mb-5">
             <div>
               <p className="font-meta text-mute">COMUNICADOS</p>
-              <p className="mt-2 text-[15px] font-medium text-ink">Hoy en la comunidad</p>
+              <p className="mt-2 text-[15px] font-medium text-marine-deep">Hoy en la comunidad</p>
             </div>
-            <Link href="/comunicados" className="font-meta text-steel hover:text-ink transition-colors">
+            <Link href="/comunicados" className="font-meta text-cyan hover:text-marine-deep transition-colors">
               VER TODOS
             </Link>
           </div>
@@ -156,14 +156,14 @@ export default async function DashboardPage() {
                   a.priority === "urgent"
                     ? "bg-destructive"
                     : a.priority === "important"
-                      ? "bg-sand"
-                      : "bg-steel";
+                      ? "bg-ember"
+                      : "bg-cyan";
                 return (
                   <li key={a.id} className="px-2 py-3 border-b border-border last:border-0">
                     <div className="flex items-start gap-3">
                       <span className={`mt-1.5 block h-1.5 w-1.5 rounded-full shrink-0 ${accent}`} />
                       <div className="min-w-0 flex-1">
-                        <p className="text-[14px] font-medium text-ink truncate">{a.title}</p>
+                        <p className="text-[14px] font-medium text-marine-deep truncate">{a.title}</p>
                         <p className="mt-0.5 text-[12.5px] text-mute line-clamp-1">{a.content}</p>
                       </div>
                     </div>
@@ -179,9 +179,9 @@ export default async function DashboardPage() {
           <div className="flex items-center justify-between mb-5">
             <div>
               <p className="font-meta text-mute">MIS REPORTES</p>
-              <p className="mt-2 text-[15px] font-medium text-ink">Seguimiento</p>
+              <p className="mt-2 text-[15px] font-medium text-marine-deep">Seguimiento</p>
             </div>
-            <Link href="/mantenimiento" className="font-meta text-steel hover:text-ink transition-colors">
+            <Link href="/mantenimiento" className="font-meta text-cyan hover:text-marine-deep transition-colors">
               VER TODOS
             </Link>
           </div>
@@ -199,7 +199,7 @@ export default async function DashboardPage() {
                 <li key={r.id} className="px-2 py-3 border-b border-border last:border-0">
                   <div className="flex items-center justify-between gap-3">
                     <div className="min-w-0 flex-1">
-                      <p className="text-[14px] font-medium text-ink truncate">{r.title}</p>
+                      <p className="text-[14px] font-medium text-marine-deep truncate">{r.title}</p>
                       <p className="mt-0.5 font-meta text-mute">
                         {new Date(r.created_at).toLocaleDateString("es", {
                           day: "numeric",
@@ -237,12 +237,12 @@ function ActionTile({
   return (
     <Link
       href={href}
-      className="group flex flex-col items-start gap-4 rounded-xl bg-card border border-border p-4 hover:border-ink/20 transition-colors"
+      className="group flex flex-col items-start gap-4 rounded-xl bg-card border border-border p-4 hover:border-marine/40 transition-colors"
     >
-      <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-ink text-bone group-hover:bg-steel transition-colors">
+      <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-marine-deep text-frost group-hover:bg-cyan transition-colors">
         {icon}
       </span>
-      <span className="text-[14px] font-medium text-ink">{label}</span>
+      <span className="text-[14px] font-medium text-marine-deep">{label}</span>
     </Link>
   );
 }

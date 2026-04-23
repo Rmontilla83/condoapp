@@ -3,16 +3,16 @@ import { NewRequestDialog } from "./new-request-dialog";
 import type { MaintenanceStatus } from "@/types/database";
 
 const statusConfig: Record<string, { label: string; tag: string; step: number }> = {
-  new: { label: "NUEVO", tag: "bg-steel/10 text-steel", step: 1 },
-  in_review: { label: "EN REVISIÓN", tag: "bg-sand/15 text-sand", step: 2 },
-  in_progress: { label: "EN CURSO", tag: "bg-sand/15 text-sand", step: 3 },
-  resolved: { label: "RESUELTO", tag: "bg-steel/10 text-steel", step: 4 },
+  new: { label: "NUEVO", tag: "bg-cyan/10 text-cyan", step: 1 },
+  in_review: { label: "EN REVISIÓN", tag: "bg-ember/15 text-ember", step: 2 },
+  in_progress: { label: "EN CURSO", tag: "bg-ember/15 text-ember", step: 3 },
+  resolved: { label: "RESUELTO", tag: "bg-cyan/10 text-cyan", step: 4 },
 };
 
 const priorityConfig = {
   low: { label: "BAJA", className: "text-mute" },
-  medium: { label: "MEDIA", className: "text-sand" },
-  high: { label: "ALTA", className: "text-sand" },
+  medium: { label: "MEDIA", className: "text-ember" },
+  high: { label: "ALTA", className: "text-ember" },
   urgent: { label: "URGENTE", className: "text-destructive" },
 };
 
@@ -28,9 +28,9 @@ export default async function MantenimientoPage() {
     <div className="space-y-8">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <span className="font-meta-loose text-steel">MANTENIMIENTO</span>
-          <h1 className="mt-4 font-display text-[clamp(1.75rem,3.5vw,2.5rem)] leading-[1.1] tracking-[-0.03em] text-ink">
-            Reporta y da <em className="font-editorial text-steel">seguimiento</em>
+          <span className="font-meta-loose text-cyan">MANTENIMIENTO</span>
+          <h1 className="mt-4 font-display text-[clamp(1.75rem,3.5vw,2.5rem)] leading-[1.1] tracking-[-0.03em] text-marine-deep">
+            Reporta y da <em className="font-editorial text-cyan">seguimiento</em>
           </h1>
         </div>
         <NewRequestDialog />
@@ -55,14 +55,14 @@ export default async function MantenimientoPage() {
                 <div className="flex items-start justify-between gap-4 flex-wrap">
                   <div className="min-w-0">
                     <div className="flex items-center gap-2.5 mb-2 flex-wrap">
-                      <h3 className="font-display text-[18px] leading-tight tracking-[-0.02em] text-ink">
+                      <h3 className="font-display text-[18px] leading-tight tracking-[-0.02em] text-marine-deep">
                         {request.title}
                       </h3>
                       <span className={`font-meta px-2 py-0.5 rounded-md ${status.tag}`}>
                         {status.label}
                       </span>
                     </div>
-                    <p className="text-[14.5px] text-ink/80 leading-relaxed mb-4">
+                    <p className="text-[14.5px] text-marine-deep/80 leading-relaxed mb-4">
                       {request.description}
                     </p>
 
@@ -110,7 +110,7 @@ export default async function MantenimientoPage() {
                         <div
                           key={step}
                           className={`h-1 flex-1 rounded-full ${
-                            isCurrent ? "bg-sand" : isCompleted ? "bg-ink" : "bg-border"
+                            isCurrent ? "bg-ember" : isCompleted ? "bg-marine-deep" : "bg-border"
                           }`}
                         />
                       );
@@ -122,7 +122,7 @@ export default async function MantenimientoPage() {
                       return (
                         <span
                           key={step}
-                          className={isCurrent ? "text-sand" : "text-mute"}
+                          className={isCurrent ? "text-ember" : "text-mute"}
                         >
                           {statusConfig[step].label}
                         </span>

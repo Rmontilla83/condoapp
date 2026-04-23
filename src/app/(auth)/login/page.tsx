@@ -209,27 +209,27 @@ export default function LoginPage() {
   const emailVisibleInOtp = !email || changingEmail;
 
   return (
-    <div className="min-h-screen flex flex-col bg-bone">
+    <div className="min-h-screen flex flex-col bg-frost">
       <header className="px-6 py-6 md:px-10 md:py-8">
-        <AtryumLogo variant="horizontal" tone="ink" className="h-6" />
+        <AtryumLogo variant="horizontal" tone="marine-deep" className="h-6" />
       </header>
 
       <main className="flex-1 flex items-center justify-center px-5 pb-12">
         <div className="w-full max-w-md">
           <div className="mb-8">
-            <span className="font-meta-loose text-steel">ACCESO · ATRYUM</span>
-            <h1 className="mt-5 font-display text-[clamp(1.75rem,4vw,2.5rem)] leading-[1.1] tracking-[-0.03em] text-ink">
+            <span className="font-meta-loose text-cyan">ACCESO · ATRYUM</span>
+            <h1 className="mt-5 font-display text-[clamp(1.75rem,4vw,2.5rem)] leading-[1.1] tracking-[-0.03em] text-marine-deep">
               {stage === "success" ? (
                 <>
-                  Acceso <em className="font-editorial text-steel">confirmado</em>.
+                  Acceso <em className="font-editorial text-cyan">confirmado</em>.
                 </>
               ) : stage === "otp" || stage === "verifying" ? (
                 <>
-                  Pega tu <em className="font-editorial text-steel">código</em>.
+                  Pega tu <em className="font-editorial text-cyan">código</em>.
                 </>
               ) : (
                 <>
-                  Entra a tu <em className="font-editorial text-steel">condominio</em>.
+                  Entra a tu <em className="font-editorial text-cyan">condominio</em>.
                 </>
               )}
             </h1>
@@ -272,7 +272,7 @@ export default function LoginPage() {
                   <button
                     type="button"
                     onClick={jumpToOtp}
-                    className="font-meta text-steel hover:text-ink transition-colors"
+                    className="font-meta text-cyan hover:text-marine-deep transition-colors"
                   >
                     YA TENGO UN CÓDIGO →
                   </button>
@@ -305,13 +305,13 @@ export default function LoginPage() {
                     <div className="rounded-lg bg-cloud/40 border border-border px-4 py-3 flex items-center justify-between gap-3">
                       <div className="min-w-0">
                         <p className="font-meta text-mute">CÓDIGO PARA</p>
-                        <p className="mt-0.5 text-[14px] text-ink truncate">{email}</p>
+                        <p className="mt-0.5 text-[14px] text-marine-deep truncate">{email}</p>
                       </div>
                       <button
                         type="button"
                         onClick={() => setChangingEmail(true)}
                         disabled={loading}
-                        className="font-meta text-steel hover:text-ink transition-colors shrink-0"
+                        className="font-meta text-cyan hover:text-marine-deep transition-colors shrink-0"
                       >
                         CAMBIAR
                       </button>
@@ -360,7 +360,7 @@ export default function LoginPage() {
                       type="button"
                       onClick={handleResend}
                       disabled={cooldown > 0 || loading}
-                      className="text-steel hover:text-ink transition-colors disabled:opacity-40"
+                      className="text-cyan hover:text-marine-deep transition-colors disabled:opacity-40"
                     >
                       {cooldown > 0
                         ? `REENVIAR · ${cooldown}s`
@@ -373,7 +373,7 @@ export default function LoginPage() {
                       type="button"
                       onClick={resetToEmail}
                       disabled={loading}
-                      className="text-steel hover:text-ink transition-colors disabled:opacity-40"
+                      className="text-cyan hover:text-marine-deep transition-colors disabled:opacity-40"
                     >
                       VOLVER
                     </button>
@@ -384,8 +384,8 @@ export default function LoginPage() {
 
             {stage === "success" && (
               <div className="py-6 text-center">
-                <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-steel/10">
-                  <svg className="h-6 w-6 text-steel" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-cyan/10">
+                  <svg className="h-6 w-6 text-cyan" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
                   </svg>
                 </div>

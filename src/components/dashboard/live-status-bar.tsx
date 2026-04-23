@@ -68,17 +68,17 @@ export function LiveStatusBar({ initialRate, initialDate }: LiveStatusBarProps) 
   const isToday = rateDate === new Date().toISOString().split("T")[0];
 
   return (
-    <div className="flex items-center gap-4 font-meta text-bone/80">
+    <div className="flex items-center gap-4 font-meta text-frost/80">
       <div className="flex items-center gap-2">
-        <span className="text-sand">VE</span>
-        <span className="text-bone">{time}</span>
+        <span className="text-ember">VE</span>
+        <span className="text-frost">{time}</span>
       </div>
-      <span className="text-bone/30" aria-hidden="true">·</span>
+      <span className="text-frost/30" aria-hidden="true">·</span>
       <div className="flex items-center gap-2">
-        <span className="text-sand">BCV</span>
-        <span className="text-bone">{formatBsRate(rate)}</span>
+        <span className="text-ember">BCV</span>
+        <span className="text-frost">{formatBsRate(rate)}</span>
         {rate !== null && !isToday && rateDate && (
-          <span className="text-bone/40" title={`Última actualización: ${rateDate}`}>
+          <span className="text-frost/40" title={`Última actualización: ${rateDate}`}>
             ({rateDate.slice(5)})
           </span>
         )}

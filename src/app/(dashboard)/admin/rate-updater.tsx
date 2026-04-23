@@ -45,7 +45,7 @@ export function RateUpdater({
     <div className="rounded-2xl bg-card border border-border p-5 flex flex-col justify-between gap-4">
       <div>
         <p className="font-meta text-mute">TASA BCV</p>
-        <p className="mt-3 font-display text-[28px] leading-none tracking-[-0.02em] text-ink">
+        <p className="mt-3 font-display text-[28px] leading-none tracking-[-0.02em] text-marine-deep">
           Bs {rate.toFixed(2)}
         </p>
         <p className="mt-2 font-meta text-mute">

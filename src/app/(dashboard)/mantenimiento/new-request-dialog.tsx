@@ -231,7 +231,7 @@ export function NewRequestDialog() {
                     <button
                       type="button"
                       onClick={() => removePhoto(idx)}
-                      className="absolute top-0 right-0 bg-ink/60 text-bone rounded-bl-lg p-0.5"
+                      className="absolute top-0 right-0 bg-marine-deep/60 text-frost rounded-bl-lg p-0.5"
                       disabled={loading}
                     >
                       <svg

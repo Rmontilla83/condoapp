@@ -36,8 +36,8 @@ export default async function SuperAdminPage() {
     <div className="mx-auto max-w-7xl px-5 md:px-8 py-10 space-y-10">
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
-          <span className="font-meta-loose text-steel">VISTA GLOBAL · Q2 2026</span>
-          <h1 className="mt-4 font-display text-[clamp(2rem,4.5vw,3.5rem)] leading-[1.05] tracking-[-0.035em] text-ink">
+          <span className="font-meta-loose text-cyan">VISTA GLOBAL · Q2 2026</span>
+          <h1 className="mt-4 font-display text-[clamp(2rem,4.5vw,3.5rem)] leading-[1.05] tracking-[-0.035em] text-marine-deep">
             {orgs.length} condominios ·{" "}
             <em className="font-editorial">{totalUnits} unidades</em>
           </h1>
@@ -50,8 +50,8 @@ export default async function SuperAdminPage() {
         <KpiCard label="CONDOMINIOS" value={orgs.length.toString()} />
         <KpiCard label="UNIDADES" value={totalUnits.toString()} />
         <KpiCard label="USUARIOS" value={totalUsers.toString()} />
-        <KpiCard label="RECAUDADO" value={`$${totalRevenue.toFixed(0)}`} tone="steel" />
-        <KpiCard label="POR COBRAR" value={`$${totalPending.toFixed(0)}`} tone="sand" />
+        <KpiCard label="RECAUDADO" value={`$${totalRevenue.toFixed(0)}`} tone="cyan" />
+        <KpiCard label="POR COBRAR" value={`$${totalPending.toFixed(0)}`} tone="ember" />
       </div>
 
       <div className="grid lg:grid-cols-2 gap-6">
@@ -60,7 +60,7 @@ export default async function SuperAdminPage() {
           <div className="flex items-center justify-between mb-5">
             <div>
               <p className="font-meta text-mute">CONDOMINIOS</p>
-              <p className="mt-2 text-[15px] font-medium text-ink">
+              <p className="mt-2 text-[15px] font-medium text-marine-deep">
                 {orgs.length} registrados
               </p>
             </div>
@@ -76,14 +76,14 @@ export default async function SuperAdminPage() {
                 <div key={org.id} className="rounded-xl bg-cloud/30 border border-border p-4">
                   <div className="flex items-start justify-between gap-3 mb-3">
                     <div className="min-w-0">
-                      <p className="text-[15px] font-medium text-ink truncate">{org.name}</p>
+                      <p className="text-[15px] font-medium text-marine-deep truncate">{org.name}</p>
                       <p className="mt-1 font-meta text-mute">
                         {org.city?.toUpperCase()}
                       </p>
                     </div>
                     <span
                       className={`font-meta px-2 py-0.5 rounded-md shrink-0 ${
-                        org.is_active ? "bg-steel/10 text-steel" : "bg-mute/15 text-mute"
+                        org.is_active ? "bg-cyan/10 text-cyan" : "bg-mute/15 text-mute"
                       }`}
                     >
                       {org.is_active ? "ACTIVO" : "INACTIVO"}
@@ -92,7 +92,7 @@ export default async function SuperAdminPage() {
 
                   <div className="flex items-center gap-2 font-meta text-mute mb-4">
                     <span>CÓDIGO ·</span>
-                    <span className="font-mono text-ink">{org.invite_code}</span>
+                    <span className="font-mono text-marine-deep">{org.invite_code}</span>
                   </div>
 
                   <div className="flex items-center gap-2 flex-wrap">
@@ -110,7 +110,7 @@ export default async function SuperAdminPage() {
           <div className="flex items-center justify-between mb-5">
             <div>
               <p className="font-meta text-mute">INVITACIONES · ADMIN</p>
-              <p className="mt-2 text-[15px] font-medium text-ink">
+              <p className="mt-2 text-[15px] font-medium text-marine-deep">
                 Últimas enviadas
               </p>
             </div>
@@ -130,7 +130,7 @@ export default async function SuperAdminPage() {
                     className="flex items-center justify-between py-3 border-b border-border last:border-0 gap-3"
                   >
                     <div className="min-w-0">
-                      <p className="text-[14px] font-medium text-ink truncate">
+                      <p className="text-[14px] font-medium text-marine-deep truncate">
                         {inv.email}
                       </p>
                       <p className="mt-0.5 font-meta text-mute truncate">{orgName}</p>
@@ -138,8 +138,8 @@ export default async function SuperAdminPage() {
                     <span
                       className={`font-meta px-2 py-0.5 rounded-md shrink-0 ${
                         inv.accepted_at
-                          ? "bg-steel/10 text-steel"
-                          : "bg-sand/15 text-sand"
+                          ? "bg-cyan/10 text-cyan"
+                          : "bg-ember/15 text-ember"
                       }`}
                     >
                       {inv.accepted_at ? "ACEPTADA" : "PENDIENTE"}
@@ -158,14 +158,14 @@ export default async function SuperAdminPage() {
 function KpiCard({
   label,
   value,
-  tone = "ink",
+  tone = "marine-deep",
 }: {
   label: string;
   value: string;
-  tone?: "ink" | "steel" | "sand";
+  tone?: "marine-deep" | "cyan" | "ember";
 }) {
   const toneClass =
-    tone === "steel" ? "text-steel" : tone === "sand" ? "text-sand" : "text-ink";
+    tone === "cyan" ? "text-cyan" : tone === "ember" ? "text-ember" : "text-marine-deep";
 
   return (
     <div className="rounded-2xl bg-card border border-border p-5">

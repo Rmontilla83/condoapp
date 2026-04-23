@@ -13,7 +13,7 @@ export default function CallbackRedirect() {
   }, []);
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-bone">
+    <div className="min-h-screen flex items-center justify-center bg-frost">
       <p className="font-meta text-mute">REDIRIGIENDO...</p>
     </div>
   );

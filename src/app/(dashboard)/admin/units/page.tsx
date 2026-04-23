@@ -11,9 +11,9 @@ const MODE_LABEL: Record<OwnershipMode, string> = {
 };
 
 const MODE_TONE: Record<OwnershipMode, string> = {
-  owner_occupied: "bg-ink text-bone",
-  tenant_with_active_owner: "bg-steel text-bone",
-  tenant_only: "bg-sand text-ink",
+  owner_occupied: "bg-marine-deep text-frost",
+  tenant_with_active_owner: "bg-cyan text-frost",
+  tenant_only: "bg-ember text-marine-deep",
 };
 
 export default async function AdminUnitsPage() {
@@ -77,9 +77,9 @@ export default async function AdminUnitsPage() {
   return (
     <div className="space-y-8">
       <div>
-        <span className="font-meta-loose text-steel">GESTIÓN · UNIDADES</span>
-        <h1 className="mt-4 font-display text-[clamp(1.75rem,3.5vw,2.5rem)] leading-[1.1] tracking-[-0.03em] text-ink">
-          Configura <em className="font-editorial text-steel">ocupación</em> y acceso
+        <span className="font-meta-loose text-cyan">GESTIÓN · UNIDADES</span>
+        <h1 className="mt-4 font-display text-[clamp(1.75rem,3.5vw,2.5rem)] leading-[1.1] tracking-[-0.03em] text-marine-deep">
+          Configura <em className="font-editorial text-cyan">ocupación</em> y acceso
         </h1>
         <p className="mt-3 text-[15px] text-mute">
           Modo de ocupación, invitaciones por email y códigos físicos.
@@ -112,7 +112,7 @@ export default async function AdminUnitsPage() {
                       {unit.type.toUpperCase()}
                       {unit.floor != null && ` · PISO ${unit.floor}`}
                     </p>
-                    <h2 className="mt-2 font-display text-[22px] leading-tight text-ink">
+                    <h2 className="mt-2 font-display text-[22px] leading-tight text-marine-deep">
                       Apto {unit.unit_number}
                       {unit.block && <span className="text-mute"> · {unit.block}</span>}
                     </h2>
@@ -127,7 +127,7 @@ export default async function AdminUnitsPage() {
                 <div className="space-y-2.5">
                   <div className="flex items-baseline gap-3">
                     <span className="font-meta text-mute w-24 shrink-0">PROPIETARIO</span>
-                    <span className="text-[13.5px] text-ink truncate">
+                    <span className="text-[13.5px] text-marine-deep truncate">
                       {owners[0]
                         ? (owners[0].profiles as { full_name?: string; email?: string } | null)
                             ?.full_name ||
@@ -138,7 +138,7 @@ export default async function AdminUnitsPage() {
                   </div>
                   <div className="flex items-baseline gap-3">
                     <span className="font-meta text-mute w-24 shrink-0">INQUILINO</span>
-                    <span className="text-[13.5px] text-ink truncate">
+                    <span className="text-[13.5px] text-marine-deep truncate">
                       {tenants[0]
                         ? (tenants[0].profiles as { full_name?: string; email?: string } | null)
                             ?.full_name ||
@@ -150,7 +150,7 @@ export default async function AdminUnitsPage() {
                   {(invites.length > 0 || codes.length > 0) && (
                     <div className="flex items-baseline gap-3 flex-wrap">
                       <span className="font-meta text-mute w-24 shrink-0">PENDIENTES</span>
-                      <span className="font-meta text-sand">
+                      <span className="font-meta text-ember">
                         {invites.length > 0 && `${invites.length} INVITACIÓN(ES)`}
                         {invites.length > 0 && codes.length > 0 && " · "}
                         {codes.length > 0 && `${codes.length} CÓDIGO(S)`}

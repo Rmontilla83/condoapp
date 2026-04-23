@@ -34,13 +34,13 @@ export function Header({
   return (
     <header className="flex h-16 items-center justify-between border-b border-border bg-background px-4 md:px-6">
       <div className="flex items-center md:hidden">
-        <AtryumLogo variant="horizontal" tone="ink" className="h-5" />
+        <AtryumLogo variant="horizontal" tone="marine-deep" className="h-5" />
       </div>
       <div className="hidden md:block" />
       <DropdownMenu>
         <DropdownMenuTrigger render={<Button variant="ghost" className="relative h-9 w-9 rounded-full p-0" />}>
           <Avatar className="h-9 w-9">
-            <AvatarFallback className="bg-steel/10 text-steel font-medium text-[13px]">
+            <AvatarFallback className="bg-cyan/10 text-cyan font-medium text-[13px]">
               {initials}
             </AvatarFallback>
           </Avatar>
@@ -48,7 +48,7 @@ export function Header({
         <DropdownMenuContent align="end" className="w-60">
           <div className="px-2 py-2">
             <p className="font-meta text-mute mb-1">SESIÓN</p>
-            <p className="text-[13px] text-ink truncate">{userEmail}</p>
+            <p className="text-[13px] text-marine-deep truncate">{userEmail}</p>
           </div>
           <DropdownMenuSeparator />
           {isSuperAdmin && (

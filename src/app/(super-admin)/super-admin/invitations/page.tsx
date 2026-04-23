@@ -22,9 +22,9 @@ export default async function InvitationsPage() {
   return (
     <div className="mx-auto max-w-5xl px-5 md:px-8 py-10 space-y-8">
       <div>
-        <span className="font-meta-loose text-steel">INVITACIONES · ADMIN</span>
-        <h1 className="mt-4 font-display text-[clamp(1.75rem,3.5vw,2.5rem)] leading-[1.1] tracking-[-0.03em] text-ink">
-          Estado de <em className="font-editorial text-steel">invitaciones</em>
+        <span className="font-meta-loose text-cyan">INVITACIONES · ADMIN</span>
+        <h1 className="mt-4 font-display text-[clamp(1.75rem,3.5vw,2.5rem)] leading-[1.1] tracking-[-0.03em] text-marine-deep">
+          Estado de <em className="font-editorial text-cyan">invitaciones</em>
         </h1>
         <p className="mt-3 text-[15px] text-mute">
           {allInvites.length} total · {pendingCount} pendiente{pendingCount !== 1 ? "s" : ""}
@@ -65,7 +65,7 @@ export default async function InvitationsPage() {
                       className={`font-meta px-2 py-0.5 rounded-md shrink-0 ${
                         isFailed
                           ? "bg-destructive/10 text-destructive"
-                          : "bg-ink/5 text-ink"
+                          : "bg-marine-deep/5 text-marine-deep"
                       }`}
                     >
                       {e.event.toUpperCase()}
