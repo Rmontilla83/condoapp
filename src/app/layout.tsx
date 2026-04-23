@@ -8,7 +8,10 @@ export const viewport: Viewport = {
   themeColor: "#0D9488",
 };
 
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://atryum.net";
+
 export const metadata: Metadata = {
+  metadataBase: new URL(SITE_URL),
   title: "CondoApp — Gestion de Condominios Inteligente | Pagos, QR, Transparencia",
   description:
     "App de gestion de condominios para Latinoamerica. Pagos en 2 toques, reportes con foto, acceso QR para visitantes, transparencia financiera total. Gratis hasta 15 unidades.",
@@ -25,9 +28,13 @@ export const metadata: Metadata = {
   ],
   authors: [{ name: "CondoApp" }],
   creator: "tuwebgo.net",
+  alternates: {
+    canonical: SITE_URL,
+  },
   openGraph: {
     type: "website",
     locale: "es_LA",
+    url: SITE_URL,
     siteName: "CondoApp",
     title: "CondoApp — La app que tu condominio merece",
     description:

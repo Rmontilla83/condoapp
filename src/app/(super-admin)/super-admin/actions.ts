@@ -11,8 +11,12 @@ function requireSuperAdmin(profile: { role: string } | null) {
   }
 }
 
-function siteUrl() {
-  return process.env.NEXT_PUBLIC_SITE_URL ?? "https://condoapp-wine.vercel.app";
+function portalUrl() {
+  return (
+    process.env.NEXT_PUBLIC_PORTAL_URL ??
+    process.env.NEXT_PUBLIC_SITE_URL ??
+    "https://portal.atryum.net"
+  );
 }
 
 async function logAuthEvent(params: {
@@ -163,7 +167,7 @@ export async function inviteAdmin(formData: FormData) {
     email,
     options: {
       shouldCreateUser: false,
-      emailRedirectTo: `${siteUrl()}/auth/confirm`,
+      emailRedirectTo: `${portalUrl()}/auth/confirm`,
     },
   });
 
@@ -222,7 +226,7 @@ export async function resendAdminInvite(invitationId: string) {
     email: inv.email,
     options: {
       shouldCreateUser: false,
-      emailRedirectTo: `${siteUrl()}/auth/confirm`,
+      emailRedirectTo: `${portalUrl()}/auth/confirm`,
     },
   });
 

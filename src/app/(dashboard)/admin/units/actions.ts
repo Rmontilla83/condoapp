@@ -7,8 +7,12 @@ import { revalidatePath } from "next/cache";
 import { randomBytes } from "node:crypto";
 import type { OwnershipMode, MemberRole, TenantPermissions } from "@/types/database";
 
-function siteUrl() {
-  return process.env.NEXT_PUBLIC_SITE_URL ?? "https://condoapp-wine.vercel.app";
+function portalUrl() {
+  return (
+    process.env.NEXT_PUBLIC_PORTAL_URL ??
+    process.env.NEXT_PUBLIC_SITE_URL ??
+    "https://portal.atryum.net"
+  );
 }
 
 async function logAuthEvent(params: {
@@ -190,7 +194,7 @@ export async function inviteUnitMember(params: {
     email,
     options: {
       shouldCreateUser: false,
-      emailRedirectTo: `${siteUrl()}/auth/confirm`,
+      emailRedirectTo: `${portalUrl()}/auth/confirm`,
     },
   });
 
