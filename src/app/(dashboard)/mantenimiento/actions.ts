@@ -9,7 +9,9 @@ export async function createMaintenanceRequest(formData: FormData) {
   if (!profile?.organization_id) return { error: "No tienes organizacion asignada" };
 
   const unitIds = await getUserUnitIds(profile.id);
-  const unitId = unitIds[0];
+  // unit_id es nullable en el schema — admins/super_admins sin unidad asignada
+  // pueden reportar igual (ej. problema de área común).
+  const unitId = unitIds[0] ?? null;
 
   const title = formData.get("title") as string;
   const category = formData.get("category") as string;
@@ -25,6 +27,7 @@ export async function createMaintenanceRequest(formData: FormData) {
   // Upload photos if any
   const photoUrls: string[] = [];
   const photos = formData.getAll("photos") as File[];
+  const photoErrors: string[] = [];
 
   for (const photo of photos) {
     if (!photo.size || photo.size === 0) continue;
@@ -35,12 +38,15 @@ export async function createMaintenanceRequest(formData: FormData) {
       .from("maintenance-photos")
       .upload(path, photo, { contentType: photo.type });
 
-    if (!uploadError) {
-      const { data: urlData } = supabase.storage
-        .from("maintenance-photos")
-        .getPublicUrl(path);
-      photoUrls.push(urlData.publicUrl);
+    if (uploadError) {
+      photoErrors.push(`${photo.name}: ${uploadError.message}`);
+      continue;
     }
+
+    const { data: urlData } = supabase.storage
+      .from("maintenance-photos")
+      .getPublicUrl(path);
+    photoUrls.push(urlData.publicUrl);
   }
 
   const { error } = await supabase.from("maintenance_requests").insert({
@@ -54,7 +60,12 @@ export async function createMaintenanceRequest(formData: FormData) {
     photo_urls: photoUrls,
   });
 
-  if (error) return { error: error.message };
+  if (error) return { error: `No se pudo guardar el reporte: ${error.message}` };
+
+  if (photoErrors.length > 0) {
+    // Se guardó el reporte pero falló alguna foto — avisar sin bloquear.
+    console.warn("Maintenance photo upload errors:", photoErrors);
+  }
 
   revalidatePath("/mantenimiento");
   revalidatePath("/dashboard");

@@ -4,6 +4,13 @@ const nextConfig: NextConfig = {
   compress: true,
   poweredByHeader: false,
   reactStrictMode: true,
+  experimental: {
+    serverActions: {
+      // Default 1MB es insuficiente para uploads de fotos (mantenimiento, etc).
+      // 15MB permite ~3 fotos de móvil moderno sin compresión.
+      bodySizeLimit: "15mb",
+    },
+  },
   async headers() {
     return [
       {

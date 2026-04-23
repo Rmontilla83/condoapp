@@ -71,7 +71,9 @@ export default function LoginPage() {
 
   async function handleVerify(e: React.FormEvent) {
     e.preventDefault();
-    if (token.length !== 6) return;
+    // Supabase OTP length es configurable (6-10). Aceptamos cualquier tamaño
+    // razonable y dejamos que el servidor valide.
+    if (token.length < 6) return;
 
     setLoading(true);
     setError("");
@@ -85,7 +87,7 @@ export default function LoginPage() {
     });
 
     if (verifyError) {
-      setError("Código inválido o expirado. Revisa los 6 dígitos o solicita uno nuevo.");
+      setError("Código inválido o expirado. Revisa los dígitos o solicita uno nuevo.");
       setStage("otp");
       setLoading(false);
       return;
@@ -143,8 +145,8 @@ export default function LoginPage() {
             </h1>
             <p className="mt-3 text-[15px] text-mute leading-relaxed">
               {stage === "email"
-                ? "Te enviamos un código de 6 dígitos. Sin contraseñas, sin complicaciones."
-                : `Enviamos un código de 6 dígitos a ${email}.`}
+                ? "Te enviamos un código por correo. Sin contraseñas, sin complicaciones."
+                : `Enviamos un código a ${email}.`}
             </p>
           </div>
 
@@ -181,7 +183,7 @@ export default function LoginPage() {
               <>
                 <form onSubmit={handleVerify} className="space-y-5">
                   <div className="space-y-2">
-                    <Label htmlFor="otp" className="font-meta text-mute">CÓDIGO DE 6 DÍGITOS</Label>
+                    <Label htmlFor="otp" className="font-meta text-mute">CÓDIGO DEL CORREO</Label>
                     <Input
                       ref={otpInputRef}
                       id="otp"
@@ -189,14 +191,14 @@ export default function LoginPage() {
                       inputMode="numeric"
                       pattern="[0-9]*"
                       autoComplete="one-time-code"
-                      maxLength={6}
-                      placeholder="······"
+                      maxLength={10}
+                      placeholder="········"
                       value={token}
                       onChange={(e) => {
-                        const clean = e.target.value.replace(/\D/g, "").slice(0, 6);
+                        const clean = e.target.value.replace(/\D/g, "").slice(0, 10);
                         setToken(clean);
                       }}
-                      className="h-14 text-center text-[28px] tracking-[0.5em] font-mono font-medium"
+                      className="h-14 text-center text-[26px] tracking-[0.35em] font-mono font-medium"
                       required
                       disabled={loading}
                     />
@@ -207,7 +209,7 @@ export default function LoginPage() {
                   <Button
                     type="submit"
                     className="w-full h-11"
-                    disabled={loading || token.length !== 6}
+                    disabled={loading || token.length < 6}
                   >
                     {stage === "verifying" ? "Verificando..." : "Verificar código"}
                   </Button>
