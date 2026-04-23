@@ -10,8 +10,35 @@ import { AtryumLogo } from "@/components/brand/atryum-logo";
 
 type Stage = "email" | "otp" | "verifying" | "success";
 
-const RESEND_COOLDOWN_SECONDS = 45;
+const RESEND_COOLDOWN_SECONDS = 60; // Supabase Auth rate-limita a 60s entre OTPs del mismo email
 const LAST_EMAIL_KEY = "atryum:lastEmail";
+
+// Traduce errores de Supabase a mensajes en español legibles
+function translateAuthError(message: string): string {
+  const m = message.toLowerCase();
+  // "For security purposes, you can only request this after X seconds"
+  const rateMatch = m.match(/after (\d+) seconds?/);
+  if (rateMatch) {
+    return `Espera ${rateMatch[1]} segundos antes de pedir otro código.`;
+  }
+  if (m.includes("rate limit") || m.includes("too many")) {
+    return "Has pedido demasiados códigos. Espera unos minutos antes de intentar de nuevo.";
+  }
+  if (m.includes("invalid") && (m.includes("otp") || m.includes("token"))) {
+    return "Código inválido o ya expiró. Pide uno nuevo.";
+  }
+  if (m.includes("expired")) {
+    return "El código expiró. Pide uno nuevo.";
+  }
+  if (m.includes("signup") && m.includes("disabled")) {
+    return "Este correo no tiene acceso. Pide una invitación al administrador.";
+  }
+  if (m.includes("smtp") || m.includes("email")) {
+    return `Problema al enviar el correo: ${message}`;
+  }
+  // Por defecto, devolver el mensaje original para no ocultar info
+  return message;
+}
 
 export default function LoginPage() {
   const router = useRouter();
@@ -78,8 +105,15 @@ export default function LoginPage() {
     const sendError = await sendCode(email);
 
     if (sendError) {
-      setError("No pudimos enviar el código. Intenta de nuevo en unos minutos.");
+      setError(translateAuthError(sendError.message));
       setLoading(false);
+      // Si es rate limit con tiempo específico, arrancar cooldown visual
+      const rateMatch = sendError.message.match(/after (\d+) seconds?/i);
+      if (rateMatch) {
+        setCooldown(parseInt(rateMatch[1], 10));
+        // Mostrar stage OTP igual — el user puede pegar un código anterior
+        setStage("otp");
+      }
       return;
     }
 
@@ -117,7 +151,7 @@ export default function LoginPage() {
       });
 
       if (verifyError) {
-        setError(`Código inválido o expirado. ${verifyError.message}`);
+        setError(translateAuthError(verifyError.message));
         setStage("otp");
         setLoading(false);
         return;
@@ -145,7 +179,10 @@ export default function LoginPage() {
     setLoading(true);
     const sendError = await sendCode(email);
     if (sendError) {
-      setError("No pudimos enviar el código. Intenta de nuevo en unos minutos.");
+      setError(translateAuthError(sendError.message));
+      // Si es rate limit con tiempo específico, respetar el cooldown del servidor
+      const rateMatch = sendError.message.match(/after (\d+) seconds?/i);
+      if (rateMatch) setCooldown(parseInt(rateMatch[1], 10));
     } else {
       localStorage.setItem(LAST_EMAIL_KEY, email);
       setCodeSent(true);
