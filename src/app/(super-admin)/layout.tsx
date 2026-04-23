@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { AtryumLogo } from "@/components/brand/atryum-logo";
+import { LiveStatusBar } from "@/components/dashboard/live-status-bar";
 import { SignOutButton } from "./sign-out-button";
 
 export default async function SuperAdminLayout({
@@ -24,11 +25,14 @@ export default async function SuperAdminLayout({
 
   return (
     <div className="min-h-screen flex flex-col bg-bone">
-      {/* Banner ink */}
+      {/* Banner ink con hora/tasa + contexto super-admin */}
       <div className="bg-ink text-bone">
-        <div className="mx-auto max-w-7xl px-5 md:px-8 py-2 flex items-center justify-between">
-          <span className="font-meta text-sand">SUPER ADMIN · PLATAFORMA ATRYUM</span>
-          <span className="font-meta text-bone/50 hidden sm:inline">{user.email}</span>
+        <div className="mx-auto max-w-7xl px-5 md:px-8 py-1.5 flex items-center justify-between gap-4 flex-wrap">
+          <LiveStatusBar initialRate={null} initialDate={null} />
+          <div className="flex items-center gap-3 font-meta">
+            <span className="text-sand hidden sm:inline">SUPER ADMIN</span>
+            <span className="text-bone/50 hidden md:inline">{user.email}</span>
+          </div>
         </div>
       </div>
 

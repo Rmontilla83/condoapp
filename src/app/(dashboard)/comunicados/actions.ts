@@ -1,6 +1,6 @@
 "use server";
 
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { getCurrentProfile } from "@/lib/queries";
 import { isAdminRole } from "@/lib/permissions";
 import { revalidatePath } from "next/cache";
@@ -16,9 +16,11 @@ export async function createAnnouncement(formData: FormData) {
   const content = (formData.get("content") as string)?.trim();
   const priority = (formData.get("priority") as string) || "normal";
 
-  if (!title || !content) return { error: "Titulo y contenido son requeridos" };
+  if (!title || !content) return { error: "Título y contenido son requeridos" };
 
-  const supabase = await createClient();
+  // Admin client bypasses RLS — el rol ya lo validamos arriba con isAdminRole.
+  // RLS de announcements mira auth.user_role() que resulta stale con view_as.
+  const supabase = createAdminClient();
   const { error } = await supabase.from("announcements").insert({
     organization_id: profile.organization_id,
     author_id: profile.id,

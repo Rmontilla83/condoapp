@@ -1,6 +1,7 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { getCurrentProfile } from "@/lib/queries";
 import { isAdminRole } from "@/lib/permissions";
 import { revalidatePath } from "next/cache";
@@ -68,7 +69,7 @@ export async function approvePayment(transactionId: string) {
     return { error: "No autorizado" };
   }
 
-  const supabase = await createClient();
+  const supabase = createAdminClient();
 
   // Get transaction — verify it belongs to this org via invoice
   const { data: tx } = await supabase
@@ -78,9 +79,8 @@ export async function approvePayment(transactionId: string) {
     .eq("invoices.organization_id", profile.organization_id)
     .single();
 
-  if (!tx) return { error: "Transaccion no encontrada" };
+  if (!tx) return { error: "Transacción no encontrada" };
 
-  // Approve transaction
   const { error: txError } = await supabase
     .from("transactions")
     .update({ status: "approved" })
@@ -88,7 +88,6 @@ export async function approvePayment(transactionId: string) {
 
   if (txError) return { error: txError.message };
 
-  // Mark invoice as paid
   const { error: invError } = await supabase
     .from("invoices")
     .update({ status: "paid" })
@@ -108,9 +107,8 @@ export async function rejectPayment(transactionId: string) {
     return { error: "No autorizado" };
   }
 
-  const supabase = await createClient();
+  const supabase = createAdminClient();
 
-  // Verify transaction belongs to this org
   const { data: check } = await supabase
     .from("transactions")
     .select("id, invoices!inner(organization_id)")
@@ -118,7 +116,7 @@ export async function rejectPayment(transactionId: string) {
     .eq("invoices.organization_id", profile.organization_id)
     .single();
 
-  if (!check) return { error: "Transaccion no encontrada" };
+  if (!check) return { error: "Transacción no encontrada" };
 
   const { error } = await supabase
     .from("transactions")

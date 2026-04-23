@@ -1,6 +1,6 @@
 "use server";
 
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { getCurrentProfile } from "@/lib/queries";
 import { isAdminRole } from "@/lib/permissions";
 import { revalidatePath } from "next/cache";
@@ -15,14 +15,15 @@ export async function createExpense(formData: FormData) {
   const category = formData.get("category") as string;
   const description = formData.get("description") as string;
   const amount = parseFloat(formData.get("amount") as string);
-  const expenseDate = (formData.get("expense_date") as string) || new Date().toISOString().split("T")[0];
+  const expenseDate =
+    (formData.get("expense_date") as string) || new Date().toISOString().split("T")[0];
   const photo = formData.get("receipt") as File;
 
   if (!category || !description || !amount || amount <= 0) {
     return { error: "Completa todos los campos" };
   }
 
-  const supabase = await createClient();
+  const supabase = createAdminClient();
 
   // Upload receipt photo if provided
   let receiptUrl: string | null = null;

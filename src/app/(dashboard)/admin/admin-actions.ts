@@ -1,6 +1,6 @@
 "use server";
 
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { getCurrentProfile, getCurrentRate } from "@/lib/queries";
 import { isAdminRole } from "@/lib/permissions";
 import { revalidatePath } from "next/cache";
@@ -10,15 +10,21 @@ export async function updateExchangeRate(rate: number) {
   if (!profile?.organization_id) return { error: "No autorizado" };
   if (!isAdminRole(profile)) return { error: "Solo administradores" };
 
-  const supabase = await createClient();
+  const supabase = createAdminClient();
   const today = new Date().toISOString().split("T")[0];
   const { error } = await supabase.from("exchange_rates").upsert(
-    { organization_id: profile.organization_id, rate, source: "bcv", effective_date: today },
-    { onConflict: "organization_id,effective_date,source" }
+    {
+      organization_id: profile.organization_id,
+      rate,
+      source: "manual",
+      effective_date: today,
+    },
+    { onConflict: "organization_id,effective_date,source" },
   );
   if (error) return { error: error.message };
   revalidatePath("/pagos");
   revalidatePath("/admin");
+  revalidatePath("/dashboard");
   return { success: true };
 }
 
@@ -30,18 +36,18 @@ export async function generateMonthlyInvoices(formData: FormData) {
   const month = formData.get("month") as string;
   const year = formData.get("year") as string;
   const amount = parseFloat(formData.get("amount") as string);
-  const description = (formData.get("description") as string)?.trim() || `Cuota ${month}/${year}`;
+  const description =
+    (formData.get("description") as string)?.trim() || `Cuota ${month}/${year}`;
   const dueDay = parseInt(formData.get("due_day") as string) || 15;
 
   if (!month || !year || !amount || amount <= 0) return { error: "Completa todos los campos" };
 
-  const supabase = await createClient();
+  const supabase = createAdminClient();
 
   // Get exchange rate
   const rateData = await getCurrentRate(profile.organization_id);
   const rate = Number(rateData.rate);
 
-  // Get all units
   const { data: units } = await supabase
     .from("units")
     .select("id")
@@ -51,7 +57,6 @@ export async function generateMonthlyInvoices(formData: FormData) {
 
   const dueDate = `${year}-${month.padStart(2, "0")}-${dueDay.toString().padStart(2, "0")}`;
 
-  // Check if invoices already exist for this month
   const { data: existing } = await supabase
     .from("invoices")
     .select("id")
@@ -94,9 +99,9 @@ export async function addUnit(formData: FormData) {
   const block = (formData.get("block") as string)?.trim() || null;
   const type = (formData.get("type") as string) || "apartment";
 
-  if (!unitNumber) return { error: "Numero de unidad es requerido" };
+  if (!unitNumber) return { error: "Número de unidad es requerido" };
 
-  const supabase = await createClient();
+  const supabase = createAdminClient();
   const { error } = await supabase.from("units").insert({
     organization_id: profile.organization_id,
     unit_number: unitNumber,
@@ -112,5 +117,6 @@ export async function addUnit(formData: FormData) {
   }
 
   revalidatePath("/admin");
+  revalidatePath("/admin/units");
   return { success: true };
 }

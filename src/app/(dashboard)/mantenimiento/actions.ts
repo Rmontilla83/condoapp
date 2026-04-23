@@ -1,6 +1,7 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { getCurrentProfile, getUserUnitIds } from "@/lib/queries";
 import { isAdminRole } from "@/lib/permissions";
 import { revalidatePath } from "next/cache";
@@ -122,7 +123,9 @@ export async function updateRequestStatus(
       return { error: "Solo administradores pueden cambiar el estado" };
     }
 
-    const supabase = await createClient();
+    // Admin client bypasea RLS — el rol ya lo validamos arriba.
+    // RLS de maintenance_requests requiere auth.user_role() que falla con view_as.
+    const supabase = createAdminClient();
 
     const updates: Record<string, unknown> = { status };
     if (assignedTo !== undefined) updates.assigned_to = assignedTo || null;

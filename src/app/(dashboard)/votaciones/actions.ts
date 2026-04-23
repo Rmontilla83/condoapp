@@ -1,6 +1,7 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { getCurrentProfile } from "@/lib/queries";
 import { isAdminRole, canTenantAct } from "@/lib/permissions";
 import { revalidatePath } from "next/cache";
@@ -24,7 +25,7 @@ export async function createPoll(formData: FormData) {
 
   if (options.length < 2) return { error: "Necesitas al menos 2 opciones" };
 
-  const supabase = await createClient();
+  const supabase = createAdminClient();
   const { error } = await supabase.from("polls").insert({
     organization_id: profile.organization_id,
     created_by: profile.id,
@@ -71,7 +72,7 @@ export async function closePoll(pollId: string) {
     return { error: "No autorizado" };
   }
 
-  const supabase = await createClient();
+  const supabase = createAdminClient();
   const { error } = await supabase
     .from("polls")
     .update({ is_open: false })

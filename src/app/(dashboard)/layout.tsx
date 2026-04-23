@@ -1,9 +1,10 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { getCurrentProfile, getEffectiveRole } from "@/lib/queries";
+import { getCurrentProfile, getEffectiveRole, getCurrentRate } from "@/lib/queries";
 import { Sidebar } from "@/components/dashboard/sidebar";
 import { BottomNav } from "@/components/dashboard/bottom-nav";
 import { Header } from "@/components/dashboard/header";
+import { LiveStatusBar } from "@/components/dashboard/live-status-bar";
 import { Onboarding } from "@/components/onboarding";
 
 export default async function DashboardLayout({
@@ -31,10 +32,22 @@ export default async function DashboardLayout({
   const isSuperAdmin = profile?.role === "super_admin";
   const viewingAs = profile?.view_as;
 
+  // Tasa inicial desde BD para evitar flash "—" al primer render.
+  const rateData = await getCurrentRate(profile.organization_id);
+  const initialRate = Number(rateData.rate) || null;
+  const initialDate = rateData.effective_date || null;
+
   return (
     <div className="flex h-screen bg-background">
       <Sidebar isAdmin={isAdmin} />
       <div className="flex flex-1 flex-col overflow-hidden">
+        {/* Cintillo live: hora Venezuela + tasa BCV actualizada */}
+        <div className="bg-ink text-bone border-b border-bone/5">
+          <div className="px-4 md:px-6 py-1.5 flex items-center justify-between">
+            <LiveStatusBar initialRate={initialRate} initialDate={initialDate} />
+            <span className="font-meta text-bone/30 hidden sm:inline">ATRYUM</span>
+          </div>
+        </div>
         <Header
           userEmail={user.email ?? ""}
           isSuperAdmin={isSuperAdmin}
