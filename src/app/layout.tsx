@@ -83,8 +83,14 @@ export default function RootLayout({
       </head>
       <body className="min-h-full flex flex-col bg-background text-foreground antialiased">
         {children}
-        <Script id="sw-register" strategy="afterInteractive">
-          {`if('serviceWorker' in navigator){navigator.serviceWorker.register('/sw.js')}`}
+        {/*
+          SW registration desactivado. El SW viejo cacheaba HTML/RSC y
+          rompía router.refresh(). Cargamos igual /sw.js porque los
+          browsers que lo tenían registrado lo consultan en cada navegación;
+          la nueva versión se auto-desinstala (ver public/sw.js).
+        */}
+        <Script id="sw-cleanup" strategy="afterInteractive">
+          {`if('serviceWorker' in navigator){navigator.serviceWorker.getRegistrations().then(regs=>regs.forEach(r=>r.unregister()))}`}
         </Script>
       </body>
     </html>

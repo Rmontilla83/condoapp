@@ -91,8 +91,14 @@ export async function generateMonthlyInvoices(formData: FormData) {
 
 export async function addUnit(formData: FormData) {
   const profile = await getCurrentProfile();
-  if (!profile?.organization_id) return { error: "No autorizado" };
-  if (!isAdminRole(profile)) return { error: "Solo administradores" };
+  if (!profile?.organization_id) {
+    console.error("[addUnit] no organization_id", { profile });
+    return { error: "No tienes un condominio asignado. Como super_admin, primero usa 'Entrar como admin' desde /super-admin." };
+  }
+  if (!isAdminRole(profile)) {
+    console.error("[addUnit] not admin role", { role: profile.role, viewAs: profile.view_as });
+    return { error: "Solo administradores pueden agregar unidades" };
+  }
 
   const unitNumber = (formData.get("unit_number") as string)?.trim();
   const floor = formData.get("floor") ? parseInt(formData.get("floor") as string) : null;
@@ -102,21 +108,29 @@ export async function addUnit(formData: FormData) {
   if (!unitNumber) return { error: "Número de unidad es requerido" };
 
   const supabase = createAdminClient();
-  const { error } = await supabase.from("units").insert({
-    organization_id: profile.organization_id,
-    unit_number: unitNumber,
-    floor,
-    block,
-    type,
-    aliquot: 0,
-  });
+  const { data, error } = await supabase
+    .from("units")
+    .insert({
+      organization_id: profile.organization_id,
+      unit_number: unitNumber,
+      floor,
+      block,
+      type,
+      aliquot: 0,
+    })
+    .select("id, unit_number, organization_id")
+    .single();
 
   if (error) {
-    if (error.code === "23505") return { error: "Esa unidad ya existe" };
-    return { error: error.message };
+    console.error("[addUnit] insert failed:", error);
+    if (error.code === "23505") return { error: "Ya existe una unidad con ese número" };
+    return { error: `No se pudo guardar: ${error.message}` };
   }
+
+  console.log("[addUnit] inserted:", data);
 
   revalidatePath("/admin");
   revalidatePath("/admin/units");
-  return { success: true };
+  revalidatePath("/dashboard");
+  return { success: true, unit: data };
 }

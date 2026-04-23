@@ -13,16 +13,39 @@ export function AddUnitDialog() {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState<string | null>(null);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setLoading(true);
     setError("");
-    const res = await addUnit(new FormData(e.currentTarget));
-    if (res.error) { setError(res.error); setLoading(false); return; }
-    setOpen(false);
-    setLoading(false);
-    router.refresh();
+    setSuccess(null);
+    const form = e.currentTarget;
+    try {
+      const res = await addUnit(new FormData(form));
+      if ("error" in res && res.error) {
+        setError(res.error);
+        setLoading(false);
+        return;
+      }
+      const unitNumber =
+        "unit" in res && res.unit
+          ? (res.unit as { unit_number: string }).unit_number
+          : "nueva";
+      setSuccess(`Unidad "${unitNumber}" guardada.`);
+      setLoading(false);
+      form.reset();
+      router.refresh();
+      // Cerrar dialog 1.5s después para que vea el éxito
+      setTimeout(() => {
+        setOpen(false);
+        setSuccess(null);
+      }, 1500);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Error desconocido";
+      setError(`Excepción: ${msg}`);
+      setLoading(false);
+    }
   }
 
   return (
@@ -63,7 +86,16 @@ export function AddUnitDialog() {
               <option value="office">Oficina</option>
             </select>
           </div>
-          {error && <p className="text-sm text-destructive">{error}</p>}
+          {error && (
+            <p className="rounded-md bg-destructive/10 border border-destructive/30 px-3 py-2 text-[13px] text-destructive">
+              {error}
+            </p>
+          )}
+          {success && (
+            <p className="rounded-md bg-steel/10 border border-steel/30 px-3 py-2 text-[13px] text-steel">
+              ✓ {success}
+            </p>
+          )}
           <div className="flex gap-3 pt-2">
             <Button type="button" variant="outline" className="flex-1" onClick={() => setOpen(false)} disabled={loading}>Cancelar</Button>
             <Button type="submit" className="flex-1" disabled={loading}>{loading ? "Agregando..." : "Agregar"}</Button>
