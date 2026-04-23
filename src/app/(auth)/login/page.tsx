@@ -20,6 +20,7 @@ export default function LoginPage() {
   const [token, setToken] = useState("");
   const [loading, setLoading] = useState(false);
   const [codeSent, setCodeSent] = useState(false);
+  const [changingEmail, setChangingEmail] = useState(false);
   const [error, setError] = useState(() => {
     if (typeof window !== "undefined") {
       const params = new URLSearchParams(window.location.search);
@@ -31,23 +32,22 @@ export default function LoginPage() {
   const otpInputRef = useRef<HTMLInputElement>(null);
   const emailInOtpRef = useRef<HTMLInputElement>(null);
 
-  // Precargar último email usado
   useEffect(() => {
     if (typeof window === "undefined") return;
     const saved = localStorage.getItem(LAST_EMAIL_KEY);
     if (saved) setEmail(saved);
   }, []);
 
+  // Focus al entrar a stage "otp"
   useEffect(() => {
-    if (stage === "otp") {
-      // Si ya hay email, focus al OTP. Si no, al email.
-      if (email) {
-        otpInputRef.current?.focus();
-      } else {
-        emailInOtpRef.current?.focus();
-      }
+    if (stage !== "otp") return;
+    if (email && !changingEmail) {
+      otpInputRef.current?.focus();
+    } else {
+      emailInOtpRef.current?.focus();
     }
-  }, [stage, email]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [stage, changingEmail]);
 
   useEffect(() => {
     if (cooldown <= 0) return;
@@ -68,9 +68,12 @@ export default function LoginPage() {
 
   async function handleRequest(e: React.FormEvent) {
     e.preventDefault();
-    if (!email) return;
-    setLoading(true);
     setError("");
+    if (!email) {
+      setError("Escribe tu correo primero.");
+      return;
+    }
+    setLoading(true);
 
     const sendError = await sendCode(email);
 
@@ -83,45 +86,68 @@ export default function LoginPage() {
     localStorage.setItem(LAST_EMAIL_KEY, email);
     setStage("otp");
     setCodeSent(true);
+    setChangingEmail(false);
     setCooldown(RESEND_COOLDOWN_SECONDS);
     setLoading(false);
   }
 
   async function handleVerify(e: React.FormEvent) {
     e.preventDefault();
-    if (!email || token.length < 6) return;
-
-    setLoading(true);
     setError("");
-    setStage("verifying");
 
-    const supabase = createClient();
-    const { error: verifyError } = await supabase.auth.verifyOtp({
-      email,
-      token,
-      type: "email",
-    });
-
-    if (verifyError) {
-      setError("Código inválido o expirado. Revisa los dígitos o solicita uno nuevo.");
-      setStage("otp");
-      setLoading(false);
+    if (!email) {
+      setError("Escribe tu correo.");
+      setChangingEmail(true);
+      return;
+    }
+    if (token.length < 6) {
+      setError("Escribe el código completo.");
       return;
     }
 
-    localStorage.setItem(LAST_EMAIL_KEY, email);
-    setStage("success");
-    router.push("/dashboard");
+    setLoading(true);
+    setStage("verifying");
+
+    try {
+      const supabase = createClient();
+      const { error: verifyError } = await supabase.auth.verifyOtp({
+        email,
+        token,
+        type: "email",
+      });
+
+      if (verifyError) {
+        setError(`Código inválido o expirado. ${verifyError.message}`);
+        setStage("otp");
+        setLoading(false);
+        return;
+      }
+
+      localStorage.setItem(LAST_EMAIL_KEY, email);
+      setStage("success");
+      router.push("/dashboard");
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Error desconocido";
+      setError(`No se pudo verificar: ${msg}`);
+      setStage("otp");
+      setLoading(false);
+    }
   }
 
   async function handleResend() {
-    if (cooldown > 0 || loading || !email) return;
-    setLoading(true);
+    if (cooldown > 0 || loading) return;
     setError("");
+    if (!email) {
+      setError("Escribe tu correo primero.");
+      setChangingEmail(true);
+      return;
+    }
+    setLoading(true);
     const sendError = await sendCode(email);
     if (sendError) {
-      setError("No pudimos reenviar el código. Intenta de nuevo en unos minutos.");
+      setError("No pudimos enviar el código. Intenta de nuevo en unos minutos.");
     } else {
+      localStorage.setItem(LAST_EMAIL_KEY, email);
       setCodeSent(true);
       setCooldown(RESEND_COOLDOWN_SECONDS);
     }
@@ -134,12 +160,16 @@ export default function LoginPage() {
     setError("");
     setCooldown(0);
     setCodeSent(false);
+    setChangingEmail(false);
   }
 
   function jumpToOtp() {
     setStage("otp");
     setError("");
+    setChangingEmail(false);
   }
+
+  const emailVisibleInOtp = !email || changingEmail;
 
   return (
     <div className="min-h-screen flex flex-col bg-bone">
@@ -162,8 +192,7 @@ export default function LoginPage() {
                 </>
               ) : (
                 <>
-                  Entra a tu{" "}
-                  <em className="font-editorial text-steel">condominio</em>.
+                  Entra a tu <em className="font-editorial text-steel">condominio</em>.
                 </>
               )}
             </h1>
@@ -171,7 +200,7 @@ export default function LoginPage() {
               {stage === "email"
                 ? "Te enviamos un código por correo. Sin contraseñas, sin complicaciones."
                 : codeSent
-                ? `Enviamos un código a ${email}.`
+                ? `Enviamos un código a ${email || "tu correo"}.`
                 : "Si ya pediste un código, pégalo aquí."}
             </p>
           </div>
@@ -197,7 +226,7 @@ export default function LoginPage() {
                     />
                   </div>
                   {error && <p className="text-[13px] text-destructive">{error}</p>}
-                  <Button type="submit" className="w-full h-11" disabled={loading || !email}>
+                  <Button type="submit" className="w-full h-11" disabled={loading}>
                     {loading ? "Enviando..." : "Enviar código"}
                   </Button>
                 </form>
@@ -217,23 +246,41 @@ export default function LoginPage() {
             {(stage === "otp" || stage === "verifying") && (
               <>
                 <form onSubmit={handleVerify} className="space-y-5">
-                  <div className="space-y-2">
-                    <Label htmlFor="email-otp" className="font-meta text-mute">
-                      CORREO
-                    </Label>
-                    <Input
-                      ref={emailInOtpRef}
-                      id="email-otp"
-                      type="email"
-                      placeholder="tu@correo.com"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      required
-                      autoComplete="email"
-                      disabled={loading}
-                      className="h-11 text-[15px]"
-                    />
-                  </div>
+                  {emailVisibleInOtp ? (
+                    <div className="space-y-2">
+                      <Label htmlFor="email-otp" className="font-meta text-mute">
+                        CORREO
+                      </Label>
+                      <Input
+                        ref={emailInOtpRef}
+                        id="email-otp"
+                        type="email"
+                        placeholder="tu@correo.com"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        required
+                        autoComplete="email"
+                        disabled={loading}
+                        className="h-11 text-[15px]"
+                      />
+                    </div>
+                  ) : (
+                    <div className="rounded-lg bg-cloud/40 border border-border px-4 py-3 flex items-center justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="font-meta text-mute">CÓDIGO PARA</p>
+                        <p className="mt-0.5 text-[14px] text-ink truncate">{email}</p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setChangingEmail(true)}
+                        disabled={loading}
+                        className="font-meta text-steel hover:text-ink transition-colors shrink-0"
+                      >
+                        CAMBIAR
+                      </button>
+                    </div>
+                  )}
+
                   <div className="space-y-2">
                     <Label htmlFor="otp" className="font-meta text-mute">
                       CÓDIGO DEL CORREO
@@ -257,12 +304,10 @@ export default function LoginPage() {
                       disabled={loading}
                     />
                   </div>
+
                   {error && <p className="text-[13px] text-destructive">{error}</p>}
-                  <Button
-                    type="submit"
-                    className="w-full h-11"
-                    disabled={loading || !email || token.length < 6}
-                  >
+
+                  <Button type="submit" className="w-full h-11" disabled={loading}>
                     {stage === "verifying" ? "Verificando..." : "Verificar y entrar"}
                   </Button>
                 </form>
@@ -271,13 +316,13 @@ export default function LoginPage() {
                   <p className="text-[12px] text-mute leading-relaxed">
                     {codeSent
                       ? "También puedes hacer clic en el enlace del correo si lo abres en este mismo dispositivo."
-                      : "Si aún no tienes código, pide uno nuevo."}
+                      : "¿Aún no tienes código? Pide uno nuevo."}
                   </p>
                   <div className="flex items-center justify-center gap-4 font-meta flex-wrap">
                     <button
                       type="button"
                       onClick={handleResend}
-                      disabled={cooldown > 0 || loading || !email}
+                      disabled={cooldown > 0 || loading}
                       className="text-steel hover:text-ink transition-colors disabled:opacity-40"
                     >
                       {cooldown > 0
