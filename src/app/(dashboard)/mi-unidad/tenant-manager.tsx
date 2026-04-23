@@ -1,9 +1,9 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import type { MemberRole, OwnershipMode, TenantPermissions } from "@/types/database";
 import {
@@ -44,6 +44,7 @@ export function TenantManager({
   invites: Invite[];
   codes: Code[];
 }) {
+  const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [feedback, setFeedback] = useState<{ type: "ok" | "error"; msg: string } | null>(null);
   const [newCode, setNewCode] = useState<{ code: string; expires_at: string } | null>(null);
@@ -56,8 +57,12 @@ export function TenantManager({
   function run(fn: () => Promise<{ error?: string; success?: boolean }>, successMsg: string) {
     startTransition(async () => {
       const res = await fn();
-      if (res.error) showFeedback("error", res.error);
-      else showFeedback("ok", successMsg);
+      if (res.error) {
+        showFeedback("error", res.error);
+      } else {
+        showFeedback("ok", successMsg);
+        router.refresh();
+      }
     });
   }
 

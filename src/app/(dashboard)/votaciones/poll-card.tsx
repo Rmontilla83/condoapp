@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { votePoll, closePoll } from "./actions";
@@ -23,6 +24,7 @@ export function PollCard({
   userId: string;
   isAdmin: boolean;
 }) {
+  const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -43,14 +45,20 @@ export function PollCard({
     setLoading(true);
     setError("");
     const res = await votePoll(poll.id, option);
-    if (res.error) setError(res.error);
+    if (res.error) {
+      setError(res.error);
+      setLoading(false);
+      return;
+    }
     setLoading(false);
+    router.refresh();
   }
 
   async function handleClose() {
     setLoading(true);
     await closePoll(poll.id);
     setLoading(false);
+    router.refresh();
   }
 
   return (

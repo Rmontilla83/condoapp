@@ -1,10 +1,12 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { grantAccess } from "./actions";
 
 export function GrantAccessButton({ passId }: { passId: string }) {
+  const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [granted, setGranted] = useState(false);
   const [error, setError] = useState("");
@@ -17,6 +19,7 @@ export function GrantAccessButton({ passId }: { passId: string }) {
       setError(res.error);
     } else {
       setGranted(true);
+      router.refresh();
     }
     setLoading(false);
   }

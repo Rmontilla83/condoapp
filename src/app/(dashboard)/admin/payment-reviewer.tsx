@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { approvePayment, rejectPayment } from "../pagos/actions";
 
@@ -17,23 +18,36 @@ interface PendingPayment {
 }
 
 export function PaymentReviewer({ payments }: { payments: PendingPayment[] }) {
+  const router = useRouter();
   const [loading, setLoading] = useState<string | null>(null);
+  const [error, setError] = useState("");
 
   async function handleApprove(id: string) {
     setLoading(id);
-    await approvePayment(id);
+    setError("");
+    const res = await approvePayment(id);
     setLoading(null);
+    if (res.error) setError(res.error);
+    else router.refresh();
   }
 
   async function handleReject(id: string) {
     setLoading(id);
-    await rejectPayment(id);
+    setError("");
+    const res = await rejectPayment(id);
     setLoading(null);
+    if (res.error) setError(res.error);
+    else router.refresh();
   }
 
   if (payments.length === 0) {
-    return <p className="py-4 text-center text-sm text-muted-foreground">No hay comprobantes pendientes de revision</p>;
+    return <p className="py-4 text-center text-[13px] text-mute">No hay comprobantes pendientes.</p>;
   }
+  const errorBanner = error ? (
+    <p className="rounded-md bg-destructive/10 border border-destructive/30 px-3 py-2 text-[13px] text-destructive mb-3">
+      {error}
+    </p>
+  ) : null;
 
   const methodLabels: Record<string, string> = {
     transfer: "Transferencia",
@@ -45,6 +59,7 @@ export function PaymentReviewer({ payments }: { payments: PendingPayment[] }) {
 
   return (
     <div className="space-y-3">
+      {errorBanner}
       {payments.map((p) => {
         const isLoading = loading === p.id;
         return (

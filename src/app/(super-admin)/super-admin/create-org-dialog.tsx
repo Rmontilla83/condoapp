@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -7,6 +8,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { createOrganization } from "./actions";
 
 export function CreateOrgDialog() {
+  const router = useRouter();
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -19,6 +21,7 @@ export function CreateOrgDialog() {
     if (res.error) { setError(res.error); setLoading(false); return; }
     setResult({ inviteCode: res.inviteCode! });
     setLoading(false);
+    router.refresh();
   }
 
   return (

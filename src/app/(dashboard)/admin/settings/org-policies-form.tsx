@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { setOrgPolicies } from "../units/actions";
 
 interface Policies {
@@ -28,6 +29,7 @@ const policyMeta: Record<keyof Policies, { title: string; description: string }>
 };
 
 export function OrgPoliciesForm({ initial }: { initial: Policies }) {
+  const router = useRouter();
   const [policies, setPolicies] = useState<Policies>(initial);
   const [pending, startTransition] = useTransition();
   const [feedback, setFeedback] = useState<{ type: "ok" | "error"; msg: string } | null>(null);
@@ -42,6 +44,7 @@ export function OrgPoliciesForm({ initial }: { initial: Policies }) {
         setFeedback({ type: "error", msg: res.error });
       } else {
         setFeedback({ type: "ok", msg: "Actualizado" });
+        router.refresh();
       }
       setTimeout(() => setFeedback(null), 3000);
     });

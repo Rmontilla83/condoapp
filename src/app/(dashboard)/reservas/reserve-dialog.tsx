@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -14,6 +15,7 @@ interface Area {
 }
 
 export function ReserveDialog({ areas }: { areas: Area[] }) {
+  const router = useRouter();
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -37,6 +39,7 @@ export function ReserveDialog({ areas }: { areas: Area[] }) {
 
     setSuccess(true);
     setLoading(false);
+    router.refresh();
   }
 
   function handleClose() {
