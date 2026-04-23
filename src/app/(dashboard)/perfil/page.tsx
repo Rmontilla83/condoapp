@@ -1,6 +1,5 @@
 import { getCurrentProfile, getUserUnitIds, getOrganization } from "@/lib/queries";
 import { createClient } from "@/lib/supabase/server";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ProfileForm } from "./profile-form";
 
 export default async function PerfilPage() {
@@ -27,32 +26,28 @@ export default async function PerfilPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight" style={{ fontFamily: "Outfit, sans-serif" }}>
-          Mi perfil
+        <span className="font-meta-loose text-steel">MI PERFIL</span>
+        <h1 className="mt-4 font-display text-[clamp(1.75rem,3.5vw,2.5rem)] leading-[1.1] tracking-[-0.03em] text-ink">
+          Tu <em className="font-editorial text-steel">información</em> personal
         </h1>
-        <p className="text-muted-foreground">Gestiona tu informacion personal</p>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">Datos personales</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <ProfileForm
-            profile={{
-              full_name: profile.full_name,
-              email: profile.email,
-              phone: profile.phone,
-              role: profile.role,
-              organization_id: profile.organization_id,
-            }}
-            orgName={orgName}
-            unitNumber={unitNumber}
-          />
-        </CardContent>
-      </Card>
+      <div className="rounded-2xl bg-card border border-border p-6 md:p-7">
+        <p className="font-meta text-mute mb-5">DATOS PERSONALES</p>
+        <ProfileForm
+          profile={{
+            full_name: profile.full_name,
+            email: profile.email,
+            phone: profile.phone,
+            role: profile.role,
+            organization_id: profile.organization_id,
+          }}
+          orgName={orgName}
+          unitNumber={unitNumber}
+        />
+      </div>
     </div>
   );
 }

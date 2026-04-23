@@ -37,7 +37,7 @@ const mainItems = [
     label: "Reportes",
     icon: (
       <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+        <path strokeLinecap="round" strokeLinejoin="round" d="M11.42 15.17l-5.384 3.174A1 1 0 014.5 17.447V6.553a1 1 0 011.536-.897l5.384 3.174m0 0l5.384-3.174A1 1 0 0118.34 6.553v10.894a1 1 0 01-1.536.897l-5.384-3.174" />
       </svg>
     ),
   },
@@ -48,8 +48,9 @@ const moreItemsBase = [
   { href: "/finanzas", label: "Finanzas", adminOnly: false },
   { href: "/reservas", label: "Reservas", adminOnly: false },
   { href: "/votaciones", label: "Votaciones", adminOnly: false },
+  { href: "/mi-unidad", label: "Mi unidad", adminOnly: false },
   { href: "/admin", label: "Admin", adminOnly: true },
-  { href: "/perfil", label: "Mi perfil", adminOnly: false },
+  { href: "/perfil", label: "Perfil", adminOnly: false },
 ];
 
 export function BottomNav({ isAdmin = false }: { isAdmin?: boolean }) {
@@ -67,8 +68,8 @@ export function BottomNav({ isAdmin = false }: { isAdmin?: boolean }) {
       {/* More menu overlay */}
       {showMore && (
         <div className="fixed inset-0 z-40 md:hidden" onClick={() => setShowMore(false)}>
-          <div className="absolute inset-0 bg-black/20" />
-          <div className="absolute bottom-16 right-2 left-2 bg-card rounded-2xl border shadow-xl p-2 animate-in fade-in slide-in-from-bottom-4 duration-200">
+          <div className="absolute inset-0 bg-ink/30" />
+          <div className="absolute bottom-20 right-3 left-3 bg-card rounded-2xl border border-border shadow-2xl p-2 animate-in fade-in slide-in-from-bottom-4 duration-200">
             <div className="grid grid-cols-3 gap-1">
               {moreItems.map((item) => {
                 const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
@@ -77,8 +78,8 @@ export function BottomNav({ isAdmin = false }: { isAdmin?: boolean }) {
                     key={item.href}
                     href={item.href}
                     onClick={() => setShowMore(false)}
-                    className={`flex items-center justify-center rounded-xl px-3 py-3 text-xs font-medium transition-colors ${
-                      isActive ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-muted"
+                    className={`flex items-center justify-center rounded-lg px-3 py-3 text-[12px] font-medium transition-colors ${
+                      isActive ? "bg-ink text-bone" : "text-ink/70 hover:bg-cloud/50"
                     }`}
                   >
                     {item.label}
@@ -90,17 +91,17 @@ export function BottomNav({ isAdmin = false }: { isAdmin?: boolean }) {
         </div>
       )}
 
-      {/* Bottom bar */}
-      <nav className="fixed bottom-0 left-0 right-0 z-50 border-t bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/80 md:hidden">
-        <div className="flex items-center justify-around py-1.5">
+      {/* Bottom bar — Ink background */}
+      <nav className="fixed bottom-0 left-0 right-0 z-50 bg-sidebar text-sidebar-foreground md:hidden">
+        <div className="flex items-center justify-around py-2">
           {mainItems.map((item) => {
             const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
             return (
               <Link
                 key={item.href}
                 href={item.href}
-                className={`flex flex-col items-center gap-0.5 px-3 py-1.5 text-[10px] font-medium transition-colors ${
-                  isActive ? "text-primary" : "text-muted-foreground"
+                className={`flex flex-col items-center gap-1 px-3 py-1.5 text-[10px] font-medium transition-colors ${
+                  isActive ? "text-sand" : "text-sidebar-foreground/60"
                 }`}
               >
                 {item.icon}
@@ -108,17 +109,16 @@ export function BottomNav({ isAdmin = false }: { isAdmin?: boolean }) {
               </Link>
             );
           })}
-          {/* More button */}
           <button
             onClick={() => setShowMore(!showMore)}
-            className={`flex flex-col items-center gap-0.5 px-3 py-1.5 text-[10px] font-medium transition-colors ${
-              isMoreActive || showMore ? "text-primary" : "text-muted-foreground"
+            className={`flex flex-col items-center gap-1 px-3 py-1.5 text-[10px] font-medium transition-colors ${
+              isMoreActive || showMore ? "text-sand" : "text-sidebar-foreground/60"
             }`}
           >
             <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
             </svg>
-            Mas
+            Más
           </button>
         </div>
       </nav>

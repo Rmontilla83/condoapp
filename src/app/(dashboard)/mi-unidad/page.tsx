@@ -1,10 +1,14 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentProfile } from "@/lib/queries";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { TenantManager } from "./tenant-manager";
 import type { MemberRole, OwnershipMode, TenantPermissions } from "@/types/database";
+
+const MODE_LABEL: Record<OwnershipMode, string> = {
+  owner_occupied: "HABITADA POR TI",
+  tenant_with_active_owner: "ARRENDADA",
+  tenant_only: "SOLO INQUILINO",
+};
 
 export default async function MiUnidadPage() {
   const profile = await getCurrentProfile();
@@ -12,7 +16,6 @@ export default async function MiUnidadPage() {
 
   const supabase = await createClient();
 
-  // Buscar unidades donde soy propietario activo
   const { data: myOwnership } = await supabase
     .from("unit_members")
     .select("id, unit_id, role, units(id, unit_number, floor, block, type, ownership_mode)")
@@ -24,24 +27,22 @@ export default async function MiUnidadPage() {
 
   if (ownedUnits.length === 0) {
     return (
-      <div className="space-y-6">
+      <div className="space-y-8">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight" style={{ fontFamily: "Outfit, sans-serif" }}>
-            Mi unidad
+          <span className="font-meta-loose text-steel">MI UNIDAD</span>
+          <h1 className="mt-4 font-display text-[clamp(1.75rem,3.5vw,2.5rem)] leading-[1.1] tracking-[-0.03em] text-ink">
+            Unidades a tu <em className="font-editorial text-steel">nombre</em>
           </h1>
         </div>
-        <Card>
-          <CardContent className="p-8 text-center">
-            <p className="text-sm text-muted-foreground">
-              No eres propietario de ninguna unidad registrada en esta app.
-            </p>
-          </CardContent>
-        </Card>
+        <div className="rounded-2xl bg-card border border-border p-10 text-center">
+          <p className="text-[14px] text-mute">
+            No eres propietario de ninguna unidad registrada en esta app.
+          </p>
+        </div>
       </div>
     );
   }
 
-  // Para cada unidad propia, cargar tenants + invitaciones + códigos pendientes
   const unitIds = ownedUnits.map((o) => o.unit_id);
 
   const [tenantsRes, invitesRes, codesRes] = await Promise.all([
@@ -67,15 +68,15 @@ export default async function MiUnidadPage() {
   ]);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight" style={{ fontFamily: "Outfit, sans-serif" }}>
-          Mi unidad
+        <span className="font-meta-loose text-steel">MI UNIDAD</span>
+        <h1 className="mt-4 font-display text-[clamp(1.75rem,3.5vw,2.5rem)] leading-[1.1] tracking-[-0.03em] text-ink">
+          Gestiona tu <em className="font-editorial text-steel">inquilino</em> y permisos
         </h1>
-        <p className="text-muted-foreground">Gestiona tu inquilino y permisos.</p>
       </div>
 
-      <div className="space-y-4">
+      <div className="space-y-5">
         {ownedUnits.map((o) => {
           const unit = Array.isArray(o.units) ? o.units[0] : o.units;
           if (!unit) return null;
@@ -86,29 +87,27 @@ export default async function MiUnidadPage() {
           const codes = (codesRes.data ?? []).filter((c) => c.unit_id === o.unit_id);
 
           return (
-            <Card key={o.id}>
-              <CardHeader>
-                <div className="flex items-start justify-between">
+            <div key={o.id} className="rounded-2xl bg-card border border-border overflow-hidden">
+              <div className="p-6 border-b border-border">
+                <div className="flex items-start justify-between gap-4">
                   <div>
-                    <CardTitle>
+                    <p className="font-meta text-mute">
+                      {unit.type.toUpperCase()}
+                      {unit.floor != null && ` · PISO ${unit.floor}`}
+                    </p>
+                    <h2 className="mt-3 font-display text-[28px] leading-tight text-ink">
                       Apto {unit.unit_number}
-                      {unit.block && <span className="text-muted-foreground"> · {unit.block}</span>}
-                    </CardTitle>
-                    <CardDescription>
-                      {unit.type}
-                      {unit.floor != null && ` · piso ${unit.floor}`}
-                    </CardDescription>
+                      {unit.block && (
+                        <span className="text-mute"> · {unit.block}</span>
+                      )}
+                    </h2>
                   </div>
-                  <Badge variant="default">
-                    {mode === "owner_occupied"
-                      ? "Habitada por ti"
-                      : mode === "tenant_with_active_owner"
-                        ? "Arrendada"
-                        : "Solo inquilino"}
-                  </Badge>
+                  <span className="shrink-0 font-meta bg-ink text-bone px-3 py-1.5 rounded-md">
+                    {MODE_LABEL[mode]}
+                  </span>
                 </div>
-              </CardHeader>
-              <CardContent>
+              </div>
+              <div className="p-6">
                 <TenantManager
                   unit={{ id: unit.id, unit_number: unit.unit_number, ownership_mode: mode }}
                   tenants={tenants.map((t) => ({
@@ -133,8 +132,8 @@ export default async function MiUnidadPage() {
                     expires_at: c.expires_at,
                   }))}
                 />
-              </CardContent>
-            </Card>
+              </div>
+            </div>
           );
         })}
       </div>

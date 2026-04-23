@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { AtryumLogo } from "@/components/brand/atryum-logo";
 
 type Stage = "email" | "otp" | "verifying" | "success";
 
@@ -116,28 +116,43 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader className="text-center">
-          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
-            <svg className="h-8 w-8 text-primary" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 21h19.5m-18-18v18m10.5-18v18m6-13.5V21M6.75 6.75h.75m-.75 3h.75m-.75 3h.75m3-6h.75m-.75 3h.75m-.75 3h.75M6.75 21v-3.375c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21M3 3h12m-.75 4.5H21m-3.75 3H21m-3.75 3H21" />
-            </svg>
-          </div>
-          <CardTitle className="text-2xl">Atryum</CardTitle>
-          <CardDescription className="text-base">
-            {stage === "email"
-              ? "Ingresa tu correo para recibir tu código de acceso."
-              : `Enviamos un código de 6 dígitos a ${email}.`}
-          </CardDescription>
-        </CardHeader>
+    <div className="min-h-screen flex flex-col bg-bone">
+      <header className="px-6 py-6 md:px-10 md:py-8">
+        <AtryumLogo variant="horizontal" tone="ink" className="h-6" />
+      </header>
 
-        <CardContent>
-          {stage === "email" && (
-            <>
-              <form onSubmit={handleRequest} className="space-y-4">
+      <main className="flex-1 flex items-center justify-center px-5 pb-12">
+        <div className="w-full max-w-md">
+          <div className="mb-8">
+            <span className="font-meta-loose text-steel">ACCESO · ATRYUM</span>
+            <h1 className="mt-5 font-display text-[clamp(1.75rem,4vw,2.5rem)] leading-[1.1] tracking-[-0.03em] text-ink">
+              {stage === "email" ? (
+                <>
+                  Entra a tu{" "}
+                  <em className="font-editorial text-steel">condominio</em>.
+                </>
+              ) : stage === "success" ? (
+                <>
+                  Acceso <em className="font-editorial text-steel">confirmado</em>.
+                </>
+              ) : (
+                <>
+                  Revisa tu <em className="font-editorial text-steel">correo</em>.
+                </>
+              )}
+            </h1>
+            <p className="mt-3 text-[15px] text-mute leading-relaxed">
+              {stage === "email"
+                ? "Te enviamos un código de 6 dígitos. Sin contraseñas, sin complicaciones."
+                : `Enviamos un código de 6 dígitos a ${email}.`}
+            </p>
+          </div>
+
+          <div className="bg-card rounded-2xl border border-border p-6 md:p-7">
+            {stage === "email" && (
+              <form onSubmit={handleRequest} className="space-y-5">
                 <div className="space-y-2">
-                  <Label htmlFor="email">Correo electrónico</Label>
+                  <Label htmlFor="email" className="font-meta text-mute">CORREO ELECTRÓNICO</Label>
                   <Input
                     id="email"
                     type="email"
@@ -147,88 +162,101 @@ export default function LoginPage() {
                     required
                     autoFocus
                     autoComplete="email"
+                    className="h-11 text-[15px]"
                   />
                 </div>
-                {error && <p className="text-sm text-destructive">{error}</p>}
-                <Button type="submit" className="w-full" disabled={loading}>
+                {error && (
+                  <p className="text-[13px] text-destructive">{error}</p>
+                )}
+                <Button type="submit" className="w-full h-11" disabled={loading}>
                   {loading ? "Enviando..." : "Enviar código"}
                 </Button>
-              </form>
-              <p className="mt-6 text-center text-xs text-muted-foreground">
-                Te enviaremos un código seguro. Sin contraseñas.
-              </p>
-            </>
-          )}
-
-          {(stage === "otp" || stage === "verifying") && (
-            <>
-              <form onSubmit={handleVerify} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="otp">Código de 6 dígitos</Label>
-                  <Input
-                    ref={otpInputRef}
-                    id="otp"
-                    type="text"
-                    inputMode="numeric"
-                    pattern="[0-9]*"
-                    autoComplete="one-time-code"
-                    maxLength={6}
-                    placeholder="123456"
-                    value={token}
-                    onChange={(e) => {
-                      const clean = e.target.value.replace(/\D/g, "").slice(0, 6);
-                      setToken(clean);
-                    }}
-                    className="text-center text-2xl tracking-[0.5em] font-mono"
-                    required
-                    disabled={loading}
-                  />
-                </div>
-                {error && <p className="text-sm text-destructive">{error}</p>}
-                <Button type="submit" className="w-full" disabled={loading || token.length !== 6}>
-                  {stage === "verifying" ? "Verificando..." : "Verificar código"}
-                </Button>
-              </form>
-
-              <div className="mt-6 space-y-2 text-center text-xs text-muted-foreground">
-                <p>
-                  También puedes hacer clic en el enlace del correo si lo abres en este mismo dispositivo.
+                <p className="text-center font-meta text-mute">
+                  SIN CONTRASEÑA · CÓDIGO EXPIRA EN 1 HORA
                 </p>
-                <div className="flex items-center justify-center gap-3 pt-2">
-                  <button
-                    type="button"
-                    onClick={handleResend}
-                    disabled={cooldown > 0 || loading}
-                    className="underline underline-offset-2 hover:text-foreground disabled:opacity-50 disabled:no-underline"
-                  >
-                    {cooldown > 0 ? `Reenviar en ${cooldown}s` : "Reenviar código"}
-                  </button>
-                  <span aria-hidden="true">·</span>
-                  <button
-                    type="button"
-                    onClick={resetToEmail}
-                    disabled={loading}
-                    className="underline underline-offset-2 hover:text-foreground disabled:opacity-50"
-                  >
-                    Usar otro correo
-                  </button>
-                </div>
-              </div>
-            </>
-          )}
+              </form>
+            )}
 
-          {stage === "success" && (
-            <div className="py-4 text-center">
-              <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-emerald-100">
-                <svg className="h-6 w-6 text-emerald-600" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
-                </svg>
+            {(stage === "otp" || stage === "verifying") && (
+              <>
+                <form onSubmit={handleVerify} className="space-y-5">
+                  <div className="space-y-2">
+                    <Label htmlFor="otp" className="font-meta text-mute">CÓDIGO DE 6 DÍGITOS</Label>
+                    <Input
+                      ref={otpInputRef}
+                      id="otp"
+                      type="text"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                      autoComplete="one-time-code"
+                      maxLength={6}
+                      placeholder="······"
+                      value={token}
+                      onChange={(e) => {
+                        const clean = e.target.value.replace(/\D/g, "").slice(0, 6);
+                        setToken(clean);
+                      }}
+                      className="h-14 text-center text-[28px] tracking-[0.5em] font-mono font-medium"
+                      required
+                      disabled={loading}
+                    />
+                  </div>
+                  {error && (
+                    <p className="text-[13px] text-destructive">{error}</p>
+                  )}
+                  <Button
+                    type="submit"
+                    className="w-full h-11"
+                    disabled={loading || token.length !== 6}
+                  >
+                    {stage === "verifying" ? "Verificando..." : "Verificar código"}
+                  </Button>
+                </form>
+
+                <div className="mt-6 pt-5 border-t border-border space-y-3 text-center">
+                  <p className="text-[12px] text-mute leading-relaxed">
+                    También puedes hacer clic en el enlace del correo si lo abres en este mismo dispositivo.
+                  </p>
+                  <div className="flex items-center justify-center gap-4 font-meta">
+                    <button
+                      type="button"
+                      onClick={handleResend}
+                      disabled={cooldown > 0 || loading}
+                      className="text-steel hover:text-ink transition-colors disabled:opacity-40"
+                    >
+                      {cooldown > 0 ? `REENVIAR · ${cooldown}s` : "REENVIAR CÓDIGO"}
+                    </button>
+                    <span className="text-mute/40" aria-hidden="true">·</span>
+                    <button
+                      type="button"
+                      onClick={resetToEmail}
+                      disabled={loading}
+                      className="text-steel hover:text-ink transition-colors disabled:opacity-40"
+                    >
+                      OTRO CORREO
+                    </button>
+                  </div>
+                </div>
+              </>
+            )}
+
+            {stage === "success" && (
+              <div className="py-6 text-center">
+                <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-steel/10">
+                  <svg className="h-6 w-6 text-steel" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                  </svg>
+                </div>
+                <p className="text-[14px] text-mute">Redirigiendo al dashboard...</p>
               </div>
-              <p className="text-sm text-muted-foreground">Redirigiendo al dashboard...</p>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+            )}
+          </div>
+
+          <p className="mt-8 text-center font-editorial text-mute text-[15px]">
+            Un átrium dentro de cada A.
+          </p>
+        </div>
+      </main>
     </div>
   );
 }

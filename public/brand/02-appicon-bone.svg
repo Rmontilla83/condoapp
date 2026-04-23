@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 120 120" shape-rendering="geometricPrecision">
+  <title>Atryum A2 — app icon · bone bg</title>
+  <rect width="120" height="120" rx="26" ry="26" fill="#F5F2EC"></rect>
+  <g transform="translate(28 28)" fill="#0E1116">
+    <polygon points="0,64 10,64 36,0 28,0"></polygon>
+    <polygon points="54,64 64,64 36,0 28,0"></polygon>
+    <rect x="10" y="40" width="16" height="6"></rect>
+    <rect x="38" y="40" width="16" height="6"></rect>
+  </g>
+</svg>

@@ -1,7 +1,12 @@
 import { redirect } from "next/navigation";
-import { getCurrentProfile, getEffectiveRole, getAdminStats, getOrgMaintenance, getCurrentRate } from "@/lib/queries";
+import {
+  getCurrentProfile,
+  getEffectiveRole,
+  getAdminStats,
+  getOrgMaintenance,
+  getCurrentRate,
+} from "@/lib/queries";
 import { createClient } from "@/lib/supabase/server";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { RequestManager } from "./request-manager";
 import { PaymentReviewer } from "./payment-reviewer";
 import { RateUpdater } from "./rate-updater";
@@ -21,7 +26,6 @@ export default async function AdminPage() {
 
   const rateData = await getCurrentRate(profile.organization_id);
 
-  // Get org invite code
   const { data: org } = await supabase
     .from("organizations")
     .select("invite_code")
@@ -31,13 +35,11 @@ export default async function AdminPage() {
   const [stats, maintenance, pendingPaymentsRes, morosRes] = await Promise.all([
     getAdminStats(profile.organization_id),
     getOrgMaintenance(profile.organization_id),
-    // Pending payment receipts
     supabase
       .from("transactions")
       .select("*, invoices(description, units(unit_number))")
       .eq("status", "pending")
       .order("paid_at", { ascending: false }),
-    // Morosos: units with pending/overdue invoices
     supabase
       .from("invoices")
       .select("unit_id, amount, status, due_date, units(unit_number)")
@@ -49,7 +51,6 @@ export default async function AdminPage() {
   const pendingPayments = pendingPaymentsRes.data ?? [];
   const overdueInvoices = morosRes.data ?? [];
 
-  // Group morosos by unit
   const morosMap: Record<string, { unit: string; total: number; count: number; oldest: string }> = {};
   for (const inv of overdueInvoices) {
     const key = inv.unit_id;
@@ -64,56 +65,64 @@ export default async function AdminPage() {
   const morosos = Object.values(morosMap).sort((a, b) => b.total - a.total);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-10">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight" style={{ fontFamily: "Outfit, sans-serif" }}>
-          Panel de Administracion
+        <span className="font-meta-loose text-steel">PANEL ADMINISTRADOR</span>
+        <h1 className="mt-4 font-display text-[clamp(2rem,4.5vw,3.25rem)] leading-[1.05] tracking-[-0.035em] text-ink">
+          Vista <em className="font-editorial text-steel">general</em>
         </h1>
-        <p className="text-muted-foreground">Vista general de tu condominio</p>
+        <p className="mt-3 text-[15px] text-mute">
+          {stats.totalUnits} unidades · {stats.paymentRate}% de cobranza · {stats.openRequests} solicitudes abiertas
+        </p>
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-        <Card>
-          <CardContent className="p-4">
-            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Total unidades</p>
-            <p className="text-3xl font-extrabold mt-1" style={{ fontFamily: "Outfit, sans-serif" }}>{stats.totalUnits}</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Cobranza</p>
-            <p className="text-3xl font-extrabold text-emerald-600 mt-1" style={{ fontFamily: "Outfit, sans-serif" }}>{stats.paymentRate}%</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Morosos</p>
-            <p className="text-3xl font-extrabold text-red-600 mt-1" style={{ fontFamily: "Outfit, sans-serif" }}>{morosos.length}</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Solicitudes</p>
-            <p className="text-3xl font-extrabold text-amber-600 mt-1" style={{ fontFamily: "Outfit, sans-serif" }}>{stats.openRequests}</p>
-          </CardContent>
-        </Card>
+      {/* KPI cards — manual style */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <div className="rounded-2xl bg-card border border-border p-5">
+          <p className="font-meta text-mute">UNIDADES</p>
+          <p className="mt-3 font-display text-[32px] leading-none tracking-[-0.02em] text-ink">
+            {stats.totalUnits}
+          </p>
+        </div>
+        <div className="rounded-2xl bg-card border border-border p-5">
+          <p className="font-meta text-mute">COBRANZA</p>
+          <p className="mt-3 font-display text-[32px] leading-none tracking-[-0.02em] text-steel">
+            {stats.paymentRate}
+            <span className="text-mute text-[20px]">%</span>
+          </p>
+        </div>
+        <div className="rounded-2xl bg-card border border-border p-5">
+          <p className="font-meta text-mute">MOROSOS</p>
+          <p className="mt-3 font-display text-[32px] leading-none tracking-[-0.02em] text-destructive">
+            {morosos.length}
+          </p>
+        </div>
+        <div className="rounded-2xl bg-card border border-border p-5">
+          <p className="font-meta text-mute">SOLICITUDES</p>
+          <p className="mt-3 font-display text-[32px] leading-none tracking-[-0.02em] text-sand">
+            {stats.openRequests}
+          </p>
+        </div>
       </div>
 
-      {/* Acciones rápidas admin */}
-      <div className="grid gap-4 md:grid-cols-3">
+      {/* Acciones rápidas */}
+      <div className="grid gap-3 md:grid-cols-3">
         <RateUpdater currentRate={Number(rateData.rate)} effectiveDate={rateData.effective_date} />
-        <div className="rounded-xl border bg-card p-4 flex flex-col justify-between gap-3">
+        <div className="rounded-2xl bg-card border border-border p-5 flex flex-col justify-between gap-4">
           <div>
-            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Cobranza</p>
-            <p className="text-sm text-muted-foreground mt-1">Genera cuotas para todas las unidades de un mes</p>
+            <p className="font-meta text-mute">COBRANZA</p>
+            <p className="mt-2 text-[14px] text-ink/80 leading-relaxed">
+              Genera cuotas para todas las unidades de un mes.
+            </p>
           </div>
           <GenerateInvoicesDialog />
         </div>
-        <div className="rounded-xl border bg-card p-4 flex flex-col justify-between gap-3">
+        <div className="rounded-2xl bg-card border border-border p-5 flex flex-col justify-between gap-4">
           <div>
-            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Unidades</p>
-            <p className="text-sm text-muted-foreground mt-1">{stats.totalUnits} unidades registradas</p>
+            <p className="font-meta text-mute">UNIDADES</p>
+            <p className="mt-2 text-[14px] text-ink/80 leading-relaxed">
+              {stats.totalUnits} unidad{stats.totalUnits !== 1 ? "es" : ""} registrada{stats.totalUnits !== 1 ? "s" : ""}.
+            </p>
           </div>
           <AddUnitDialog />
         </div>
@@ -121,114 +130,128 @@ export default async function AdminPage() {
 
       {/* Invite code */}
       {org?.invite_code && (
-        <Card>
-          <CardContent className="p-4 flex items-center justify-between">
-            <div>
-              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Codigo de invitacion para residentes</p>
-              <p className="text-2xl font-mono font-extrabold text-primary mt-1">{org.invite_code}</p>
-              <p className="text-xs text-muted-foreground mt-0.5">Comparte este codigo por WhatsApp para que los residentes se unan</p>
-            </div>
-          </CardContent>
-        </Card>
+        <div className="rounded-2xl bg-ink text-bone p-6 md:p-7">
+          <p className="font-meta text-sand">CÓDIGO DE INVITACIÓN · RESIDENTES</p>
+          <p className="mt-4 font-mono text-[32px] leading-none text-bone tracking-[0.08em]">
+            {org.invite_code}
+          </p>
+          <p className="mt-4 text-[13px] text-bone/60">
+            Comparte por WhatsApp para que los residentes se unan.
+          </p>
+        </div>
       )}
 
       <div className="grid gap-6 lg:grid-cols-2">
-        {/* Comprobantes pendientes de aprobación */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg flex items-center gap-2">
-              <svg className="h-5 w-5 text-amber-500" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M9 14.25l6-6m4.5-3.493V21.75l-3.75-1.5-3.75 1.5-3.75-1.5-3.75 1.5V4.757c0-1.108.806-2.057 1.907-2.185a48.507 48.507 0 0111.186 0c1.1.128 1.907 1.077 1.907 2.185z" />
-              </svg>
-              Comprobantes por revisar
-            </CardTitle>
-            <CardDescription>{pendingPayments.length} pendientes de aprobacion</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <PaymentReviewer payments={pendingPayments as any} />
-          </CardContent>
-        </Card>
-
-        {/* Morosos */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg flex items-center gap-2">
-              <svg className="h-5 w-5 text-red-500" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
-              </svg>
-              Morosos
-            </CardTitle>
-            <CardDescription>Unidades con cuotas pendientes o vencidas</CardDescription>
-          </CardHeader>
-          <CardContent>
-            {morosos.length === 0 ? (
-              <div className="py-4 text-center">
-                <p className="text-sm text-emerald-600 font-medium">Todas las unidades estan al dia</p>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {morosos.map((m) => (
-                  <div key={m.unit} className="flex items-center justify-between rounded-xl border border-red-100 bg-red-50/50 p-3">
-                    <div>
-                      <p className="text-sm font-semibold">Apto {m.unit}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {m.count} cuota{m.count > 1 ? "s" : ""} — desde {new Date(m.oldest).toLocaleDateString("es", { month: "short", year: "numeric" })}
-                      </p>
-                    </div>
-                    <span className="text-sm font-bold text-red-600">${m.total.toFixed(2)}</span>
-                  </div>
-                ))}
-                <div className="text-center pt-2">
-                  <p className="text-xs text-muted-foreground">
-                    Total por cobrar: <span className="font-bold text-red-600">${morosos.reduce((s, m) => s + m.total, 0).toFixed(2)}</span>
-                  </p>
-                </div>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Solicitudes — gestión interactiva */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">Solicitudes de mantenimiento</CardTitle>
-          <CardDescription>Toca una para gestionar — asignar responsable, cambiar estado</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <RequestManager requests={maintenance} />
-        </CardContent>
-      </Card>
-
-      {/* Resumen financiero */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">Resumen financiero</CardTitle>
-          <CardDescription>Datos acumulados</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-            <div className="rounded-xl border p-3 text-center">
-              <p className="text-xs text-muted-foreground">Recaudado</p>
-              <p className="text-xl font-extrabold text-emerald-600" style={{ fontFamily: "Outfit, sans-serif" }}>${stats.totalIncome.toFixed(2)}</p>
-            </div>
-            <div className="rounded-xl border p-3 text-center">
-              <p className="text-xs text-muted-foreground">Gastos</p>
-              <p className="text-xl font-extrabold text-red-600" style={{ fontFamily: "Outfit, sans-serif" }}>${stats.totalExpenses.toFixed(2)}</p>
-            </div>
-            <div className="rounded-xl border p-3 text-center">
-              <p className="text-xs text-muted-foreground">Balance</p>
-              <p className={`text-xl font-extrabold ${stats.balance >= 0 ? "text-primary" : "text-red-600"}`} style={{ fontFamily: "Outfit, sans-serif" }}>
-                ${stats.balance.toFixed(2)}
+        {/* Comprobantes */}
+        <div className="rounded-2xl bg-card border border-border p-6">
+          <div className="flex items-center justify-between mb-5">
+            <div>
+              <p className="font-meta text-mute">COMPROBANTES POR REVISAR</p>
+              <p className="mt-2 text-[15px] font-medium text-ink">
+                {pendingPayments.length} pendiente{pendingPayments.length !== 1 ? "s" : ""} de aprobación
               </p>
             </div>
-            <div className="rounded-xl border p-3 text-center">
-              <p className="text-xs text-muted-foreground">Tasa cobranza</p>
-              <p className="text-xl font-extrabold" style={{ fontFamily: "Outfit, sans-serif" }}>{stats.paymentRate}%</p>
+          </div>
+          {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+          <PaymentReviewer payments={pendingPayments as any} />
+        </div>
+
+        {/* Morosos */}
+        <div className="rounded-2xl bg-card border border-border p-6">
+          <div className="flex items-center justify-between mb-5">
+            <div>
+              <p className="font-meta text-mute">MOROSOS</p>
+              <p className="mt-2 text-[15px] font-medium text-ink">
+                Unidades con cuotas pendientes
+              </p>
             </div>
           </div>
-        </CardContent>
-      </Card>
+
+          {morosos.length === 0 ? (
+            <div className="py-6 text-center">
+              <p className="font-meta text-steel">TODAS AL DÍA · GRACIAS</p>
+            </div>
+          ) : (
+            <div className="space-y-0">
+              {morosos.map((m) => (
+                <div
+                  key={m.unit}
+                  className="flex items-center justify-between py-3.5 border-b border-border last:border-0 gap-3"
+                >
+                  <div className="min-w-0">
+                    <p className="text-[14px] font-medium text-ink">Apto {m.unit}</p>
+                    <p className="mt-0.5 font-meta text-mute truncate">
+                      {m.count} CUOTA{m.count > 1 ? "S" : ""} ·{" "}
+                      DESDE{" "}
+                      {new Date(m.oldest)
+                        .toLocaleDateString("es", { month: "short", year: "numeric" })
+                        .toUpperCase()}
+                    </p>
+                  </div>
+                  <span className="text-[14px] font-medium text-destructive shrink-0">
+                    ${m.total.toFixed(2)}
+                  </span>
+                </div>
+              ))}
+              <div className="mt-4 pt-4 border-t border-border">
+                <div className="flex items-center justify-between">
+                  <span className="font-meta text-mute">TOTAL POR COBRAR</span>
+                  <span className="font-display text-[20px] text-destructive">
+                    ${morosos.reduce((s, m) => s + m.total, 0).toFixed(2)}
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Solicitudes — gestión */}
+      <div className="rounded-2xl bg-card border border-border p-6">
+        <div className="mb-5">
+          <p className="font-meta text-mute">SOLICITUDES DE MANTENIMIENTO</p>
+          <p className="mt-2 text-[15px] font-medium text-ink">
+            Toca una para gestionar — asignar responsable, cambiar estado
+          </p>
+        </div>
+        <RequestManager requests={maintenance} />
+      </div>
+
+      {/* Resumen financiero */}
+      <div className="rounded-2xl bg-card border border-border p-6">
+        <p className="font-meta text-mute mb-5">RESUMEN FINANCIERO · ACUMULADO</p>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <div className="rounded-xl bg-cloud/40 border border-border p-4">
+            <p className="font-meta text-mute">RECAUDADO</p>
+            <p className="mt-3 font-display text-[22px] leading-none text-steel">
+              ${stats.totalIncome.toFixed(2)}
+            </p>
+          </div>
+          <div className="rounded-xl bg-cloud/40 border border-border p-4">
+            <p className="font-meta text-mute">GASTOS</p>
+            <p className="mt-3 font-display text-[22px] leading-none text-ink">
+              ${stats.totalExpenses.toFixed(2)}
+            </p>
+          </div>
+          <div className="rounded-xl bg-cloud/40 border border-border p-4">
+            <p className="font-meta text-mute">BALANCE</p>
+            <p
+              className={`mt-3 font-display text-[22px] leading-none ${
+                stats.balance >= 0 ? "text-ink" : "text-destructive"
+              }`}
+            >
+              ${stats.balance.toFixed(2)}
+            </p>
+          </div>
+          <div className="rounded-xl bg-cloud/40 border border-border p-4">
+            <p className="font-meta text-mute">COBRANZA</p>
+            <p className="mt-3 font-display text-[22px] leading-none text-ink">
+              {stats.paymentRate}
+              <span className="text-mute text-[14px]">%</span>
+            </p>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

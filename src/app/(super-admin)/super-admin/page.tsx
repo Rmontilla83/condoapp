@@ -1,7 +1,6 @@
 import { redirect } from "next/navigation";
 import { getCurrentProfile } from "@/lib/queries";
 import { createClient } from "@/lib/supabase/server";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { CreateOrgDialog } from "./create-org-dialog";
 import { InviteAdminDialog } from "./invite-admin-dialog";
 import { EnterOrgButton } from "./enter-org-button";
@@ -26,126 +25,156 @@ export default async function SuperAdminPage() {
   const invoices = invoicesRes.data ?? [];
   const invitations = invitationsRes.data ?? [];
 
-  const totalRevenue = invoices.filter((i) => i.status === "paid").reduce((s, i) => s + Number(i.amount), 0);
-  const totalPending = invoices.filter((i) => i.status === "pending" || i.status === "overdue").reduce((s, i) => s + Number(i.amount), 0);
+  const totalRevenue = invoices
+    .filter((i) => i.status === "paid")
+    .reduce((s, i) => s + Number(i.amount), 0);
+  const totalPending = invoices
+    .filter((i) => i.status === "pending" || i.status === "overdue")
+    .reduce((s, i) => s + Number(i.amount), 0);
 
   return (
-    <div className="min-h-screen bg-[#FAFBFC]">
-      <div className="mx-auto max-w-7xl px-5 md:px-8 py-8">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-extrabold tracking-tight text-[#0F172A]" style={{ fontFamily: "Outfit, sans-serif" }}>
-            Super Admin
+    <div className="mx-auto max-w-7xl px-5 md:px-8 py-10 space-y-10">
+      <div className="flex items-start justify-between gap-4 flex-wrap">
+        <div>
+          <span className="font-meta-loose text-steel">VISTA GLOBAL · Q2 2026</span>
+          <h1 className="mt-4 font-display text-[clamp(2rem,4.5vw,3.5rem)] leading-[1.05] tracking-[-0.035em] text-ink">
+            {orgs.length} condominios ·{" "}
+            <em className="font-editorial">{totalUnits} unidades</em>
           </h1>
-          <p className="text-muted-foreground">Plataforma Atryum — vista global</p>
         </div>
+        <CreateOrgDialog />
+      </div>
 
-        {/* Global stats */}
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
-          <Card>
-            <CardContent className="p-4">
-              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Condominios</p>
-              <p className="text-3xl font-extrabold mt-1" style={{ fontFamily: "Outfit, sans-serif" }}>{orgs.length}</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4">
-              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Unidades</p>
-              <p className="text-3xl font-extrabold mt-1" style={{ fontFamily: "Outfit, sans-serif" }}>{totalUnits}</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4">
-              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Usuarios</p>
-              <p className="text-3xl font-extrabold mt-1" style={{ fontFamily: "Outfit, sans-serif" }}>{totalUsers}</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4">
-              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Recaudado</p>
-              <p className="text-2xl font-extrabold text-emerald-600 mt-1" style={{ fontFamily: "Outfit, sans-serif" }}>${totalRevenue.toFixed(0)}</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4">
-              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Por cobrar</p>
-              <p className="text-2xl font-extrabold text-amber-600 mt-1" style={{ fontFamily: "Outfit, sans-serif" }}>${totalPending.toFixed(0)}</p>
-            </CardContent>
-          </Card>
-        </div>
+      {/* KPI cards — manual style */}
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+        <KpiCard label="CONDOMINIOS" value={orgs.length.toString()} />
+        <KpiCard label="UNIDADES" value={totalUnits.toString()} />
+        <KpiCard label="USUARIOS" value={totalUsers.toString()} />
+        <KpiCard label="RECAUDADO" value={`$${totalRevenue.toFixed(0)}`} tone="steel" />
+        <KpiCard label="POR COBRAR" value={`$${totalPending.toFixed(0)}`} tone="sand" />
+      </div>
 
-        <div className="grid gap-6 lg:grid-cols-2">
-          {/* Condominios */}
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle className="text-lg">Condominios</CardTitle>
-                  <CardDescription>{orgs.length} registrados</CardDescription>
-                </div>
-                <CreateOrgDialog />
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                {orgs.map((org) => (
-                  <div key={org.id} className="rounded-xl border p-4">
-                    <div className="flex items-center justify-between mb-2">
-                      <div>
-                        <p className="font-semibold">{org.name}</p>
-                        <p className="text-xs text-muted-foreground">{org.city}</p>
-                      </div>
-                      <div className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold ${org.is_active ? "bg-emerald-50 text-emerald-700" : "bg-gray-100 text-gray-500"}`}>
-                        {org.is_active ? "Activo" : "Inactivo"}
-                      </div>
+      <div className="grid lg:grid-cols-2 gap-6">
+        {/* Condominios */}
+        <div className="rounded-2xl bg-card border border-border p-6">
+          <div className="flex items-center justify-between mb-5">
+            <div>
+              <p className="font-meta text-mute">CONDOMINIOS</p>
+              <p className="mt-2 text-[15px] font-medium text-ink">
+                {orgs.length} registrados
+              </p>
+            </div>
+          </div>
+
+          {orgs.length === 0 ? (
+            <p className="py-6 text-center text-[13px] text-mute">
+              Sin condominios todavía.
+            </p>
+          ) : (
+            <div className="space-y-3">
+              {orgs.map((org) => (
+                <div key={org.id} className="rounded-xl bg-cloud/30 border border-border p-4">
+                  <div className="flex items-start justify-between gap-3 mb-3">
+                    <div className="min-w-0">
+                      <p className="text-[15px] font-medium text-ink truncate">{org.name}</p>
+                      <p className="mt-1 font-meta text-mute">
+                        {org.city?.toUpperCase()}
+                      </p>
                     </div>
-                    <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                      <span className="flex items-center gap-1">
-                        <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M15.75 5.25a3 3 0 013 3m3 0a6 6 0 01-7.029 5.912c-.563-.097-1.159.026-1.563.43L10.5 17.25H8.25v2.25H6v2.25H2.25v-2.818c0-.597.237-1.17.659-1.591l6.499-6.499c.404-.404.527-1 .43-1.563A6 6 0 1121.75 8.25z"/></svg>
-                        Codigo: <span className="font-mono font-bold text-primary">{org.invite_code}</span>
-                      </span>
-                    </div>
-                    <div className="mt-2">
-                      <InviteAdminDialog orgId={org.id} orgName={org.name} />
-                    </div>
+                    <span
+                      className={`font-meta px-2 py-0.5 rounded-md shrink-0 ${
+                        org.is_active ? "bg-steel/10 text-steel" : "bg-mute/15 text-mute"
+                      }`}
+                    >
+                      {org.is_active ? "ACTIVO" : "INACTIVO"}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center gap-2 font-meta text-mute mb-4">
+                    <span>CÓDIGO ·</span>
+                    <span className="font-mono text-ink">{org.invite_code}</span>
+                  </div>
+
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <InviteAdminDialog orgId={org.id} orgName={org.name} />
                     <EnterOrgButton orgId={org.id} />
                   </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Recent invitations */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Invitaciones de admin</CardTitle>
-              <CardDescription>Ultimas invitaciones enviadas</CardDescription>
-            </CardHeader>
-            <CardContent>
-              {invitations.length === 0 ? (
-                <p className="py-4 text-center text-sm text-muted-foreground">No hay invitaciones</p>
-              ) : (
-                <div className="space-y-3">
-                  {invitations.map((inv) => {
-                    const orgName = Array.isArray(inv.organizations) ? inv.organizations[0]?.name : inv.organizations?.name;
-                    return (
-                      <div key={inv.id} className="flex items-center justify-between rounded-xl border p-3">
-                        <div>
-                          <p className="text-sm font-medium">{inv.email}</p>
-                          <p className="text-xs text-muted-foreground">{orgName}</p>
-                        </div>
-                        <div className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold ${inv.accepted_at ? "bg-emerald-50 text-emerald-700" : "bg-amber-50 text-amber-700"}`}>
-                          {inv.accepted_at ? "Aceptada" : "Pendiente"}
-                        </div>
-                      </div>
-                    );
-                  })}
                 </div>
-              )}
-            </CardContent>
-          </Card>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Invitations */}
+        <div className="rounded-2xl bg-card border border-border p-6">
+          <div className="flex items-center justify-between mb-5">
+            <div>
+              <p className="font-meta text-mute">INVITACIONES · ADMIN</p>
+              <p className="mt-2 text-[15px] font-medium text-ink">
+                Últimas enviadas
+              </p>
+            </div>
+          </div>
+
+          {invitations.length === 0 ? (
+            <p className="py-6 text-center text-[13px] text-mute">No hay invitaciones.</p>
+          ) : (
+            <ul className="space-y-0">
+              {invitations.map((inv) => {
+                const orgName = Array.isArray(inv.organizations)
+                  ? inv.organizations[0]?.name
+                  : inv.organizations?.name;
+                return (
+                  <li
+                    key={inv.id}
+                    className="flex items-center justify-between py-3 border-b border-border last:border-0 gap-3"
+                  >
+                    <div className="min-w-0">
+                      <p className="text-[14px] font-medium text-ink truncate">
+                        {inv.email}
+                      </p>
+                      <p className="mt-0.5 font-meta text-mute truncate">{orgName}</p>
+                    </div>
+                    <span
+                      className={`font-meta px-2 py-0.5 rounded-md shrink-0 ${
+                        inv.accepted_at
+                          ? "bg-steel/10 text-steel"
+                          : "bg-sand/15 text-sand"
+                      }`}
+                    >
+                      {inv.accepted_at ? "ACEPTADA" : "PENDIENTE"}
+                    </span>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
         </div>
       </div>
+    </div>
+  );
+}
+
+function KpiCard({
+  label,
+  value,
+  tone = "ink",
+}: {
+  label: string;
+  value: string;
+  tone?: "ink" | "steel" | "sand";
+}) {
+  const toneClass =
+    tone === "steel" ? "text-steel" : tone === "sand" ? "text-sand" : "text-ink";
+
+  return (
+    <div className="rounded-2xl bg-card border border-border p-5">
+      <p className="font-meta text-mute">{label}</p>
+      <p
+        className={`mt-3 font-display text-[28px] leading-none tracking-[-0.02em] ${toneClass}`}
+      >
+        {value}
+      </p>
     </div>
   );
 }

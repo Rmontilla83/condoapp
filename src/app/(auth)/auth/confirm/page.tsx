@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { AtryumLogo, AtryumSymbol } from "@/components/brand/atryum-logo";
 
 export default function ConfirmPage() {
   const [status, setStatus] = useState<"ready" | "loading" | "success" | "error">("loading");
@@ -22,7 +22,6 @@ export default function ConfirmPage() {
       return;
     }
 
-    // Sin parámetros — verificar si ya hay sesión activa
     const supabase = createClient();
     supabase.auth.getSession().then(({ data }) => {
       if (data.session) {
@@ -51,7 +50,6 @@ export default function ConfirmPage() {
       setTimeout(() => router.push("/dashboard"), 400);
     };
 
-    // Si después de un error hay sesión activa, es éxito real (token ya se consumió).
     const sessionIsAlive = async () => {
       const { data } = await supabase.auth.getSession();
       return !!data.session;
@@ -88,90 +86,86 @@ export default function ConfirmPage() {
       setStatus("error");
       setErrorMsg("No se pudo verificar el enlace.");
     } finally {
-      // No resetear processingRef — un solo intento por render
+      // intencional: un solo intento por render
     }
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#FAFBFC] p-4">
-      <Card className="w-full max-w-sm">
-        <CardHeader className="text-center">
-          <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-xl bg-[#0F172A]">
-            <svg
-              viewBox="0 0 24 24"
-              className="h-7 w-7 text-[#2DD4BF]"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
-            </svg>
+    <div className="min-h-screen flex flex-col bg-bone">
+      <header className="px-6 py-6 md:px-10 md:py-8">
+        <AtryumLogo variant="horizontal" tone="ink" className="h-6" />
+      </header>
+
+      <main className="flex-1 flex items-center justify-center px-5 pb-12">
+        <div className="w-full max-w-sm">
+          <div className="bg-card rounded-2xl border border-border p-8 text-center">
+            <AtryumSymbol tone="ink" className="h-10 w-10 mx-auto mb-5" />
+
+            <h1 className="font-display text-[24px] leading-tight tracking-[-0.03em] text-ink">
+              {status === "success" ? (
+                <>Acceso <em className="font-editorial text-steel">confirmado</em></>
+              ) : status === "error" ? (
+                "No pudimos entrar"
+              ) : (
+                <>Confirma tu <em className="font-editorial text-steel">acceso</em></>
+              )}
+            </h1>
+
+            <div className="mt-6">
+              {status === "ready" && (
+                <>
+                  <p className="text-[14px] text-mute mb-6 leading-relaxed">
+                    Toca el botón para acceder a tu condominio.
+                  </p>
+                  <Button
+                    onClick={handleConfirm}
+                    size="lg"
+                    className="w-full h-11 text-[14px] font-medium"
+                    disabled={processingRef.current}
+                  >
+                    Acceder a Atryum
+                  </Button>
+                </>
+              )}
+
+              {status === "loading" && (
+                <div className="py-4">
+                  <div className="mx-auto h-8 w-8 animate-spin rounded-full border-2 border-steel border-t-transparent" />
+                  <p className="text-[13px] text-mute mt-4">Verificando...</p>
+                </div>
+              )}
+
+              {status === "success" && (
+                <div className="py-3">
+                  <div className="mx-auto mb-3 flex h-11 w-11 items-center justify-center rounded-full bg-steel/10">
+                    <svg className="h-5 w-5 text-steel" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                    </svg>
+                  </div>
+                  <p className="text-[13px] text-mute">Redirigiendo al dashboard...</p>
+                </div>
+              )}
+
+              {status === "error" && (
+                <>
+                  <p className="text-[13px] text-destructive mb-5">{errorMsg}</p>
+                  <Button
+                    onClick={() => router.push("/login")}
+                    variant="outline"
+                    className="w-full h-11"
+                  >
+                    Ir al login
+                  </Button>
+                </>
+              )}
+            </div>
           </div>
-          <CardTitle style={{ fontFamily: "Outfit, sans-serif" }}>
-            {status === "success"
-              ? "Acceso confirmado"
-              : status === "error"
-                ? "Error"
-                : "Confirma tu acceso"}
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="text-center">
-          {status === "ready" && (
-            <>
-              <p className="text-sm text-muted-foreground mb-6">
-                Toca el botón para acceder a tu condominio.
-              </p>
-              <Button
-                onClick={handleConfirm}
-                size="lg"
-                className="w-full text-base font-semibold"
-                disabled={processingRef.current}
-              >
-                Acceder a Atryum
-              </Button>
-            </>
-          )}
 
-          {status === "loading" && (
-            <div className="py-4">
-              <div className="mx-auto h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-              <p className="text-sm text-muted-foreground mt-3">Verificando...</p>
-            </div>
-          )}
-
-          {status === "success" && (
-            <div className="py-4">
-              <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-emerald-100">
-                <svg
-                  className="h-6 w-6 text-emerald-600"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  strokeWidth={2.5}
-                  stroke="currentColor"
-                >
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
-                </svg>
-              </div>
-              <p className="text-sm text-muted-foreground">Redirigiendo al dashboard...</p>
-            </div>
-          )}
-
-          {status === "error" && (
-            <>
-              <p className="text-sm text-destructive mb-4">{errorMsg}</p>
-              <Button
-                onClick={() => router.push("/login")}
-                variant="outline"
-                className="w-full"
-              >
-                Ir al login
-              </Button>
-            </>
-          )}
-        </CardContent>
-      </Card>
+          <p className="mt-6 text-center font-editorial text-mute text-[14px]">
+            Un átrium dentro de cada A.
+          </p>
+        </div>
+      </main>
     </div>
   );
 }

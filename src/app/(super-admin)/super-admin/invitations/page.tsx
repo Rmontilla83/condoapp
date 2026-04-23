@@ -1,6 +1,4 @@
 import { createClient } from "@/lib/supabase/server";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { InvitationsTable } from "./invitations-table";
 
 export default async function InvitationsPage() {
@@ -17,75 +15,81 @@ export default async function InvitationsPage() {
     .order("created_at", { ascending: false })
     .limit(50);
 
+  const allInvites = adminInvites ?? [];
+  const pendingCount = allInvites.filter((i) => !i.accepted_at).length;
+  const allEvents = events ?? [];
+
   return (
-    <div className="mx-auto max-w-5xl p-6 space-y-6">
+    <div className="mx-auto max-w-5xl px-5 md:px-8 py-10 space-y-8">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight" style={{ fontFamily: "Outfit, sans-serif" }}>
-          Invitaciones de admin
+        <span className="font-meta-loose text-steel">INVITACIONES · ADMIN</span>
+        <h1 className="mt-4 font-display text-[clamp(1.75rem,3.5vw,2.5rem)] leading-[1.1] tracking-[-0.03em] text-ink">
+          Estado de <em className="font-editorial text-steel">invitaciones</em>
         </h1>
-        <p className="text-muted-foreground">Estado de invitaciones y log de eventos.</p>
+        <p className="mt-3 text-[15px] text-mute">
+          {allInvites.length} total · {pendingCount} pendiente{pendingCount !== 1 ? "s" : ""}
+        </p>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Invitaciones</CardTitle>
-          <CardDescription>
-            {(adminInvites ?? []).length} total ·{" "}
-            {(adminInvites ?? []).filter((i) => !i.accepted_at).length} pendientes
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <InvitationsTable
-            invitations={(adminInvites ?? []).map((i) => ({
-              id: i.id,
-              email: i.email,
-              accepted_at: i.accepted_at,
-              created_at: i.created_at,
-              org_name:
-                (Array.isArray(i.organizations)
-                  ? (i.organizations[0] as { name?: string } | undefined)?.name
-                  : (i.organizations as { name?: string } | null)?.name) ?? "—",
-            }))}
-          />
-        </CardContent>
-      </Card>
+      <div className="rounded-2xl bg-card border border-border p-6">
+        <p className="font-meta text-mute mb-5">INVITACIONES</p>
+        <InvitationsTable
+          invitations={allInvites.map((i) => ({
+            id: i.id,
+            email: i.email,
+            accepted_at: i.accepted_at,
+            created_at: i.created_at,
+            org_name:
+              (Array.isArray(i.organizations)
+                ? (i.organizations[0] as { name?: string } | undefined)?.name
+                : (i.organizations as { name?: string } | null)?.name) ?? "—",
+          }))}
+        />
+      </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Eventos recientes</CardTitle>
-          <CardDescription>Últimos 50 eventos de autenticación.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          {(events ?? []).length === 0 ? (
-            <p className="text-sm text-muted-foreground text-center py-4">Sin eventos.</p>
-          ) : (
-            <div className="divide-y">
-              {(events ?? []).map((e) => (
-                <div key={e.id} className="flex items-center justify-between py-2 text-sm">
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2">
-                      <Badge variant={e.event.includes("failed") ? "destructive" : "outline"}>
-                        {e.event}
-                      </Badge>
-                      <span className="text-muted-foreground text-xs truncate">
-                        {e.target_email ?? "—"}
-                      </span>
-                    </div>
+      <div className="rounded-2xl bg-card border border-border p-6">
+        <p className="font-meta text-mute mb-5">EVENTOS RECIENTES · ÚLTIMOS 50</p>
+        {allEvents.length === 0 ? (
+          <p className="py-6 text-center text-[13px] text-mute">Sin eventos.</p>
+        ) : (
+          <ul className="space-y-0">
+            {allEvents.map((e) => {
+              const isFailed = e.event.includes("failed");
+              return (
+                <li
+                  key={e.id}
+                  className="flex items-center justify-between gap-3 py-2.5 border-b border-border last:border-0"
+                >
+                  <div className="min-w-0 flex-1 flex items-center gap-3">
+                    <span
+                      className={`font-meta px-2 py-0.5 rounded-md shrink-0 ${
+                        isFailed
+                          ? "bg-destructive/10 text-destructive"
+                          : "bg-ink/5 text-ink"
+                      }`}
+                    >
+                      {e.event.toUpperCase()}
+                    </span>
+                    <span className="text-[13px] text-mute truncate">
+                      {e.target_email ?? "—"}
+                    </span>
                   </div>
-                  <span className="text-xs text-muted-foreground ml-3">
-                    {new Date(e.created_at).toLocaleString("es", {
-                      day: "2-digit",
-                      month: "short",
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })}
+                  <span className="font-meta text-mute shrink-0">
+                    {new Date(e.created_at)
+                      .toLocaleString("es", {
+                        day: "2-digit",
+                        month: "short",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })
+                      .toUpperCase()}
                   </span>
-                </div>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </div>
     </div>
   );
 }

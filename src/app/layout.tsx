@@ -5,46 +5,55 @@ import "./globals.css";
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  themeColor: "#0D9488",
+  themeColor: "#0E1116",
+  colorScheme: "light",
 };
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://atryum.net";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
-  title: "Atryum — Gestion de Condominios Inteligente | Pagos, QR, Transparencia",
+  title: {
+    default: "Atryum — Un átrium dentro de cada A",
+    template: "%s · Atryum",
+  },
   description:
-    "App de gestion de condominios para Latinoamerica. Pagos en 2 toques, reportes con foto, acceso QR para visitantes, transparencia financiera total. Gratis hasta 15 unidades.",
+    "Atryum reúne acceso, comunidad y administración del condominio en una sola app. Pagos, mantenimiento, QR de visitantes y transparencia financiera.",
   keywords: [
     "gestion condominios",
     "app condominios",
+    "proptech",
     "administracion condominios",
     "pagos condominio",
-    "mantenimiento condominio",
     "control acceso QR",
     "transparencia financiera condominio",
-    "condominio Venezuela",
     "condominio Latinoamerica",
+    "condominio Venezuela",
   ],
   authors: [{ name: "Atryum" }],
-  creator: "tuwebgo.net",
+  creator: "Atryum",
   alternates: {
     canonical: SITE_URL,
+  },
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "Atryum",
   },
   openGraph: {
     type: "website",
     locale: "es_LA",
     url: SITE_URL,
     siteName: "Atryum",
-    title: "Atryum — La app que tu condominio merece",
+    title: "Atryum — Un átrium dentro de cada A",
     description:
-      "Pagos en 2 toques. Reportes con foto. Acceso QR para visitantes. Transparencia total. Gratis hasta 15 unidades.",
+      "Acceso, comunidad y administración en una sola app. Operativo en menos de una semana, sin obra ni cableado.",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Atryum — Gestion de Condominios Inteligente",
+    title: "Atryum — Un átrium dentro de cada A",
     description:
-      "Pagos, mantenimiento, acceso QR y transparencia financiera. Todo desde tu celular.",
+      "Acceso, comunidad y administración del condominio en una sola app.",
   },
   robots: {
     index: true,
@@ -58,22 +67,22 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="es" className="h-full antialiased">
+    <html lang="es" className="h-full">
       <head>
         <link rel="manifest" href="/manifest.json" />
-        <link rel="apple-touch-icon" href="/icon-192.png" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link
           rel="preconnect"
           href="https://fonts.gstatic.com"
           crossOrigin="anonymous"
         />
+        <link
+          rel="stylesheet"
+          href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500&display=swap"
+        />
       </head>
-      <body className="min-h-full flex flex-col">
+      <body className="min-h-full flex flex-col bg-background text-foreground antialiased">
         {children}
-        <Script id="font-loader" strategy="afterInteractive">
-          {`(function(){var l=document.createElement('link');l.rel='stylesheet';l.href='https://fonts.googleapis.com/css2?family=Outfit:wght@600;700;800;900&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&display=swap';document.head.appendChild(l)})();`}
-        </Script>
         <Script id="sw-register" strategy="afterInteractive">
           {`if('serviceWorker' in navigator){navigator.serviceWorker.register('/sw.js')}`}
         </Script>

@@ -5,13 +5,6 @@ import {
   getFeeBreakdown,
   getCurrentRate,
 } from "@/lib/queries";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { InvoiceRow } from "./invoice-row";
 
 export default async function PagosPage() {
@@ -38,148 +31,153 @@ export default async function PagosPage() {
   )[0];
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="space-y-8">
+      <div className="flex items-start justify-between gap-5">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight" style={{ fontFamily: "Outfit, sans-serif" }}>Pagos</h1>
-          <p className="text-muted-foreground">Tu estado de cuenta y pagos realizados</p>
+          <span className="font-meta-loose text-steel">CUOTAS · ATRYUM</span>
+          <h1 className="mt-4 font-display text-[clamp(1.75rem,3.5vw,2.5rem)] leading-[1.1] tracking-[-0.03em] text-ink">
+            Tu estado de <em className="font-editorial text-steel">cuenta</em>
+          </h1>
         </div>
         {rate > 0 && (
-          <div className="text-right">
-            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Tasa BCV</p>
-            <p className="text-lg font-bold text-primary" style={{ fontFamily: "Outfit, sans-serif" }}>
-              Bs {rate.toFixed(2)}/$
+          <div className="text-right shrink-0">
+            <p className="font-meta text-mute">TASA BCV</p>
+            <p className="mt-1 font-display text-[20px] text-ink">
+              Bs {rate.toFixed(2)}
+              <span className="text-mute text-sm">/$</span>
             </p>
-            <p className="text-[10px] text-muted-foreground">{rateData.effective_date}</p>
+            <p className="font-meta text-mute">{rateData.effective_date}</p>
           </div>
         )}
       </div>
 
-      {/* Resumen dual currency */}
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-        <Card>
-          <CardContent className="p-4">
-            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Saldo pendiente</p>
-            <p className={`text-2xl font-extrabold mt-1 ${pendingTotal > 0 ? "text-destructive" : "text-primary"}`} style={{ fontFamily: "Outfit, sans-serif" }}>
-              ${pendingTotal.toFixed(2)}
-            </p>
-            {rate > 0 && pendingTotal > 0 && (
-              <p className="text-sm text-muted-foreground">Bs {pendingTotalBs.toFixed(2)}</p>
-            )}
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Ultimo pago</p>
-            {lastPaid ? (
-              <>
-                <p className="text-2xl font-extrabold mt-1" style={{ fontFamily: "Outfit, sans-serif" }}>${Number(lastPaid.amount).toFixed(2)}</p>
-                <p className="text-xs text-muted-foreground">{lastPaid.description}</p>
-              </>
-            ) : (
-              <p className="text-lg text-muted-foreground mt-1">Sin pagos</p>
-            )}
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Proximo vencimiento</p>
-            {nextDue ? (
-              <>
-                <p className="text-2xl font-extrabold mt-1" style={{ fontFamily: "Outfit, sans-serif" }}>
-                  {new Date(nextDue.due_date).toLocaleDateString("es", { day: "numeric", month: "short" })}
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  ${Number(nextDue.amount).toFixed(2)}
-                  {rate > 0 ? ` / Bs ${(Number(nextDue.amount) * rate).toFixed(2)}` : ""}
-                </p>
-              </>
-            ) : (
-              <p className="text-lg text-muted-foreground mt-1">Sin pendientes</p>
-            )}
-          </CardContent>
-        </Card>
+      {/* KPI cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+        <div className="rounded-2xl bg-card border border-border p-5">
+          <p className="font-meta text-mute">SALDO PENDIENTE</p>
+          <p
+            className={`mt-3 font-display text-[32px] leading-none tracking-[-0.02em] ${
+              pendingTotal > 0 ? "text-ink" : "text-steel"
+            }`}
+          >
+            ${pendingTotal.toFixed(2)}
+          </p>
+          {rate > 0 && pendingTotal > 0 && (
+            <p className="mt-2 text-[13px] text-mute">Bs {pendingTotalBs.toFixed(2)}</p>
+          )}
+          {pendingTotal === 0 && (
+            <p className="mt-2 font-meta text-steel">AL DÍA</p>
+          )}
+        </div>
+        <div className="rounded-2xl bg-card border border-border p-5">
+          <p className="font-meta text-mute">ÚLTIMO PAGO</p>
+          {lastPaid ? (
+            <>
+              <p className="mt-3 font-display text-[32px] leading-none tracking-[-0.02em] text-ink">
+                ${Number(lastPaid.amount).toFixed(2)}
+              </p>
+              <p className="mt-2 text-[13px] text-mute truncate">{lastPaid.description}</p>
+            </>
+          ) : (
+            <p className="mt-3 text-[15px] text-mute">Sin pagos</p>
+          )}
+        </div>
+        <div className="rounded-2xl bg-card border border-border p-5">
+          <p className="font-meta text-mute">PRÓXIMO VENCIMIENTO</p>
+          {nextDue ? (
+            <>
+              <p className="mt-3 font-display text-[28px] leading-none tracking-[-0.02em] text-ink">
+                {new Date(nextDue.due_date).toLocaleDateString("es", { day: "numeric", month: "long" })}
+              </p>
+              <p className="mt-2 text-[13px] text-mute">
+                ${Number(nextDue.amount).toFixed(2)}
+                {rate > 0 ? ` · Bs ${(Number(nextDue.amount) * rate).toFixed(2)}` : ""}
+              </p>
+            </>
+          ) : (
+            <p className="mt-3 text-[15px] text-mute">Sin pendientes</p>
+          )}
+        </div>
       </div>
 
-      {/* Alerta + metodos de pago */}
+      {/* Métodos de pago */}
       {pendingTotal > 0 && (
-        <Card className="border-primary/20 bg-primary/5">
-          <CardContent className="p-4">
-            <p className="font-medium">Tienes {pendingInvoices.length} cuota{pendingInvoices.length > 1 ? "s" : ""} pendiente{pendingInvoices.length > 1 ? "s" : ""}</p>
-            <p className="text-sm text-muted-foreground mb-3">
-              Total: ${pendingTotal.toFixed(2)}{rate > 0 ? ` (Bs ${pendingTotalBs.toFixed(2)})` : ""}
-            </p>
-            <div className="flex flex-wrap gap-2">
-              <div className="inline-flex items-center gap-1.5 bg-white/80 rounded-lg px-3 py-1.5 text-xs font-medium border">
-                <span className="h-2 w-2 rounded-full bg-blue-500" />
-                Debito Inmediato (Bs)
-              </div>
-              <div className="inline-flex items-center gap-1.5 bg-white/80 rounded-lg px-3 py-1.5 text-xs font-medium border">
-                <span className="h-2 w-2 rounded-full bg-purple-500" />
-                Stripe (USD)
-              </div>
-              <div className="inline-flex items-center gap-1.5 bg-white/80 rounded-lg px-3 py-1.5 text-xs font-medium border">
-                <span className="h-2 w-2 rounded-full bg-emerald-500" />
-                Transferencia + comprobante
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        <div className="rounded-2xl bg-ink text-bone p-6 md:p-7">
+          <p className="font-meta text-sand">MÉTODOS DISPONIBLES</p>
+          <p className="mt-3 font-display text-[20px] leading-tight">
+            Tienes {pendingInvoices.length} cuota{pendingInvoices.length > 1 ? "s" : ""}{" "}
+            <em className="font-editorial text-sand">pendiente{pendingInvoices.length > 1 ? "s" : ""}</em>
+          </p>
+          <p className="mt-1 text-[13px] text-bone/60">
+            Total: ${pendingTotal.toFixed(2)}{rate > 0 ? ` (Bs ${pendingTotalBs.toFixed(2)})` : ""}
+          </p>
+          <div className="mt-5 flex flex-wrap gap-2">
+            {[
+              "Débito Inmediato (Bs)",
+              "Stripe (USD)",
+              "Transferencia + comprobante",
+            ].map((method) => (
+              <span key={method} className="font-meta bg-bone/5 border border-bone/10 text-bone/80 px-3 py-1.5 rounded-md">
+                {method.toUpperCase()}
+              </span>
+            ))}
+          </div>
+        </div>
       )}
 
       {/* Historial */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">Historial de cuotas</CardTitle>
-          <CardDescription>{invoices.length} cuotas registradas</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-3">
+      <div className="rounded-2xl bg-card border border-border p-6">
+        <div className="flex items-center justify-between mb-5">
+          <div>
+            <p className="font-meta text-mute">HISTORIAL</p>
+            <p className="mt-2 text-[15px] font-medium text-ink">
+              {invoices.length} cuota{invoices.length !== 1 ? "s" : ""} registrada{invoices.length !== 1 ? "s" : ""}
+            </p>
+          </div>
+        </div>
+        <div className="space-y-3">
           {invoices.length === 0 ? (
-            <p className="py-4 text-center text-sm text-muted-foreground">No hay cuotas registradas</p>
+            <p className="py-6 text-center text-[13px] text-mute">No hay cuotas registradas</p>
           ) : (
             invoices.map((invoice) => (
               <InvoiceRow key={invoice.id} invoice={invoice} rate={rate} />
             ))
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
-      {/* Desglose dual currency */}
+      {/* Desglose */}
       {feeBreakdown.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">Desglose de cuota mensual</CardTitle>
-            <CardDescription>Referencia en USD — equivalente en Bs a tasa BCV</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {feeBreakdown.map((fee) => (
-                <div key={fee.id} className="flex items-center justify-between text-sm">
-                  <span>{fee.concept}</span>
-                  <div className="text-right">
-                    <span className="font-medium">${Number(fee.amount).toFixed(2)}</span>
-                    {rate > 0 && (
-                      <span className="text-xs text-muted-foreground ml-2">
-                        Bs {(Number(fee.amount) * rate).toFixed(2)}
-                      </span>
-                    )}
-                  </div>
-                </div>
-              ))}
-              <div className="border-t pt-3 flex items-center justify-between font-medium">
-                <span>Total</span>
+        <div className="rounded-2xl bg-card border border-border p-6">
+          <p className="font-meta text-mute">DESGLOSE MENSUAL</p>
+          <p className="mt-2 text-[15px] font-medium text-ink mb-5">
+            Referencia en USD · equivalente en Bs a tasa BCV
+          </p>
+          <div className="space-y-0">
+            {feeBreakdown.map((fee) => (
+              <div key={fee.id} className="flex items-center justify-between py-3 border-b border-border last:border-0">
+                <span className="text-[14px] text-mute">{fee.concept}</span>
                 <div className="text-right">
-                  <span>${feeTotal.toFixed(2)}</span>
+                  <span className="text-[14px] font-medium text-ink">${Number(fee.amount).toFixed(2)}</span>
                   {rate > 0 && (
-                    <span className="text-sm text-muted-foreground ml-2">
-                      Bs {(feeTotal * rate).toFixed(2)}
+                    <span className="font-meta text-mute ml-3">
+                      BS {(Number(fee.amount) * rate).toFixed(2)}
                     </span>
                   )}
                 </div>
               </div>
+            ))}
+            <div className="flex items-center justify-between py-4 mt-1">
+              <span className="text-[14px] font-medium text-ink">Total</span>
+              <div className="text-right">
+                <span className="font-display text-[20px] text-ink">${feeTotal.toFixed(2)}</span>
+                {rate > 0 && (
+                  <span className="font-meta text-mute ml-3">BS {(feeTotal * rate).toFixed(2)}</span>
+                )}
+              </div>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       )}
     </div>
   );

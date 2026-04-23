@@ -1,21 +1,19 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentProfile, getEffectiveRole } from "@/lib/queries";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { UnitManagerDialog } from "./unit-manager-dialog";
 import type { OwnershipMode } from "@/types/database";
 
-const modeLabels: Record<OwnershipMode, string> = {
-  owner_occupied: "Propietario",
-  tenant_with_active_owner: "Propietario + inquilino",
-  tenant_only: "Solo inquilino",
+const MODE_LABEL: Record<OwnershipMode, string> = {
+  owner_occupied: "PROPIETARIO",
+  tenant_with_active_owner: "PROP + INQUILINO",
+  tenant_only: "SOLO INQUILINO",
 };
 
-const modeVariants: Record<OwnershipMode, "default" | "secondary" | "outline"> = {
-  owner_occupied: "default",
-  tenant_with_active_owner: "secondary",
-  tenant_only: "outline",
+const MODE_TONE: Record<OwnershipMode, string> = {
+  owner_occupied: "bg-ink text-bone",
+  tenant_with_active_owner: "bg-steel text-bone",
+  tenant_only: "bg-sand text-ink",
 };
 
 export default async function AdminUnitsPage() {
@@ -34,7 +32,6 @@ export default async function AdminUnitsPage() {
     .eq("organization_id", profile.organization_id)
     .order("unit_number");
 
-  // Para cada unidad: miembros activos + invitaciones pendientes + códigos activos
   const unitIds = (units ?? []).map((u) => u.id);
 
   const [membersRes, invitesRes, codesRes] = await Promise.all([
@@ -78,24 +75,23 @@ export default async function AdminUnitsPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight" style={{ fontFamily: "Outfit, sans-serif" }}>
-          Gestión de unidades
+        <span className="font-meta-loose text-steel">GESTIÓN · UNIDADES</span>
+        <h1 className="mt-4 font-display text-[clamp(1.75rem,3.5vw,2.5rem)] leading-[1.1] tracking-[-0.03em] text-ink">
+          Configura <em className="font-editorial text-steel">ocupación</em> y acceso
         </h1>
-        <p className="text-muted-foreground">
-          Configura el modo de ocupación, invita residentes por email o genera códigos de acceso.
+        <p className="mt-3 text-[15px] text-mute">
+          Modo de ocupación, invitaciones por email y códigos físicos.
         </p>
       </div>
 
       {(units ?? []).length === 0 && (
-        <Card>
-          <CardContent className="p-8 text-center">
-            <p className="text-sm text-muted-foreground">
-              No hay unidades todavía. Agrega una desde el panel principal.
-            </p>
-          </CardContent>
-        </Card>
+        <div className="rounded-2xl bg-card border border-border py-12 text-center">
+          <p className="text-[14px] text-mute">
+            No hay unidades todavía. Agrégalas desde el panel principal.
+          </p>
+        </div>
       )}
 
       <div className="grid gap-4 md:grid-cols-2">
@@ -108,47 +104,57 @@ export default async function AdminUnitsPage() {
           const tenants = members.filter((m) => m.role === "tenant");
 
           return (
-            <Card key={unit.id}>
-              <CardHeader className="pb-3">
-                <div className="flex items-start justify-between gap-2">
+            <div key={unit.id} className="rounded-2xl bg-card border border-border overflow-hidden">
+              <div className="p-5 border-b border-border">
+                <div className="flex items-start justify-between gap-3">
                   <div>
-                    <CardTitle className="text-base">
+                    <p className="font-meta text-mute">
+                      {unit.type.toUpperCase()}
+                      {unit.floor != null && ` · PISO ${unit.floor}`}
+                    </p>
+                    <h2 className="mt-2 font-display text-[22px] leading-tight text-ink">
                       Apto {unit.unit_number}
-                      {unit.block && <span className="text-muted-foreground text-sm"> · {unit.block}</span>}
-                    </CardTitle>
-                    <CardDescription className="text-xs mt-1">
-                      {unit.type} {unit.floor != null && `· piso ${unit.floor}`}
-                    </CardDescription>
+                      {unit.block && <span className="text-mute"> · {unit.block}</span>}
+                    </h2>
                   </div>
-                  <Badge variant={modeVariants[mode]}>{modeLabels[mode]}</Badge>
+                  <span className={`font-meta px-2.5 py-1 rounded-md shrink-0 ${MODE_TONE[mode]}`}>
+                    {MODE_LABEL[mode]}
+                  </span>
                 </div>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="space-y-1.5 text-sm">
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs font-semibold text-muted-foreground uppercase w-20">
-                      Propietario
-                    </span>
-                    <span className="truncate">
+              </div>
+
+              <div className="p-5 space-y-4">
+                <div className="space-y-2.5">
+                  <div className="flex items-baseline gap-3">
+                    <span className="font-meta text-mute w-24 shrink-0">PROPIETARIO</span>
+                    <span className="text-[13.5px] text-ink truncate">
                       {owners[0]
-                        ? `${(owners[0].profiles as { full_name?: string; email?: string } | null)?.full_name || (owners[0].profiles as { full_name?: string; email?: string } | null)?.email}`
-                        : <span className="text-muted-foreground">—</span>}
+                        ? (owners[0].profiles as { full_name?: string; email?: string } | null)
+                            ?.full_name ||
+                          (owners[0].profiles as { full_name?: string; email?: string } | null)
+                            ?.email
+                        : <span className="text-mute">—</span>}
                     </span>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs font-semibold text-muted-foreground uppercase w-20">
-                      Inquilino
-                    </span>
-                    <span className="truncate">
+                  <div className="flex items-baseline gap-3">
+                    <span className="font-meta text-mute w-24 shrink-0">INQUILINO</span>
+                    <span className="text-[13.5px] text-ink truncate">
                       {tenants[0]
-                        ? `${(tenants[0].profiles as { full_name?: string; email?: string } | null)?.full_name || (tenants[0].profiles as { full_name?: string; email?: string } | null)?.email}`
-                        : <span className="text-muted-foreground">—</span>}
+                        ? (tenants[0].profiles as { full_name?: string; email?: string } | null)
+                            ?.full_name ||
+                          (tenants[0].profiles as { full_name?: string; email?: string } | null)
+                            ?.email
+                        : <span className="text-mute">—</span>}
                     </span>
                   </div>
                   {(invites.length > 0 || codes.length > 0) && (
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                      {invites.length > 0 && <span>{invites.length} invitación(es) pendiente(s)</span>}
-                      {codes.length > 0 && <span>· {codes.length} código(s) activo(s)</span>}
+                    <div className="flex items-baseline gap-3 flex-wrap">
+                      <span className="font-meta text-mute w-24 shrink-0">PENDIENTES</span>
+                      <span className="font-meta text-sand">
+                        {invites.length > 0 && `${invites.length} INVITACIÓN(ES)`}
+                        {invites.length > 0 && codes.length > 0 && " · "}
+                        {codes.length > 0 && `${codes.length} CÓDIGO(S)`}
+                      </span>
                     </div>
                   )}
                 </div>
@@ -180,8 +186,8 @@ export default async function AdminUnitsPage() {
                     expires_at: c.expires_at,
                   }))}
                 />
-              </CardContent>
-            </Card>
+              </div>
+            </div>
           );
         })}
       </div>

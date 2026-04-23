@@ -32,7 +32,7 @@ export default async function DashboardLayout({
   const viewingAs = profile?.view_as;
 
   return (
-    <div className="flex h-screen">
+    <div className="flex h-screen bg-background">
       <Sidebar isAdmin={isAdmin} />
       <div className="flex flex-1 flex-col overflow-hidden">
         <Header
@@ -40,13 +40,20 @@ export default async function DashboardLayout({
           isSuperAdmin={isSuperAdmin}
           viewingAs={viewingAs ?? null}
         />
-        <main className="flex-1 overflow-y-auto pb-20 md:pb-0">
-          {isSuperAdmin && viewingAs && (
-            <div className={`px-4 py-1.5 text-center text-xs font-semibold text-white ${viewingAs === "admin" ? "bg-primary" : "bg-blue-600"}`}>
-              Viendo como: {viewingAs === "admin" ? "Admin" : "Residente"} — <a href="/super-admin" className="underline">Volver a Super Admin</a>
-            </div>
-          )}
-          <div className="mx-auto max-w-6xl p-4 md:p-6">
+        {isSuperAdmin && viewingAs && (
+          <div
+            className={`px-5 py-2 text-center font-meta ${
+              viewingAs === "admin" ? "bg-sand text-ink" : "bg-steel text-bone"
+            }`}
+          >
+            VIENDO COMO · {viewingAs === "admin" ? "ADMIN" : "RESIDENTE"}{" "}
+            <a href="/super-admin" className="underline underline-offset-2 ml-2">
+              VOLVER A SUPER ADMIN
+            </a>
+          </div>
+        )}
+        <main className="flex-1 overflow-y-auto pb-24 md:pb-0">
+          <div className="mx-auto max-w-6xl px-5 py-6 md:px-10 md:py-10">
             {children}
           </div>
         </main>

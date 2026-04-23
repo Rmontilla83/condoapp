@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1120" height="288" viewBox="0 0 280 72" shape-rendering="geometricPrecision">
+  <title>Atryum A2 — fondo oscuro (sand)</title>
+  <rect width="280" height="72" fill="#0E1116"></rect>
+  <g transform="translate(4 4)" fill="#D4A574">
+    <polygon points="0,64 10,64 36,0 28,0"></polygon>
+    <polygon points="54,64 64,64 36,0 28,0"></polygon>
+    <rect x="10" y="40" width="16" height="6"></rect>
+    <rect x="38" y="40" width="16" height="6"></rect>
+  </g>
+  <text x="86" y="52" font-family="Inter,system-ui,sans-serif" font-weight="500" font-size="52" letter-spacing="-1" fill="#F5F2EC">atryum</text>
+</svg>

@@ -1,15 +1,13 @@
 import { getCurrentProfile } from "@/lib/queries";
 import { createClient } from "@/lib/supabase/server";
-import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { NewPassDialog } from "./new-pass-dialog";
 import type { AccessPass } from "@/types/database";
 
-const statusConfig: Record<string, { label: string; className: string }> = {
-  active: { label: "Activo", className: "border-emerald-300 text-emerald-700 bg-emerald-50" },
-  used: { label: "Usado", className: "border-blue-300 text-blue-700 bg-blue-50" },
-  expired: { label: "Expirado", className: "border-gray-300 text-gray-700 bg-gray-50" },
-  cancelled: { label: "Cancelado", className: "border-red-300 text-red-700 bg-red-50" },
+const statusConfig: Record<string, { label: string; tag: string }> = {
+  active: { label: "ACTIVO", tag: "bg-steel/10 text-steel" },
+  used: { label: "USADO", tag: "bg-mute/15 text-mute" },
+  expired: { label: "EXPIRADO", tag: "bg-mute/15 text-mute" },
+  cancelled: { label: "CANCELADO", tag: "bg-destructive/10 text-destructive" },
 };
 
 export default async function VisitantesPage() {
@@ -26,7 +24,6 @@ export default async function VisitantesPage() {
 
   const passes = (data ?? []) as AccessPass[];
 
-  // Mark expired passes
   const now = new Date();
   const displayPasses = passes.map((p) => {
     if (p.status === "active" && new Date(p.valid_until) < now) {
@@ -36,91 +33,89 @@ export default async function VisitantesPage() {
   });
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="space-y-8">
+      <div className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight" style={{ fontFamily: "Outfit, sans-serif" }}>
-            Visitantes
+          <span className="font-meta-loose text-steel">ACCESO · VISITANTES</span>
+          <h1 className="mt-4 font-display text-[clamp(1.75rem,3.5vw,2.5rem)] leading-[1.1] tracking-[-0.03em] text-ink">
+            Genera <em className="font-editorial text-steel">QR</em> de acceso
           </h1>
-          <p className="text-muted-foreground">Genera QR de acceso para tus visitantes</p>
         </div>
         <NewPassDialog />
       </div>
 
       {/* How it works */}
-      <Card>
-        <CardContent className="p-5">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {[
-              { step: "1", title: "Registra", desc: "Ingresa nombre y cedula de tu visitante" },
-              { step: "2", title: "Comparte", desc: "Envia el QR por WhatsApp a tu visitante" },
-              { step: "3", title: "Acceso", desc: "El vigilante escanea y verifica al instante" },
-            ].map((s) => (
-              <div key={s.step} className="flex items-start gap-3">
-                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary text-sm font-bold">
-                  {s.step}
-                </div>
-                <div>
-                  <p className="text-sm font-semibold">{s.title}</p>
-                  <p className="text-xs text-muted-foreground">{s.desc}</p>
-                </div>
+      <div className="rounded-2xl bg-ink text-bone p-6 md:p-7">
+        <p className="font-meta text-sand">CÓMO FUNCIONA</p>
+        <div className="mt-5 grid grid-cols-1 md:grid-cols-3 gap-5">
+          {[
+            { step: "01", title: "Registra", desc: "Ingresa nombre y cédula de tu visitante." },
+            { step: "02", title: "Comparte", desc: "Envía el QR por WhatsApp a tu visitante." },
+            { step: "03", title: "Acceso", desc: "El vigilante escanea y verifica al instante." },
+          ].map((s) => (
+            <div key={s.step} className="flex items-start gap-3">
+              <span className="font-meta text-sand shrink-0">{s.step}</span>
+              <div>
+                <p className="font-display text-[17px] leading-tight text-bone">{s.title}</p>
+                <p className="mt-1.5 text-[13px] text-bone/60 leading-relaxed">{s.desc}</p>
               </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+            </div>
+          ))}
+        </div>
+      </div>
 
       {/* Passes list */}
       {displayPasses.length === 0 ? (
-        <Card>
-          <CardContent className="py-12 text-center">
-            <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 text-primary">
-              <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 4.875c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5A1.125 1.125 0 013.75 9.375v-4.5z" />
-              </svg>
-            </div>
-            <p className="text-muted-foreground">No has generado pases de visitante aun</p>
-            <p className="text-xs text-muted-foreground mt-1">Toca "Nuevo visitante" para crear tu primer QR</p>
-          </CardContent>
-        </Card>
+        <div className="rounded-2xl bg-card border border-border py-16 text-center">
+          <p className="text-[14px] text-mute">No has generado pases de visitante aún.</p>
+          <p className="mt-2 font-meta text-mute">
+            TOCA &ldquo;NUEVO VISITANTE&rdquo; PARA CREAR TU PRIMER QR
+          </p>
+        </div>
       ) : (
-        <div className="space-y-3">
-          <p className="text-sm font-semibold text-muted-foreground">{displayPasses.length} pases recientes</p>
-          {displayPasses.map((pass) => {
-            const config = statusConfig[pass.status] ?? statusConfig.expired;
-            return (
-              <Card key={pass.id}>
-                <CardContent className="p-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                        <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
-                        </svg>
-                      </div>
-                      <div>
-                        <p className="text-sm font-semibold">{pass.visitor_name}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {pass.visitor_id_number}
-                          {pass.unit_number ? ` → Apto ${pass.unit_number}` : ""}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <div className="text-right hidden sm:block">
-                        <p className="text-xs text-muted-foreground">
-                          {new Date(pass.created_at).toLocaleDateString("es", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
-                        </p>
-                      </div>
-                      <Badge variant="outline" className={config.className}>
-                        {config.label}
-                      </Badge>
+        <div>
+          <p className="font-meta text-mute mb-4">
+            {displayPasses.length} PASE{displayPasses.length !== 1 ? "S" : ""} RECIENTE{displayPasses.length !== 1 ? "S" : ""}
+          </p>
+          <div className="space-y-3">
+            {displayPasses.map((pass) => {
+              const config = statusConfig[pass.status] ?? statusConfig.expired;
+              return (
+                <div
+                  key={pass.id}
+                  className="rounded-2xl bg-card border border-border p-5 flex items-center justify-between gap-4"
+                >
+                  <div className="flex items-center gap-4 min-w-0">
+                    <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-ink text-bone shrink-0">
+                      <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
+                      </svg>
+                    </span>
+                    <div className="min-w-0">
+                      <p className="text-[14px] font-medium text-ink truncate">{pass.visitor_name}</p>
+                      <p className="mt-0.5 font-meta text-mute truncate">
+                        {pass.visitor_id_number}
+                        {pass.unit_number ? ` · APTO ${pass.unit_number}` : ""}
+                      </p>
                     </div>
                   </div>
-                </CardContent>
-              </Card>
-            );
-          })}
+                  <div className="flex items-center gap-3 shrink-0">
+                    <span className="font-meta text-mute hidden sm:inline">
+                      {new Date(pass.created_at)
+                        .toLocaleDateString("es", {
+                          day: "numeric",
+                          month: "short",
+                        })
+                        .toUpperCase()}
+                    </span>
+                    <span className={`font-meta px-2.5 py-1 rounded-md ${config.tag}`}>
+                      {config.label}
+                    </span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         </div>
       )}
     </div>

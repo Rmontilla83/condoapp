@@ -1,12 +1,10 @@
 import { getCurrentProfile, getEffectiveRole, getAnnouncements } from "@/lib/queries";
-import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { NewAnnouncementDialog } from "./new-announcement-dialog";
 
 const priorityConfig = {
-  normal: { label: "Info", className: "border-blue-300 text-blue-700 bg-blue-50" },
-  important: { label: "Importante", className: "border-amber-300 text-amber-700 bg-amber-50" },
-  urgent: { label: "Urgente", className: "border-red-300 text-red-700 bg-red-50" },
+  normal: { label: "INFO", dot: "bg-steel", tag: "bg-steel/10 text-steel" },
+  important: { label: "IMPORTANTE", dot: "bg-sand", tag: "bg-sand/15 text-sand" },
+  urgent: { label: "URGENTE", dot: "bg-destructive", tag: "bg-destructive/10 text-destructive" },
 };
 
 export default async function ComunicadosPage() {
@@ -16,11 +14,13 @@ export default async function ComunicadosPage() {
   const announcements = await getAnnouncements(profile.organization_id);
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="space-y-8">
+      <div className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight" style={{ fontFamily: "Outfit, sans-serif" }}>Comunicados</h1>
-          <p className="text-muted-foreground">Noticias y avisos de tu comunidad</p>
+          <span className="font-meta-loose text-steel">COMUNICADOS</span>
+          <h1 className="mt-4 font-display text-[clamp(1.75rem,3.5vw,2.5rem)] leading-[1.1] tracking-[-0.03em] text-ink">
+            Noticias de tu <em className="font-editorial text-steel">comunidad</em>
+          </h1>
         </div>
         {(getEffectiveRole(profile) === "admin" || getEffectiveRole(profile) === "super_admin") && (
           <NewAnnouncementDialog />
@@ -28,59 +28,51 @@ export default async function ComunicadosPage() {
       </div>
 
       {announcements.length === 0 ? (
-        <Card>
-          <CardContent className="py-12 text-center">
-            <p className="text-muted-foreground">No hay comunicados aun</p>
-          </CardContent>
-        </Card>
+        <div className="rounded-2xl bg-card border border-border py-16 text-center">
+          <p className="text-[14px] text-mute">No hay comunicados aún.</p>
+        </div>
       ) : (
         <div className="space-y-4">
           {announcements.map((announcement) => {
-            const config = priorityConfig[announcement.priority as keyof typeof priorityConfig] ?? priorityConfig.normal;
-            const authorName = announcement.profiles?.full_name ?? "Administracion";
+            const config =
+              priorityConfig[announcement.priority as keyof typeof priorityConfig] ??
+              priorityConfig.normal;
+            const authorName = announcement.profiles?.full_name ?? "Administración";
             return (
-              <Card key={announcement.id} className={
-                announcement.priority === "urgent" ? "border-red-200 bg-red-50/30" :
-                announcement.priority === "important" ? "border-amber-200 bg-amber-50/30" : ""
-              }>
-                <CardContent className="p-4">
-                  <div className="flex items-start gap-3">
-                    <div className={`mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${
-                      announcement.priority === "urgent" ? "bg-red-100" :
-                      announcement.priority === "important" ? "bg-amber-100" : "bg-blue-100"
-                    }`}>
-                      {announcement.priority === "urgent" ? (
-                        <svg className="h-4 w-4 text-red-600" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
-                        </svg>
-                      ) : announcement.priority === "important" ? (
-                        <svg className="h-4 w-4 text-amber-600" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
-                        </svg>
-                      ) : (
-                        <svg className="h-4 w-4 text-blue-600" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z" />
-                        </svg>
-                      )}
+              <article
+                key={announcement.id}
+                className="rounded-2xl bg-card border border-border p-5 md:p-6"
+              >
+                <div className="flex items-start gap-4">
+                  <span className={`mt-2 h-2 w-2 rounded-full shrink-0 ${config.dot}`} />
+                  <div className="flex-1 min-w-0">
+                    <div className="flex flex-wrap items-center gap-2.5 mb-2">
+                      <h3 className="font-display text-[18px] leading-tight tracking-[-0.02em] text-ink">
+                        {announcement.title}
+                      </h3>
+                      <span className={`font-meta px-2 py-0.5 rounded-md ${config.tag}`}>
+                        {config.label}
+                      </span>
                     </div>
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-1">
-                        <h3 className="font-medium">{announcement.title}</h3>
-                        <Badge variant="outline" className={config.className}>
-                          {config.label}
-                        </Badge>
-                      </div>
-                      <p className="text-sm text-muted-foreground leading-relaxed mb-2">
-                        {announcement.content}
-                      </p>
-                      <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                        <span>{authorName}</span>
-                        <span>{new Date(announcement.published_at).toLocaleDateString("es")}</span>
-                      </div>
+                    <p className="text-[14.5px] text-ink/80 leading-relaxed">
+                      {announcement.content}
+                    </p>
+                    <div className="mt-4 flex items-center gap-3 font-meta text-mute">
+                      <span>{authorName.toUpperCase()}</span>
+                      <span aria-hidden="true">·</span>
+                      <span>
+                        {new Date(announcement.published_at)
+                          .toLocaleDateString("es", {
+                            day: "numeric",
+                            month: "short",
+                            year: "numeric",
+                          })
+                          .toUpperCase()}
+                      </span>
                     </div>
                   </div>
-                </CardContent>
-              </Card>
+                </div>
+              </article>
             );
           })}
         </div>

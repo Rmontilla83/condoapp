@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { AtryumLogo } from "@/components/brand/atryum-logo";
 
 // Onboarding simple para usuarios logueados sin organization_id.
 // NO pedimos invite_code ni selector de unidad (eso es inseguro).
@@ -20,8 +20,6 @@ export function Onboarding({ userEmail }: { userEmail: string }) {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   useEffect(() => {
-    // Intentar resolver invitación pendiente — el trigger debería haberlo hecho
-    // en signup, pero ejecutamos la RPC de nuevo como defensa por si se perdió.
     const supabase = createClient();
 
     async function tryResolve() {
@@ -67,83 +65,95 @@ export function Onboarding({ userEmail }: { userEmail: string }) {
 
   if (checking) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#FAFBFC] p-4">
-        <p className="text-muted-foreground">Verificando acceso...</p>
+      <div className="flex min-h-screen items-center justify-center bg-bone">
+        <p className="font-meta text-mute">VERIFICANDO ACCESO...</p>
       </div>
     );
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[#FAFBFC] p-4">
-      <div className="w-full max-w-md space-y-6">
-        <div className="text-center">
-          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-[#0F172A]">
-            <svg
-              viewBox="0 0 24 24"
-              className="h-6 w-6 text-[#2DD4BF]"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
-            </svg>
+    <div className="min-h-screen flex flex-col bg-bone">
+      <header className="px-6 py-6 md:px-10 md:py-8">
+        <AtryumLogo variant="horizontal" tone="ink" className="h-6" />
+      </header>
+
+      <main className="flex-1 flex items-center justify-center px-5 pb-12">
+        <div className="w-full max-w-md">
+          <div className="mb-8">
+            <span className="font-meta-loose text-steel">PRIMER ACCESO</span>
+            <h1 className="mt-5 font-display text-[clamp(1.75rem,4vw,2.5rem)] leading-[1.1] tracking-[-0.03em] text-ink">
+              Bienvenido a <em className="font-editorial text-steel">Atryum</em>.
+            </h1>
+            <p className="mt-3 text-[15px] text-mute leading-relaxed">
+              El administrador de tu condominio te invitó por email o te dio un código.
+              Elige la opción que aplique.
+            </p>
+            <p className="mt-4 font-meta text-mute">
+              SESIÓN · {userEmail.toUpperCase()}
+            </p>
           </div>
-          <h1 className="text-2xl font-bold" style={{ fontFamily: "Outfit, sans-serif" }}>
-            Bienvenido a Atryum
-          </h1>
-          <p className="mt-1 text-muted-foreground text-sm">{userEmail}</p>
-        </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>¿Cómo vas a acceder?</CardTitle>
-            <CardDescription>
-              El administrador de tu condominio te invitó por email o te dio un código. Elige la opción que aplique.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <Button
+          <div className="space-y-3">
+            <button
               onClick={() => router.push("/join")}
-              className="w-full justify-start h-auto py-3"
-              size="lg"
+              className="group w-full rounded-2xl bg-card border border-border p-5 text-left hover:border-ink/20 transition-colors btn-press"
             >
-              <div className="flex flex-col items-start">
-                <span className="font-semibold">Tengo un código de acceso</span>
-                <span className="text-xs opacity-80">Ej: ABC1-2026-X7K2</span>
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-[15px] font-medium text-ink">Tengo un código</p>
+                  <p className="mt-1 font-meta text-mute">EJ: ABC1-2026-X7K2</p>
+                </div>
+                <svg className="h-4 w-4 text-mute group-hover:text-ink transition-colors" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+                </svg>
               </div>
-            </Button>
+            </button>
 
-            <Button
+            <button
               onClick={retryInvitations}
-              variant="outline"
-              className="w-full justify-start h-auto py-3"
-              size="lg"
               disabled={retrying}
+              className="group w-full rounded-2xl bg-card border border-border p-5 text-left hover:border-ink/20 transition-colors btn-press disabled:opacity-60"
             >
-              <div className="flex flex-col items-start">
-                <span className="font-semibold">
-                  {retrying ? "Buscando..." : "Fui invitado por email"}
-                </span>
-                <span className="text-xs opacity-80">
-                  Revisa si hay una invitación pendiente para {userEmail}
-                </span>
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-[15px] font-medium text-ink">
+                    {retrying ? "Buscando..." : "Fui invitado por email"}
+                  </p>
+                  <p className="mt-1 font-meta text-mute">
+                    REVISAR INVITACIONES PENDIENTES
+                  </p>
+                </div>
+                <svg className="h-4 w-4 text-mute group-hover:text-ink transition-colors" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+                </svg>
               </div>
-            </Button>
+            </button>
 
             {errorMsg && (
-              <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">
-                {errorMsg} Pide al administrador que te genere un código o te reenvíe la invitación.
+              <div className="rounded-xl border border-destructive/30 bg-destructive/5 p-4">
+                <p className="text-[13px] text-destructive">
+                  {errorMsg} Pide al administrador que te genere un código o te reenvíe la invitación.
+                </p>
               </div>
             )}
+          </div>
 
-            <p className="text-xs text-muted-foreground text-center pt-2">
-              Si nada aplica, contacta al administrador de tu condominio para que te invite.
-            </p>
-          </CardContent>
-        </Card>
-      </div>
+          <div className="mt-8 pt-6 border-t border-border text-center">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={async () => {
+                const supabase = createClient();
+                await supabase.auth.signOut();
+                router.push("/login");
+              }}
+              className="text-[13px] text-mute hover:text-ink"
+            >
+              Cerrar sesión
+            </Button>
+          </div>
+        </div>
+      </main>
     </div>
   );
 }

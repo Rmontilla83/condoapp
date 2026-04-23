@@ -1,6 +1,5 @@
 import { getCurrentProfile, getEffectiveRole } from "@/lib/queries";
 import { createClient } from "@/lib/supabase/server";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { NewExpenseDialog } from "./new-expense-dialog";
 
 export default async function FinanzasPage() {
@@ -37,29 +36,29 @@ export default async function FinanzasPage() {
     .filter((i) => i.status === "pending" || i.status === "overdue")
     .reduce((s, i) => s + Number(i.amount), 0);
 
-  // Group expenses by category
   const byCategory: Record<string, number> = {};
   for (const e of expenses) {
     byCategory[e.category] = (byCategory[e.category] ?? 0) + Number(e.amount);
   }
   const categories = Object.entries(byCategory).sort((a, b) => b[1] - a[1]);
 
-  const categoryColors: Record<string, string> = {
-    Mantenimiento: "bg-amber-500",
-    Limpieza: "bg-blue-500",
-    Seguridad: "bg-red-500",
-    Servicios: "bg-purple-500",
+  const categoryAccent: Record<string, string> = {
+    Mantenimiento: "bg-sand",
+    Limpieza: "bg-steel",
+    Seguridad: "bg-destructive",
+    Servicios: "bg-mute",
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="space-y-8">
+      <div className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight" style={{ fontFamily: "Outfit, sans-serif" }}>
-            Transparencia financiera
+          <span className="font-meta-loose text-steel">FINANZAS</span>
+          <h1 className="mt-4 font-display text-[clamp(1.75rem,3.5vw,2.5rem)] leading-[1.1] tracking-[-0.03em] text-ink">
+            Transparencia <em className="font-editorial text-steel">financiera</em>
           </h1>
-          <p className="text-muted-foreground">
-            Aqui puedes ver exactamente en que se gasta el dinero de tu condominio
+          <p className="mt-3 text-[15px] text-mute">
+            Exactamente en qué se gasta el dinero de tu condominio.
           </p>
         </div>
         {(getEffectiveRole(profile) === "admin" || getEffectiveRole(profile) === "super_admin") && (
@@ -67,113 +66,121 @@ export default async function FinanzasPage() {
         )}
       </div>
 
-      {/* Summary cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card>
-          <CardContent className="p-4">
-            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Recaudado</p>
-            <p className="text-2xl font-extrabold text-emerald-600 mt-1" style={{ fontFamily: "Outfit, sans-serif" }}>
-              ${totalIncome.toFixed(2)}
-            </p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Gastos</p>
-            <p className="text-2xl font-extrabold text-red-600 mt-1" style={{ fontFamily: "Outfit, sans-serif" }}>
-              ${totalExpenses.toFixed(2)}
-            </p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Balance</p>
-            <p className={`text-2xl font-extrabold mt-1 ${balance >= 0 ? "text-primary" : "text-red-600"}`} style={{ fontFamily: "Outfit, sans-serif" }}>
-              ${balance.toFixed(2)}
-            </p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Por cobrar</p>
-            <p className="text-2xl font-extrabold text-amber-600 mt-1" style={{ fontFamily: "Outfit, sans-serif" }}>
-              ${totalPending.toFixed(2)}
-            </p>
-          </CardContent>
-        </Card>
+      {/* KPI cards */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <div className="rounded-2xl bg-card border border-border p-5">
+          <p className="font-meta text-mute">RECAUDADO</p>
+          <p className="mt-3 font-display text-[28px] leading-none tracking-[-0.02em] text-steel">
+            ${totalIncome.toFixed(2)}
+          </p>
+        </div>
+        <div className="rounded-2xl bg-card border border-border p-5">
+          <p className="font-meta text-mute">GASTOS</p>
+          <p className="mt-3 font-display text-[28px] leading-none tracking-[-0.02em] text-ink">
+            ${totalExpenses.toFixed(2)}
+          </p>
+        </div>
+        <div className="rounded-2xl bg-card border border-border p-5">
+          <p className="font-meta text-mute">BALANCE</p>
+          <p
+            className={`mt-3 font-display text-[28px] leading-none tracking-[-0.02em] ${
+              balance >= 0 ? "text-ink" : "text-destructive"
+            }`}
+          >
+            ${balance.toFixed(2)}
+          </p>
+        </div>
+        <div className="rounded-2xl bg-card border border-border p-5">
+          <p className="font-meta text-mute">POR COBRAR</p>
+          <p className="mt-3 font-display text-[28px] leading-none tracking-[-0.02em] text-sand">
+            ${totalPending.toFixed(2)}
+          </p>
+        </div>
       </div>
 
-      {/* Expenses by category — visual bar chart */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">Gastos por categoria</CardTitle>
-          <CardDescription>Distribucion del gasto total</CardDescription>
-        </CardHeader>
-        <CardContent>
-          {categories.length === 0 ? (
-            <p className="text-sm text-muted-foreground py-4 text-center">No hay gastos registrados</p>
-          ) : (
-            <div className="space-y-4">
-              {categories.map(([cat, amount]) => {
-                const pct = totalExpenses > 0 ? (amount / totalExpenses) * 100 : 0;
-                const color = categoryColors[cat] ?? "bg-gray-500";
-                return (
-                  <div key={cat}>
-                    <div className="flex items-center justify-between mb-1.5">
-                      <span className="text-sm font-medium">{cat}</span>
-                      <span className="text-sm font-bold">${amount.toFixed(2)}</span>
-                    </div>
-                    <div className="h-2.5 rounded-full bg-muted overflow-hidden">
-                      <div
-                        className={`h-full rounded-full ${color} transition-all duration-500`}
-                        style={{ width: `${pct}%` }}
-                      />
-                    </div>
-                    <p className="text-xs text-muted-foreground mt-0.5">{pct.toFixed(0)}% del total</p>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+      {/* Gastos por categoría */}
+      <div className="rounded-2xl bg-card border border-border p-6">
+        <p className="font-meta text-mute">GASTOS POR CATEGORÍA</p>
+        <p className="mt-2 text-[15px] font-medium text-ink mb-6">
+          Distribución del gasto total
+        </p>
 
-      {/* Detailed expense list */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">Detalle de gastos</CardTitle>
-          <CardDescription>Cada gasto documentado del condominio</CardDescription>
-        </CardHeader>
-        <CardContent>
-          {expenses.length === 0 ? (
-            <p className="text-sm text-muted-foreground py-4 text-center">No hay gastos registrados</p>
-          ) : (
-            <div className="space-y-0">
-              {expenses.map((expense, idx) => (
-                <div key={idx} className="flex items-center justify-between py-3 border-b border-border/50 last:border-0">
-                  <div className="flex items-center gap-3">
-                    <div className={`h-2 w-2 rounded-full ${categoryColors[expense.category] ?? "bg-gray-400"}`} />
+        {categories.length === 0 ? (
+          <p className="py-6 text-center text-[13px] text-mute">No hay gastos registrados</p>
+        ) : (
+          <div className="space-y-5">
+            {categories.map(([cat, amount]) => {
+              const pct = totalExpenses > 0 ? (amount / totalExpenses) * 100 : 0;
+              const color = categoryAccent[cat] ?? "bg-mute";
+              return (
+                <div key={cat}>
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-[14px] font-medium text-ink">{cat}</span>
                     <div>
-                      <p className="text-sm font-medium">{expense.description}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {expense.category} — {new Date(expense.expense_date).toLocaleDateString("es", { day: "numeric", month: "short", year: "numeric" })}
-                      </p>
+                      <span className="text-[14px] font-medium text-ink">${amount.toFixed(2)}</span>
+                      <span className="font-meta text-mute ml-3">{pct.toFixed(0)}%</span>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2 shrink-0">
-                    {expense.receipt_url && (
-                      <a href={expense.receipt_url} target="_blank" rel="noopener noreferrer" className="block h-8 w-8 rounded border overflow-hidden hover:opacity-80">
-                        <img src={expense.receipt_url} alt="Recibo" className="h-full w-full object-cover" />
-                      </a>
-                    )}
-                    <span className="text-sm font-bold text-red-600">-${Number(expense.amount).toFixed(2)}</span>
+                  <div className="h-1.5 rounded-full bg-cloud overflow-hidden">
+                    <div
+                      className={`h-full rounded-full ${color} transition-all duration-500`}
+                      style={{ width: `${pct}%` }}
+                    />
                   </div>
                 </div>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* Detalle */}
+      <div className="rounded-2xl bg-card border border-border p-6">
+        <p className="font-meta text-mute">DETALLE</p>
+        <p className="mt-2 text-[15px] font-medium text-ink mb-5">
+          Cada gasto documentado
+        </p>
+
+        {expenses.length === 0 ? (
+          <p className="py-6 text-center text-[13px] text-mute">No hay gastos registrados</p>
+        ) : (
+          <div className="space-y-0">
+            {expenses.map((expense, idx) => (
+              <div key={idx} className="flex items-center justify-between py-3.5 border-b border-border last:border-0">
+                <div className="flex items-center gap-3 min-w-0">
+                  <span className={`h-1.5 w-1.5 rounded-full shrink-0 ${categoryAccent[expense.category] ?? "bg-mute"}`} />
+                  <div className="min-w-0">
+                    <p className="text-[14px] font-medium text-ink truncate">{expense.description}</p>
+                    <p className="font-meta text-mute truncate">
+                      {expense.category.toUpperCase()} ·{" "}
+                      {new Date(expense.expense_date).toLocaleDateString("es", {
+                        day: "numeric",
+                        month: "short",
+                      }).toUpperCase()}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3 shrink-0">
+                  {expense.receipt_url && (
+                    <a
+                      href={expense.receipt_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="block h-8 w-8 rounded-md border border-border overflow-hidden hover:opacity-80"
+                    >
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={expense.receipt_url} alt="Recibo" className="h-full w-full object-cover" />
+                    </a>
+                  )}
+                  <span className="text-[14px] font-medium text-ink">
+                    −${Number(expense.amount).toFixed(2)}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

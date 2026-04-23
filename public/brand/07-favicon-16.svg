@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" shape-rendering="crispEdges">
+  <title>Atryum A2 — favicon 16</title>
+  <rect width="16" height="16" fill="#0E1116"></rect>
+  <g fill="#D4A574">
+    
+    <rect x="1" y="13" width="2" height="2"></rect>
+    <rect x="2" y="11" width="2" height="2"></rect>
+    <rect x="3" y="9" width="2" height="2"></rect>
+    <rect x="4" y="7" width="2" height="2"></rect>
+    <rect x="5" y="5" width="2" height="2"></rect>
+    <rect x="6" y="3" width="2" height="2"></rect>
+    
+    <rect x="13" y="13" width="2" height="2"></rect>
+    <rect x="12" y="11" width="2" height="2"></rect>
+    <rect x="11" y="9" width="2" height="2"></rect>
+    <rect x="10" y="7" width="2" height="2"></rect>
+    <rect x="9" y="5" width="2" height="2"></rect>
+    <rect x="8" y="3" width="2" height="2"></rect>
+    
+    <rect x="7" y="1" width="2" height="2"></rect>
+    
+    <rect x="4" y="9" width="3" height="1"></rect>
+    <rect x="9" y="9" width="3" height="1"></rect>
+  </g>
+</svg>

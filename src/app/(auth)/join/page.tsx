@@ -4,9 +4,9 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { AtryumLogo } from "@/components/brand/atryum-logo";
 
 export default function JoinPage() {
   const router = useRouter();
@@ -70,60 +70,53 @@ export default function JoinPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[#FAFBFC] p-4">
-      <div className="w-full max-w-md space-y-6">
-        <div className="text-center">
-          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-[#0F172A]">
-            <svg
-              viewBox="0 0 24 24"
-              className="h-6 w-6 text-[#2DD4BF]"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
-            </svg>
-          </div>
-          <h1 className="text-2xl font-bold" style={{ fontFamily: "Outfit, sans-serif" }}>
-            Canjear código de acceso
-          </h1>
-          {userEmail && <p className="mt-1 text-muted-foreground text-sm">{userEmail}</p>}
-        </div>
+    <div className="min-h-screen flex flex-col bg-bone">
+      <header className="px-6 py-6 md:px-10 md:py-8">
+        <AtryumLogo variant="horizontal" tone="ink" className="h-6" />
+      </header>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Ingresa tu código</CardTitle>
-            <CardDescription>
-              El administrador o propietario te lo envió por WhatsApp o te lo entregó impreso.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-4">
+      <main className="flex-1 flex items-center justify-center px-5 pb-12">
+        <div className="w-full max-w-md">
+          <div className="mb-8">
+            <span className="font-meta-loose text-steel">CÓDIGO DE ACCESO</span>
+            <h1 className="mt-5 font-display text-[clamp(1.75rem,4vw,2.5rem)] leading-[1.1] tracking-[-0.03em] text-ink">
+              Canjea tu <em className="font-editorial text-steel">código</em>.
+            </h1>
+            <p className="mt-3 text-[15px] text-mute leading-relaxed">
+              Tu administrador o propietario te lo envió por WhatsApp o te lo entregó impreso.
+            </p>
+            {userEmail && (
+              <p className="mt-4 font-meta text-mute">
+                SESIÓN · {userEmail.toUpperCase()}
+              </p>
+            )}
+          </div>
+
+          <div className="bg-card rounded-2xl border border-border p-6 md:p-7">
+            <form onSubmit={handleSubmit} className="space-y-5">
               <div className="space-y-2">
-                <Label htmlFor="code">Código</Label>
+                <Label htmlFor="code" className="font-meta text-mute">CÓDIGO</Label>
                 <Input
                   id="code"
                   name="code"
-                  placeholder="Ej: ABC1-2026-X7K2"
-                  className="text-center text-lg font-mono font-bold tracking-widest uppercase"
+                  placeholder="ABC1-2026-X7K2"
+                  className="h-12 text-center text-[18px] font-mono font-medium tracking-[0.2em] uppercase"
                   maxLength={24}
                   autoFocus
                   required
                 />
               </div>
-              {error && <p className="text-sm text-destructive text-center">{error}</p>}
-              <Button type="submit" className="w-full" size="lg" disabled={loading}>
+              {error && <p className="text-[13px] text-destructive text-center">{error}</p>}
+              <Button type="submit" className="w-full h-11" disabled={loading}>
                 {loading ? "Verificando..." : "Canjear y acceder"}
               </Button>
-              <p className="text-xs text-muted-foreground text-center">
-                ¿No tienes código? Pídele al administrador que te lo genere o invite por email.
+              <p className="text-center font-meta text-mute">
+                ¿SIN CÓDIGO? PÍDELE A TU ADMIN QUE TE INVITE POR EMAIL
               </p>
             </form>
-          </CardContent>
-        </Card>
-      </div>
+          </div>
+        </div>
+      </main>
     </div>
   );
 }
