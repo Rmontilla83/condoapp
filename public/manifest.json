@@ -1,6 +1,6 @@
 {
-  "name": "CondoApp — Gestion de Condominios",
-  "short_name": "CondoApp",
+  "name": "Atryum — Gestion de Condominios",
+  "short_name": "Atryum",
   "description": "Pagos, mantenimiento, QR visitantes, transparencia financiera",
   "start_url": "/dashboard",
   "display": "standalone",

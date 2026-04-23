@@ -12,7 +12,7 @@ const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://atryum.net";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
-  title: "CondoApp — Gestion de Condominios Inteligente | Pagos, QR, Transparencia",
+  title: "Atryum — Gestion de Condominios Inteligente | Pagos, QR, Transparencia",
   description:
     "App de gestion de condominios para Latinoamerica. Pagos en 2 toques, reportes con foto, acceso QR para visitantes, transparencia financiera total. Gratis hasta 15 unidades.",
   keywords: [
@@ -26,7 +26,7 @@ export const metadata: Metadata = {
     "condominio Venezuela",
     "condominio Latinoamerica",
   ],
-  authors: [{ name: "CondoApp" }],
+  authors: [{ name: "Atryum" }],
   creator: "tuwebgo.net",
   alternates: {
     canonical: SITE_URL,
@@ -35,14 +35,14 @@ export const metadata: Metadata = {
     type: "website",
     locale: "es_LA",
     url: SITE_URL,
-    siteName: "CondoApp",
-    title: "CondoApp — La app que tu condominio merece",
+    siteName: "Atryum",
+    title: "Atryum — La app que tu condominio merece",
     description:
       "Pagos en 2 toques. Reportes con foto. Acceso QR para visitantes. Transparencia total. Gratis hasta 15 unidades.",
   },
   twitter: {
     card: "summary_large_image",
-    title: "CondoApp — Gestion de Condominios Inteligente",
+    title: "Atryum — Gestion de Condominios Inteligente",
     description:
       "Pagos, mantenimiento, acceso QR y transparencia financiera. Todo desde tu celular.",
   },

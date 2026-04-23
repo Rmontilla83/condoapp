@@ -129,7 +129,7 @@ export default function ConfirmPage() {
                 className="w-full text-base font-semibold"
                 disabled={processingRef.current}
               >
-                Acceder a CondoApp
+                Acceder a Atryum
               </Button>
             </>
           )}

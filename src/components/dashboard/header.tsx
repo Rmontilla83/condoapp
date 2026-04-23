@@ -27,9 +27,9 @@ export function Header({ userEmail, isSuperAdmin = false, viewingAs = null }: { 
     <header className="flex h-16 items-center justify-between border-b bg-card px-4 md:px-6">
       <div className="flex items-center gap-2 md:hidden">
         <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground font-bold text-xs">
-          C
+          A
         </div>
-        <span className="font-bold">CondoApp</span>
+        <span className="font-bold">Atryum</span>
       </div>
       <div className="hidden md:block" />
       <DropdownMenu>

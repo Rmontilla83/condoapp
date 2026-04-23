@@ -131,7 +131,7 @@ export default async function VerificarPage({
         <div className="border-t px-6 py-3 text-center">
           <p className="text-[11px] text-[#6B7280]">
             Verificado por{" "}
-            <span className="font-semibold text-[#0D9488]">condoapp</span>
+            <span className="font-semibold text-[#0D9488]">Atryum</span>
           </p>
         </div>
       </Card>

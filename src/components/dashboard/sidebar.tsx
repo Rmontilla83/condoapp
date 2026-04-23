@@ -88,9 +88,9 @@ export function Sidebar({ isAdmin = false }: { isAdmin?: boolean }) {
     <aside className="hidden md:flex md:w-64 md:flex-col md:border-r bg-card">
       <div className="flex h-16 items-center gap-2 border-b px-6">
         <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary text-primary-foreground font-bold text-sm">
-          C
+          A
         </div>
-        <span className="text-lg font-bold">CondoApp</span>
+        <span className="text-lg font-bold">Atryum</span>
       </div>
       <nav className="flex-1 space-y-1 p-4">
         {navItems.map((item) => {

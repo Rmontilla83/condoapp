@@ -19,7 +19,7 @@ export default function HomePage() {
                 </svg>
               </div>
               <span className="text-[17px] font-bold tracking-tight" style={{fontFamily:'Outfit,sans-serif'}}>
-                condo<span className="text-[#0D9488]">app</span>
+                Atryum
               </span>
             </Link>
             <div className="hidden md:flex items-center gap-1 text-[13px] font-medium text-[#64748B]">
@@ -536,7 +536,7 @@ export default function HomePage() {
                 <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
               </svg>
             </div>
-            <span className="text-[14px] font-bold text-[#0F172A]" style={{fontFamily:'Outfit,sans-serif'}}>condoapp</span>
+            <span className="text-[14px] font-bold text-[#0F172A]" style={{fontFamily:'Outfit,sans-serif'}}>Atryum</span>
           </div>
           <p className="text-[13px] text-[#6B7280]">
             Hecho por{" "}
@@ -554,7 +554,7 @@ export default function HomePage() {
           __html: JSON.stringify({
             "@context": "https://schema.org",
             "@type": "SoftwareApplication",
-            name: "CondoApp",
+            name: "Atryum",
             applicationCategory: "BusinessApplication",
             operatingSystem: "Web",
             description: "App de gestion de condominios para Latinoamerica. Pagos, mantenimiento, acceso QR, transparencia financiera.",

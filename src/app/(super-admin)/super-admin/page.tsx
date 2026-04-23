@@ -39,7 +39,7 @@ export default async function SuperAdminPage() {
             <h1 className="text-3xl font-extrabold tracking-tight text-[#0F172A]" style={{ fontFamily: "Outfit, sans-serif" }}>
               Super Admin
             </h1>
-            <p className="text-muted-foreground">Plataforma CondoApp — vista global</p>
+            <p className="text-muted-foreground">Plataforma Atryum — vista global</p>
           </div>
           <div className="flex items-center gap-3">
             <ViewSwitcher currentView={profile.view_as ?? null} />

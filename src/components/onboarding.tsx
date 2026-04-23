@@ -91,7 +91,7 @@ export function Onboarding({ userEmail }: { userEmail: string }) {
             </svg>
           </div>
           <h1 className="text-2xl font-bold" style={{ fontFamily: "Outfit, sans-serif" }}>
-            Bienvenido a CondoApp
+            Bienvenido a Atryum
           </h1>
           <p className="mt-1 text-muted-foreground text-sm">{userEmail}</p>
         </div>
