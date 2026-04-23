@@ -4,7 +4,6 @@ import { createClient } from "@/lib/supabase/server";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { CreateOrgDialog } from "./create-org-dialog";
 import { InviteAdminDialog } from "./invite-admin-dialog";
-import { ViewSwitcher } from "./view-switcher";
 import { EnterOrgButton } from "./enter-org-button";
 
 export default async function SuperAdminPage() {
@@ -34,17 +33,11 @@ export default async function SuperAdminPage() {
     <div className="min-h-screen bg-[#FAFBFC]">
       <div className="mx-auto max-w-7xl px-5 md:px-8 py-8">
         {/* Header */}
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <h1 className="text-3xl font-extrabold tracking-tight text-[#0F172A]" style={{ fontFamily: "Outfit, sans-serif" }}>
-              Super Admin
-            </h1>
-            <p className="text-muted-foreground">Plataforma Atryum — vista global</p>
-          </div>
-          <div className="flex items-center gap-3">
-            <ViewSwitcher currentView={profile.view_as ?? null} />
-            <a href="/dashboard" className="text-sm font-medium text-primary hover:underline">Ir al dashboard →</a>
-          </div>
+        <div className="mb-8">
+          <h1 className="text-3xl font-extrabold tracking-tight text-[#0F172A]" style={{ fontFamily: "Outfit, sans-serif" }}>
+            Super Admin
+          </h1>
+          <p className="text-muted-foreground">Plataforma Atryum — vista global</p>
         </div>
 
         {/* Global stats */}
