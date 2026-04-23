@@ -14,7 +14,11 @@ export default function HomePage() {
         <div className="mx-auto max-w-7xl px-5 md:px-8 py-5">
           <div className="flex items-center justify-between rounded-2xl bg-frost/80 backdrop-blur-xl border border-marine/15 px-5 py-3">
             <Link href="/" className="flex items-center hover-scale" aria-label="Atryum — inicio">
-              <AtryumLogo variant="horizontal" tone="marine-deep" className="h-7" />
+              <AtryumLogo
+                variant="horizontal"
+                tone="color"
+                className="text-[22px] md:text-[26px]"
+              />
             </Link>
 
             <div className="hidden md:flex items-center gap-0.5 text-[13px] text-mute">
@@ -559,7 +563,7 @@ export default function HomePage() {
       <footer className="border-t border-border py-12 bg-frost">
         <div className="mx-auto max-w-7xl px-5 md:px-8 flex flex-col md:flex-row items-center justify-between gap-6">
           <div className="flex items-center gap-4">
-            <AtryumLogo variant="horizontal" tone="marine-deep" className="h-5" />
+            <AtryumLogo variant="horizontal" tone="color" className="text-[16px]" />
             <span className="font-editorial text-mute text-[15px] hidden md:inline">
               Un átrium dentro de cada A.
             </span>

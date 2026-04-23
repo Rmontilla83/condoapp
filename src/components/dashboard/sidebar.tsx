@@ -85,11 +85,12 @@ export function Sidebar({ isAdmin = false }: { isAdmin?: boolean }) {
 
   return (
     <aside className="hidden md:flex md:w-64 md:flex-col bg-sidebar text-sidebar-foreground">
-      {/* Logo hero — lockup es aspect ~1.3:1 (símbolo + wordmark apilado).
-          Dimensionamos por ancho para darle presencia real en el sidebar. */}
+      {/* Logo hero: usamos el lockup apilado oficial del kit (PNG 1.3:1).
+          En el sidebar dark queda premium con colores originales (manual
+          "C Reversed" aprueba símbolo a color + wordmark blanco). */}
       <div className="flex items-center justify-center px-5 pt-8 pb-6">
         <AtryumLogo
-          variant="horizontal"
+          variant="stacked"
           tone="color"
           className="w-40 h-auto"
           priority

@@ -40,7 +40,7 @@ export default async function SuperAdminLayout({
       <header className="border-b border-border bg-frost">
         <div className="mx-auto max-w-7xl px-5 md:px-8 h-16 flex items-center justify-between">
           <Link href="/super-admin" className="flex items-center">
-            <AtryumLogo variant="horizontal" tone="marine-deep" className="h-6" />
+            <AtryumLogo variant="horizontal" tone="color" className="text-[22px]" />
           </Link>
           <nav className="flex items-center gap-1 text-[13px]">
             <Link

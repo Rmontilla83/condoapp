@@ -34,7 +34,7 @@ export function Header({
   return (
     <header className="flex h-16 items-center justify-between border-b border-border bg-background px-4 md:px-6">
       <div className="flex items-center md:hidden">
-        <AtryumLogo variant="horizontal" tone="marine-deep" className="h-5" />
+        <AtryumLogo variant="horizontal" tone="color" className="text-[20px]" />
       </div>
       <div className="hidden md:block" />
       <DropdownMenu>

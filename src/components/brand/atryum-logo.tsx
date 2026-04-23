@@ -1,9 +1,7 @@
 import Image from "next/image";
 import { cn } from "@/lib/utils";
 
-// Acepta tones canónicos (color/marine/white/black) y alias heredados del
-// sweep de la paleta V3 (marine-deep, frost, ember, ink, bone, sand).
-// Todos resuelven a uno de los 4 canónicos sin romper llamados existentes.
+// Acepta tones canónicos (color/marine/white/black) y alias heredados.
 type CanonicalTone = "color" | "marine" | "white" | "black";
 type AtryumTone =
   | CanonicalTone
@@ -15,6 +13,11 @@ type AtryumTone =
   | "bone"
   | "sand"
   | "current";
+
+// Variantes:
+//   symbol      → solo el isotipo (PNG cuadrado)
+//   horizontal  → símbolo + wordmark ATRYUM al lado (composición horizontal)
+//   stacked     → lockup original del kit (símbolo encima + wordmark debajo, PNG 1.3:1)
 type AtryumVariant = "symbol" | "horizontal" | "stacked";
 
 interface AtryumLogoProps {
@@ -43,18 +46,26 @@ function resolveTone(tone: AtryumTone): CanonicalTone {
   }
 }
 
-const LOCKUP_SRC: Record<CanonicalTone, string> = {
+const SYMBOL_SRC: Record<CanonicalTone, string> = {
+  color: "/brand/symbol.png",
+  marine: "/brand/symbol-marine.png",
+  white: "/brand/symbol-white.png",
+  black: "/brand/symbol-black.png",
+};
+
+const STACKED_SRC: Record<CanonicalTone, string> = {
   color: "/brand/lockup.png",
   marine: "/brand/lockup-marine.png",
   white: "/brand/lockup-white.png",
   black: "/brand/lockup-black.png",
 };
 
-const SYMBOL_SRC: Record<CanonicalTone, string> = {
-  color: "/brand/symbol.png",
-  marine: "/brand/symbol-marine.png",
-  white: "/brand/symbol-white.png",
-  black: "/brand/symbol-black.png",
+// Color del wordmark tipográfico (para variant="horizontal")
+const WORDMARK_COLOR: Record<CanonicalTone, string> = {
+  color: "#1E4D8F", // Marine — según symbols-v3.jsx oficial
+  marine: "#1E4D8F",
+  white: "#FFFFFF",
+  black: "#0F2E5A",
 };
 
 export function AtryumSymbol({
@@ -90,6 +101,9 @@ export function AtryumLogo({
   priority,
   "aria-label": ariaLabel = "Atryum",
 }: AtryumLogoProps) {
+  const canonical = resolveTone(tone);
+
+  // symbol → solo isotipo
   if (variant === "symbol") {
     return (
       <AtryumSymbol
@@ -101,17 +115,52 @@ export function AtryumLogo({
     );
   }
 
-  // horizontal y stacked usan el lockup (símbolo + wordmark ATRYUM debajo)
-  const canonical = resolveTone(tone);
+  // stacked → PNG del kit (símbolo + ATRYUM apilados, aspect 1.3:1)
+  if (variant === "stacked") {
+    return (
+      <Image
+        src={STACKED_SRC[canonical]}
+        alt={ariaLabel}
+        width={800}
+        height={613}
+        priority={priority}
+        className={cn("h-auto w-auto", className)}
+        unoptimized
+      />
+    );
+  }
+
+  // horizontal → símbolo (PNG) + wordmark ATRYUM tipográfico al lado.
+  // Este patrón respeta el manual (variante A Principal) y escala limpio
+  // en navs horizontales donde el lockup vertical se ve desproporcionado.
   return (
-    <Image
-      src={LOCKUP_SRC[canonical]}
-      alt={ariaLabel}
-      width={800}
-      height={240}
-      priority={priority}
-      className={cn("h-auto w-auto", className)}
-      unoptimized
-    />
+    <span
+      className={cn("inline-flex items-center gap-2.5", className)}
+      role="img"
+      aria-label={ariaLabel}
+    >
+      <Image
+        src={SYMBOL_SRC[canonical]}
+        alt=""
+        width={128}
+        height={128}
+        priority={priority}
+        className="h-[1.4em] w-auto"
+        unoptimized
+      />
+      <span
+        className="font-display"
+        style={{
+          color: WORDMARK_COLOR[canonical],
+          fontWeight: 700,
+          fontSize: "1em",
+          letterSpacing: "0.05em",
+          textTransform: "uppercase",
+          lineHeight: 1,
+        }}
+      >
+        atryum
+      </span>
+    </span>
   );
 }

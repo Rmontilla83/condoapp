@@ -93,7 +93,7 @@ export default function ConfirmPage() {
   return (
     <div className="min-h-screen flex flex-col bg-frost">
       <header className="px-6 py-6 md:px-10 md:py-8">
-        <AtryumLogo variant="horizontal" tone="marine-deep" className="h-6" />
+        <AtryumLogo variant="horizontal" tone="color" className="text-[22px]" />
       </header>
 
       <main className="flex-1 flex items-center justify-center px-5 pb-12">
