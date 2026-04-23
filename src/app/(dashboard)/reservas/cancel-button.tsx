@@ -14,7 +14,7 @@ export function CancelButton({ id }: { id: string }) {
     setLoading(true);
     await cancelReservation(id);
     setLoading(false);
-    router.refresh();
+    window.location.reload();
   }
 
   return (

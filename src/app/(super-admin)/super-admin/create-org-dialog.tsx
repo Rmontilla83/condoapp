@@ -21,7 +21,7 @@ export function CreateOrgDialog() {
     if (res.error) { setError(res.error); setLoading(false); return; }
     setResult({ inviteCode: res.inviteCode! });
     setLoading(false);
-    router.refresh();
+    window.location.reload();
   }
 
   return (

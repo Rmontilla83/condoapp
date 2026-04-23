@@ -44,7 +44,7 @@ export function OrgPoliciesForm({ initial }: { initial: Policies }) {
         setFeedback({ type: "error", msg: res.error });
       } else {
         setFeedback({ type: "ok", msg: "Actualizado" });
-        router.refresh();
+        window.location.reload();
       }
       setTimeout(() => setFeedback(null), 3000);
     });

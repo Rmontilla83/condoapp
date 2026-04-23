@@ -39,7 +39,7 @@ export function ReserveDialog({ areas }: { areas: Area[] }) {
 
     setSuccess(true);
     setLoading(false);
-    router.refresh();
+    window.location.reload();
   }
 
   function handleClose() {

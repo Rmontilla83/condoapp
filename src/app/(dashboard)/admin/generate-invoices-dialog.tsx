@@ -29,7 +29,7 @@ export function GenerateInvoicesDialog() {
     if (res.error) { setError(res.error); setLoading(false); return; }
     setResult(`${res.count} cuotas generadas exitosamente`);
     setLoading(false);
-    router.refresh();
+    window.location.reload();
   }
 
   return (

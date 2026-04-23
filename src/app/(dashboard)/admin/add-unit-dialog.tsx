@@ -35,7 +35,7 @@ export function AddUnitDialog() {
       setSuccess(`Unidad "${unitNumber}" guardada.`);
       setLoading(false);
       form.reset();
-      router.refresh();
+      window.location.reload();
       // Cerrar dialog 1.5s después para que vea el éxito
       setTimeout(() => {
         setOpen(false);

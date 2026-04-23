@@ -51,14 +51,14 @@ export function PollCard({
       return;
     }
     setLoading(false);
-    router.refresh();
+    window.location.reload();
   }
 
   async function handleClose() {
     setLoading(true);
     await closePoll(poll.id);
     setLoading(false);
-    router.refresh();
+    window.location.reload();
   }
 
   return (

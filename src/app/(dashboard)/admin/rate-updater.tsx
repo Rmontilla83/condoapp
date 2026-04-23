@@ -30,7 +30,7 @@ export function RateUpdater({
         setDate(data.date);
         setSynced(true);
         setTimeout(() => setSynced(false), 3000);
-        router.refresh();
+        window.location.reload();
       } else {
         setError(data.error ?? "No pudimos sincronizar la tasa");
       }

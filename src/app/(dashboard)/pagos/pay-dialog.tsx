@@ -32,7 +32,7 @@ export function PayDialog({ invoiceId, amount, description }: { invoiceId: strin
 
     setSuccess(true);
     setLoading(false);
-    router.refresh();
+    window.location.reload();
   }
 
   function handleClose() {

@@ -42,7 +42,7 @@ export function RequestManager({ requests }: { requests: MaintenanceRequest[] })
 
       setExpandedId(null);
       setLoadingId(null);
-      router.refresh();
+      window.location.reload();
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Error desconocido";
       setErrors((prev) => ({ ...prev, [requestId]: msg }));

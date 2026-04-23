@@ -28,7 +28,7 @@ export function PaymentReviewer({ payments }: { payments: PendingPayment[] }) {
     const res = await approvePayment(id);
     setLoading(null);
     if (res.error) setError(res.error);
-    else router.refresh();
+    else window.location.reload();
   }
 
   async function handleReject(id: string) {
@@ -37,7 +37,7 @@ export function PaymentReviewer({ payments }: { payments: PendingPayment[] }) {
     const res = await rejectPayment(id);
     setLoading(null);
     if (res.error) setError(res.error);
-    else router.refresh();
+    else window.location.reload();
   }
 
   if (payments.length === 0) {

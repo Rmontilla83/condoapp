@@ -23,7 +23,7 @@ export function InviteAdminDialog({ orgId, orgName }: { orgId: string; orgName: 
     if (res.error) { setError(res.error); setLoading(false); return; }
     setSuccess(true);
     setLoading(false);
-    router.refresh();
+    window.location.reload();
   }
 
   return (

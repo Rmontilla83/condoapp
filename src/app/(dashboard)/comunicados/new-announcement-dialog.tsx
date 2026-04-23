@@ -22,7 +22,7 @@ export function NewAnnouncementDialog() {
     if (res.error) { setError(res.error); setLoading(false); return; }
     setOpen(false);
     setLoading(false);
-    router.refresh();
+    window.location.reload();
   }
 
   return (

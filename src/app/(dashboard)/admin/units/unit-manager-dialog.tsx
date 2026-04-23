@@ -72,7 +72,7 @@ export function UnitManagerDialog({
         showFeedback("error", res.error);
       } else {
         showFeedback("ok", successMsg);
-        router.refresh();
+        window.location.reload();
       }
     });
   }

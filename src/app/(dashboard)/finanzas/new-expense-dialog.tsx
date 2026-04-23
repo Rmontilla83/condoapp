@@ -30,7 +30,7 @@ export function NewExpenseDialog() {
 
     setOpen(false);
     setLoading(false);
-    router.refresh();
+    window.location.reload();
   }
 
   return (

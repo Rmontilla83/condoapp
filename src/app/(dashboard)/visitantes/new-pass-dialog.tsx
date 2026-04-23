@@ -39,7 +39,7 @@ export function NewPassDialog() {
 
     setResult({ qrCode: res.qrCode!, passId: res.passId! });
     setLoading(false);
-    router.refresh();
+    window.location.reload();
   }
 
   function handleClose() {

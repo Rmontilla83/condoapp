@@ -19,7 +19,7 @@ export function GrantAccessButton({ passId }: { passId: string }) {
       setError(res.error);
     } else {
       setGranted(true);
-      router.refresh();
+      window.location.reload();
     }
     setLoading(false);
   }

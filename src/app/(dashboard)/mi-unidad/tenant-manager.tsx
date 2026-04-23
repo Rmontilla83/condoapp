@@ -61,7 +61,7 @@ export function TenantManager({
         showFeedback("error", res.error);
       } else {
         showFeedback("ok", successMsg);
-        router.refresh();
+        window.location.reload();
       }
     });
   }

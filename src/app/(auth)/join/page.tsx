@@ -66,7 +66,7 @@ export default function JoinPage() {
     }
 
     router.push("/dashboard");
-    router.refresh();
+    window.location.reload();
   }
 
   return (

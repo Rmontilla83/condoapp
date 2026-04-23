@@ -95,7 +95,7 @@ export function NewRequestDialog() {
       // Success — cerrar dialog, limpiar, refrescar lista
       resetAll();
       setOpen(false);
-      router.refresh();
+      window.location.reload();
 
       if (result.photosFailed > 0) {
         // Mostrar warning no bloqueante después de cerrar
