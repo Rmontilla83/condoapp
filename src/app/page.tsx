@@ -1,6 +1,9 @@
 import Link from "next/link";
 import { Reveal } from "@/components/reveal";
 import { AtryumLogo, AtryumSymbol } from "@/components/brand/atryum-logo";
+import { Magnetic } from "@/components/ui/magnetic";
+import { TiltCard } from "@/components/ui/tilt-card";
+import { AnimatedCounter } from "@/components/ui/animated-counter";
 
 const PORTAL_LOGIN = process.env.NEXT_PUBLIC_PORTAL_URL
   ? `${process.env.NEXT_PUBLIC_PORTAL_URL}/login`
@@ -38,9 +41,12 @@ export default function HomePage() {
       </nav>
 
       {/* ═══ HERO ═══ */}
-      <section className="relative pt-36 pb-20 md:pt-44 md:pb-32">
+      <section className="relative pt-36 pb-20 md:pt-44 md:pb-32 overflow-hidden">
+        {/* Mesh signature blur — parallax atmosférico V3 */}
+        <div className="absolute inset-0 mesh-signature pointer-events-none" aria-hidden="true" />
+        {/* Dot grid */}
         <div
-          className="absolute inset-0 opacity-[0.035] pointer-events-none"
+          className="absolute inset-0 opacity-[0.04] pointer-events-none"
           style={{
             backgroundImage: "radial-gradient(#0F2E5A 1px, transparent 1px)",
             backgroundSize: "28px 28px",
@@ -67,23 +73,27 @@ export default function HomePage() {
               </p>
 
               <div className="hero-text hero-text-d3 mt-9 flex flex-wrap items-center gap-3">
-                <Link
-                  href={PORTAL_LOGIN}
-                  className="group bg-marine-deep text-frost text-[15px] font-medium pl-6 pr-4 py-3.5 rounded-xl hover:bg-marine transition-all duration-300 inline-flex items-center gap-3 btn-press"
-                >
-                  Empezar gratis
-                  <span className="flex h-7 w-7 items-center justify-center rounded-md bg-frost/10 group-hover:bg-frost/15 transition-colors">
-                    <svg className="h-3.5 w-3.5 transition-transform duration-300 group-hover:translate-x-0.5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12h15m0 0l-6.75-6.75M19.5 12l-6.75 6.75" />
-                    </svg>
-                  </span>
-                </Link>
-                <a
-                  href="#solucion"
-                  className="text-[14px] font-medium text-marine-deep px-5 py-3.5 rounded-xl border border-marine/25 hover:bg-marine/10 transition-colors btn-press"
-                >
-                  Ver producto
-                </a>
+                <Magnetic strength={0.25}>
+                  <Link
+                    href={PORTAL_LOGIN}
+                    className="group bg-marine-deep text-frost text-[15px] font-medium pl-6 pr-4 py-3.5 rounded-xl hover:bg-marine inline-flex items-center gap-3 press-spring shadow-[0_8px_30px_rgb(15,46,90,0.16)] hover:shadow-[0_14px_40px_rgb(15,46,90,0.22)] transition-shadow duration-500"
+                  >
+                    Empezar gratis
+                    <span className="flex h-7 w-7 items-center justify-center rounded-md bg-frost/10 group-hover:bg-frost/20 transition-colors">
+                      <svg className="h-3.5 w-3.5 transition-transform duration-500 group-hover:translate-x-1" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12h15m0 0l-6.75-6.75M19.5 12l-6.75 6.75" />
+                      </svg>
+                    </span>
+                  </Link>
+                </Magnetic>
+                <Magnetic strength={0.18}>
+                  <a
+                    href="#solucion"
+                    className="text-[14px] font-medium text-marine-deep px-5 py-3.5 rounded-xl border border-marine/25 hover:bg-marine/10 hover:border-marine/40 transition-colors press-spring inline-block"
+                  >
+                    Ver producto
+                  </a>
+                </Magnetic>
               </div>
 
               <p className="hero-text hero-text-d4 mt-6 font-meta text-mute">
@@ -94,8 +104,8 @@ export default function HomePage() {
             {/* Right — Ink scene with Sand A + floating card */}
             <div className="md:col-span-6 lg:col-span-6 flex justify-center md:justify-end">
               <div className="relative hero-aside w-full max-w-[480px]">
-                {/* Main marine-deep card */}
-                <div className="relative rounded-3xl bg-marine-deep text-frost p-8 md:p-10 overflow-hidden grain">
+                {/* Main marine-deep card con tilt 3D sobre mouse */}
+                <TiltCard max={6} glare className="relative rounded-3xl bg-marine-deep text-frost p-8 md:p-10 overflow-hidden grain shadow-[0_32px_80px_-20px_rgb(15,46,90,0.5)]">
                   <div className="flex items-center justify-between">
                     <span className="font-meta-loose text-ember">
                       EDIFICIO · RESIDENCIAS LOS ROBLES
@@ -117,18 +127,24 @@ export default function HomePage() {
                   <div className="mt-8 pt-6 border-t border-frost/10 grid grid-cols-3 gap-4">
                     <div>
                       <p className="font-meta text-frost/60">CUOTAS AL DÍA</p>
-                      <p className="mt-1.5 font-display text-xl text-frost">94%</p>
+                      <p className="mt-1.5 font-display text-xl text-frost">
+                        <AnimatedCounter value={94} suffix="%" duration={1600} />
+                      </p>
                     </div>
                     <div>
                       <p className="font-meta text-frost/60">INCIDENCIAS</p>
-                      <p className="mt-1.5 font-display text-xl text-frost">8</p>
+                      <p className="mt-1.5 font-display text-xl text-frost">
+                        <AnimatedCounter value={8} duration={1200} />
+                      </p>
                     </div>
                     <div>
                       <p className="font-meta text-frost/60">ACCESOS 24H</p>
-                      <p className="mt-1.5 font-display text-xl text-frost">1.284</p>
+                      <p className="mt-1.5 font-display text-xl text-frost">
+                        <AnimatedCounter value={1284} duration={1800} />
+                      </p>
                     </div>
                   </div>
-                </div>
+                </TiltCard>
 
                 {/* Floating payment card */}
                 <div className="absolute -left-6 -bottom-8 md:-left-16 md:-bottom-10 hidden sm:block hero-card-float hero-card-float-d1 float-gentle">
@@ -179,13 +195,20 @@ export default function HomePage() {
 
           <div className="mt-16 grid md:grid-cols-3 gap-5">
             {[
-              { number: "73%", text: "de residentes en Latam no confían en cómo se administra su condominio" },
-              { number: "45min", text: "promedio diario que gasta un admin respondiendo en WhatsApp" },
-              { number: "15-40%", text: "de morosidad promedio en condominios sin sistema digital" },
+              { value: 73, suffix: "%", text: "de residentes en Latam no confían en cómo se administra su condominio" },
+              { value: 45, suffix: "min", text: "promedio diario que gasta un admin respondiendo en WhatsApp" },
+              { value: 40, prefix: "15–", suffix: "%", text: "de morosidad promedio en condominios sin sistema digital" },
             ].map((stat, i) => (
-              <Reveal key={stat.number} delay={i * 120}>
-                <div className="rounded-2xl border border-frost/10 bg-frost/[0.03] p-7 hover-lift">
-                  <p className="font-display text-[44px] text-ember leading-none">{stat.number}</p>
+              <Reveal key={i} delay={i * 140}>
+                <div className="group rounded-2xl border border-frost/10 bg-frost/[0.03] p-7 transition-all duration-500 hover:border-ember/40 hover:bg-frost/[0.05] hover:-translate-y-1">
+                  <p className="font-display text-[44px] text-ember leading-none tabular-nums">
+                    <AnimatedCounter
+                      value={stat.value}
+                      prefix={stat.prefix ?? ""}
+                      suffix={stat.suffix}
+                      duration={1400 + i * 200}
+                    />
+                  </p>
                   <p className="mt-4 text-[14px] text-frost/70 leading-relaxed">{stat.text}</p>
                 </div>
               </Reveal>
@@ -543,17 +566,19 @@ export default function HomePage() {
               unidades.
             </p>
             <div className="mt-10">
-              <Link
-                href={PORTAL_LOGIN}
-                className="group bg-ember text-marine-deep text-[15px] font-medium pl-7 pr-5 py-4 rounded-xl hover:bg-ember transition-all duration-300 inline-flex items-center gap-3 btn-press"
-              >
-                Empezar gratis ahora
-                <span className="flex h-7 w-7 items-center justify-center rounded-md bg-marine-deep/10 group-hover:bg-marine-deep/15 transition-colors">
-                  <svg className="h-3.5 w-3.5 transition-transform duration-300 group-hover:translate-x-0.5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12h15m0 0l-6.75-6.75M19.5 12l-6.75 6.75" />
-                  </svg>
-                </span>
-              </Link>
+              <Magnetic strength={0.3}>
+                <Link
+                  href={PORTAL_LOGIN}
+                  className="group bg-ember text-marine-deep text-[15px] font-medium pl-7 pr-5 py-4 rounded-xl inline-flex items-center gap-3 press-spring shadow-[0_16px_44px_-12px_rgb(232,115,44,0.55)] hover:shadow-[0_24px_60px_-10px_rgb(232,115,44,0.7)] transition-shadow duration-500"
+                >
+                  Empezar gratis ahora
+                  <span className="flex h-7 w-7 items-center justify-center rounded-md bg-marine-deep/10 group-hover:bg-marine-deep/25 transition-colors">
+                    <svg className="h-3.5 w-3.5 transition-transform duration-500 group-hover:translate-x-1" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12h15m0 0l-6.75-6.75M19.5 12l-6.75 6.75" />
+                    </svg>
+                  </span>
+                </Link>
+              </Magnetic>
             </div>
           </div>
         </section>

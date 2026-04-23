@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { CreateOrgDialog } from "./create-org-dialog";
 import { InviteAdminDialog } from "./invite-admin-dialog";
 import { EnterOrgButton } from "./enter-org-button";
+import { AnimatedCounter } from "@/components/ui/animated-counter";
 
 export default async function SuperAdminPage() {
   const profile = await getCurrentProfile();
@@ -45,13 +46,13 @@ export default async function SuperAdminPage() {
         <CreateOrgDialog />
       </div>
 
-      {/* KPI cards — manual style */}
+      {/* KPI cards — manual style con count-up */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-        <KpiCard label="CONDOMINIOS" value={orgs.length.toString()} />
-        <KpiCard label="UNIDADES" value={totalUnits.toString()} />
-        <KpiCard label="USUARIOS" value={totalUsers.toString()} />
-        <KpiCard label="RECAUDADO" value={`$${totalRevenue.toFixed(0)}`} tone="cyan" />
-        <KpiCard label="POR COBRAR" value={`$${totalPending.toFixed(0)}`} tone="ember" />
+        <KpiCard label="CONDOMINIOS" value={orgs.length} />
+        <KpiCard label="UNIDADES" value={totalUnits} />
+        <KpiCard label="USUARIOS" value={totalUsers} />
+        <KpiCard label="RECAUDADO" value={totalRevenue} prefix="$" tone="cyan" />
+        <KpiCard label="POR COBRAR" value={totalPending} prefix="$" tone="ember" />
       </div>
 
       <div className="grid lg:grid-cols-2 gap-6">
@@ -158,22 +159,32 @@ export default async function SuperAdminPage() {
 function KpiCard({
   label,
   value,
+  prefix,
   tone = "marine-deep",
 }: {
   label: string;
-  value: string;
+  value: number;
+  prefix?: string;
   tone?: "marine-deep" | "cyan" | "ember";
 }) {
   const toneClass =
     tone === "cyan" ? "text-cyan" : tone === "ember" ? "text-ember" : "text-marine-deep";
+  const borderHover =
+    tone === "cyan"
+      ? "hover:border-cyan/40"
+      : tone === "ember"
+      ? "hover:border-ember/40"
+      : "hover:border-marine/40";
 
   return (
-    <div className="rounded-2xl bg-card border border-border p-5">
+    <div
+      className={`group rounded-2xl bg-card border border-border p-5 transition-all duration-500 ${borderHover} hover:-translate-y-0.5 hover:shadow-[0_18px_50px_-18px_rgb(15,46,90,0.18)]`}
+    >
       <p className="font-meta text-mute">{label}</p>
       <p
-        className={`mt-3 font-display text-[28px] leading-none tracking-[-0.02em] ${toneClass}`}
+        className={`mt-3 font-display text-[28px] leading-none tracking-[-0.02em] tabular-nums ${toneClass}`}
       >
-        {value}
+        <AnimatedCounter value={value} duration={1400} prefix={prefix ?? ""} />
       </p>
     </div>
   );

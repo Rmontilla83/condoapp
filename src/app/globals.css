@@ -189,10 +189,14 @@
   }
 }
 
-/* ═══ Motion tokens ═══ */
+/* ═══ Motion tokens — Emil Kowalski / Linear / Vercel inspired ═══ */
 :root {
   --ease-spring: cubic-bezier(0.22, 1, 0.36, 1);
   --ease-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-emil: cubic-bezier(0.2, 0, 0, 1);              /* smooth out */
+  --ease-emil-spring: cubic-bezier(0.34, 1.4, 0.64, 1); /* overshoot sutil */
+  --ease-snap: cubic-bezier(0.16, 1, 0.3, 1);           /* snappy */
+  --ease-expo: cubic-bezier(0.19, 1, 0.22, 1);          /* dramático */
 }
 
 /* ═══ Scroll reveal ═══ */
@@ -273,4 +277,93 @@
   opacity: 0.03;
   background-image: radial-gradient(currentColor 1px, transparent 1px);
   background-size: 24px 24px;
+}
+
+/* ═══ Shimmer skeleton ═══ */
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+.shimmer {
+  background-image: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.55) 50%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  background-repeat: no-repeat;
+  animation: shimmer 1.6s var(--ease-emil) infinite;
+}
+
+/* ═══ Gradient mesh subtle (para fondos de hero) ═══ */
+.mesh-signature {
+  background:
+    radial-gradient(80% 60% at 15% 20%, rgba(47, 180, 230, 0.12), transparent 60%),
+    radial-gradient(70% 50% at 85% 10%, rgba(30, 77, 143, 0.10), transparent 55%),
+    radial-gradient(60% 40% at 75% 90%, rgba(232, 115, 44, 0.08), transparent 55%);
+}
+
+.mesh-signature-dark {
+  background:
+    radial-gradient(70% 50% at 20% 30%, rgba(47, 180, 230, 0.18), transparent 60%),
+    radial-gradient(60% 45% at 80% 20%, rgba(30, 77, 143, 0.22), transparent 55%),
+    radial-gradient(55% 40% at 70% 90%, rgba(232, 115, 44, 0.15), transparent 55%);
+}
+
+/* ═══ Pulse glow para badges live ═══ */
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(47, 180, 230, 0.4); }
+  50% { box-shadow: 0 0 0 8px rgba(47, 180, 230, 0); }
+}
+.pulse-glow { animation: pulse-glow 2.2s var(--ease-emil) infinite; }
+
+/* ═══ Breathing float (gentle vertical oscillation) ═══ */
+@keyframes float-breath {
+  0%, 100% { transform: translateY(0) scale(1); }
+  50% { transform: translateY(-6px) scale(1.008); }
+}
+.float-breath { animation: float-breath 6s var(--ease-emil) infinite; }
+
+/* ═══ Press spring — replace genérico btn-press ═══ */
+.press-spring {
+  transition: transform 200ms var(--ease-emil-spring);
+}
+.press-spring:active {
+  transform: scale(0.95);
+  transition-duration: 80ms;
+}
+
+/* ═══ Stagger delays ═══ */
+.stagger-0 { transition-delay: 0ms; animation-delay: 0ms; }
+.stagger-1 { transition-delay: 60ms; animation-delay: 60ms; }
+.stagger-2 { transition-delay: 120ms; animation-delay: 120ms; }
+.stagger-3 { transition-delay: 200ms; animation-delay: 200ms; }
+.stagger-4 { transition-delay: 300ms; animation-delay: 300ms; }
+.stagger-5 { transition-delay: 420ms; animation-delay: 420ms; }
+.stagger-6 { transition-delay: 560ms; animation-delay: 560ms; }
+.stagger-7 { transition-delay: 720ms; animation-delay: 720ms; }
+
+/* ═══ Focus ring elegante — cyan outline con spring ═══ */
+*:focus-visible {
+  outline: 2px solid var(--color-cyan);
+  outline-offset: 3px;
+  transition: outline-offset 160ms var(--ease-emil-spring);
+}
+
+/* ═══ Scrollbar refinement ═══ */
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: rgba(107, 122, 144, 0.3);
+  border-radius: 10px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+::-webkit-scrollbar-thumb:hover { background-color: rgba(107, 122, 144, 0.5); background-clip: content-box; }
+
+/* ═══ Selection ═══ */
+::selection {
+  background: rgba(47, 180, 230, 0.25);
+  color: var(--color-marine-deep);
 }

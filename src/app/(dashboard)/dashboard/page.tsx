@@ -7,6 +7,7 @@ import {
 } from "@/lib/queries";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
+import { AnimatedCounter } from "@/components/ui/animated-counter";
 
 const statusLabels: Record<string, string> = {
   new: "NUEVO",
@@ -64,17 +65,22 @@ export default async function DashboardPage() {
         </p>
       </div>
 
-      {/* Saldo card — manual style */}
-      <div className="rounded-2xl bg-card border border-border p-6 md:p-8">
+      {/* Saldo card — con count-up dramático */}
+      <div className="group rounded-2xl bg-card border border-border p-6 md:p-8 transition-all duration-500 hover:border-marine/25 hover:shadow-[0_18px_50px_-18px_rgb(15,46,90,0.18)]">
         <div className="flex items-start justify-between gap-5">
           <div className="min-w-0">
             <p className="font-meta text-mute">SALDO PENDIENTE · USD</p>
             <p
-              className={`mt-4 font-display text-[clamp(2.75rem,6vw,4rem)] leading-none tracking-[-0.03em] ${
+              className={`mt-4 font-display text-[clamp(2.75rem,6vw,4rem)] leading-none tracking-[-0.03em] tabular-nums ${
                 pendingTotal > 0 ? "text-marine-deep" : "text-cyan"
               }`}
             >
-              ${pendingTotal.toFixed(2)}
+              <AnimatedCounter
+                value={pendingTotal}
+                decimals={2}
+                prefix="$"
+                duration={1600}
+              />
             </p>
             {pendingTotal === 0 && (
               <p className="mt-3 font-meta text-cyan">AL DÍA · GRACIAS</p>
@@ -82,7 +88,7 @@ export default async function DashboardPage() {
           </div>
           {pendingTotal > 0 && (
             <Link href="/pagos">
-              <Button className="h-11 px-5">Pagar ahora</Button>
+              <Button className="h-11 px-5 press-spring">Pagar ahora</Button>
             </Link>
           )}
         </div>
