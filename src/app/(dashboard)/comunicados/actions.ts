@@ -2,12 +2,13 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentProfile } from "@/lib/queries";
+import { isAdminRole } from "@/lib/permissions";
 import { revalidatePath } from "next/cache";
 
 export async function createAnnouncement(formData: FormData) {
   const profile = await getCurrentProfile();
-  if (!profile?.organization_id) return { error: "No tienes organizacion" };
-  if (profile.role !== "admin" && profile.role !== "super_admin") {
+  if (!profile?.organization_id) return { error: "No tienes organización" };
+  if (!isAdminRole(profile)) {
     return { error: "Solo administradores pueden crear comunicados" };
   }
 

@@ -26,12 +26,6 @@ export default async function AdminPage() {
 
   const rateData = await getCurrentRate(profile.organization_id);
 
-  const { data: org } = await supabase
-    .from("organizations")
-    .select("invite_code")
-    .eq("id", profile.organization_id)
-    .single();
-
   const [stats, maintenance, pendingPaymentsRes, morosRes] = await Promise.all([
     getAdminStats(profile.organization_id),
     getOrgMaintenance(profile.organization_id),
@@ -127,19 +121,6 @@ export default async function AdminPage() {
           <AddUnitDialog />
         </div>
       </div>
-
-      {/* Invite code */}
-      {org?.invite_code && (
-        <div className="rounded-2xl bg-ink text-bone p-6 md:p-7">
-          <p className="font-meta text-sand">CÓDIGO DE INVITACIÓN · RESIDENTES</p>
-          <p className="mt-4 font-mono text-[32px] leading-none text-bone tracking-[0.08em]">
-            {org.invite_code}
-          </p>
-          <p className="mt-4 text-[13px] text-bone/60">
-            Comparte por WhatsApp para que los residentes se unan.
-          </p>
-        </div>
-      )}
 
       <div className="grid gap-6 lg:grid-cols-2">
         {/* Comprobantes */}

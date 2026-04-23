@@ -2,12 +2,13 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentProfile, getCurrentRate } from "@/lib/queries";
+import { isAdminRole } from "@/lib/permissions";
 import { revalidatePath } from "next/cache";
 
 export async function updateExchangeRate(rate: number) {
   const profile = await getCurrentProfile();
   if (!profile?.organization_id) return { error: "No autorizado" };
-  if (profile.role !== "admin" && profile.role !== "super_admin") return { error: "Solo administradores" };
+  if (!isAdminRole(profile)) return { error: "Solo administradores" };
 
   const supabase = await createClient();
   const today = new Date().toISOString().split("T")[0];
@@ -24,7 +25,7 @@ export async function updateExchangeRate(rate: number) {
 export async function generateMonthlyInvoices(formData: FormData) {
   const profile = await getCurrentProfile();
   if (!profile?.organization_id) return { error: "No autorizado" };
-  if (profile.role !== "admin" && profile.role !== "super_admin") return { error: "Solo administradores" };
+  if (!isAdminRole(profile)) return { error: "Solo administradores" };
 
   const month = formData.get("month") as string;
   const year = formData.get("year") as string;
@@ -86,7 +87,7 @@ export async function generateMonthlyInvoices(formData: FormData) {
 export async function addUnit(formData: FormData) {
   const profile = await getCurrentProfile();
   if (!profile?.organization_id) return { error: "No autorizado" };
-  if (profile.role !== "admin" && profile.role !== "super_admin") return { error: "Solo administradores" };
+  if (!isAdminRole(profile)) return { error: "Solo administradores" };
 
   const unitNumber = (formData.get("unit_number") as string)?.trim();
   const floor = formData.get("floor") ? parseInt(formData.get("floor") as string) : null;

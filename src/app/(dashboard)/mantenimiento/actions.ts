@@ -2,6 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentProfile, getUserUnitIds } from "@/lib/queries";
+import { isAdminRole } from "@/lib/permissions";
 import { revalidatePath } from "next/cache";
 
 export type CreateMaintenanceResult =
@@ -117,7 +118,7 @@ export async function updateRequestStatus(
   try {
     const profile = await getCurrentProfile();
     if (!profile?.organization_id) return { error: "No autorizado" };
-    if (profile.role !== "admin" && profile.role !== "super_admin") {
+    if (!isAdminRole(profile)) {
       return { error: "Solo administradores pueden cambiar el estado" };
     }
 

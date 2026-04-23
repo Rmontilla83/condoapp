@@ -2,11 +2,19 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentProfile } from "@/lib/queries";
+import { canTenantAct } from "@/lib/permissions";
 import { revalidatePath } from "next/cache";
 
 export async function createReservation(formData: FormData) {
   const profile = await getCurrentProfile();
-  if (!profile?.organization_id) return { error: "No tienes organizacion asignada" };
+  if (!profile?.organization_id) return { error: "No tienes organización asignada" };
+
+  // Policy V2: inquilinos solo pueden reservar si el condominio lo permite.
+  // Owners y admins siempre pueden.
+  const gate = await canTenantAct(profile, "tenant_can_reserve");
+  if (!gate.allowed) {
+    return { error: gate.reason ?? "No puedes reservar en este condominio." };
+  }
 
   const areaId = formData.get("area_id") as string;
   const date = formData.get("date") as string;
@@ -37,7 +45,7 @@ export async function createReservation(formData: FormData) {
     .gt("end_time", startTime);
 
   if (conflicts && conflicts.length > 0) {
-    return { error: "Ese horario ya esta reservado. Elige otro." };
+    return { error: "Ese horario ya está reservado. Elige otro." };
   }
 
   const { error } = await supabase.from("reservations").insert({

@@ -2,12 +2,13 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentProfile } from "@/lib/queries";
+import { isAdminRole } from "@/lib/permissions";
 import { revalidatePath } from "next/cache";
 
 export async function createExpense(formData: FormData) {
   const profile = await getCurrentProfile();
-  if (!profile?.organization_id) return { error: "No tienes organizacion asignada" };
-  if (profile.role !== "admin" && profile.role !== "super_admin") {
+  if (!profile?.organization_id) return { error: "No tienes organización asignada" };
+  if (!isAdminRole(profile)) {
     return { error: "Solo administradores pueden registrar gastos" };
   }
 

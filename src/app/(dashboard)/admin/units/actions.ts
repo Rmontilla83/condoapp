@@ -3,6 +3,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getCurrentProfile } from "@/lib/queries";
+import { isAdminRole } from "@/lib/permissions";
 import { revalidatePath } from "next/cache";
 import { randomBytes } from "node:crypto";
 import type { OwnershipMode, MemberRole, TenantPermissions } from "@/types/database";
@@ -48,7 +49,7 @@ async function ensureUserExists(admin: ReturnType<typeof createAdminClient>, ema
 async function requireAdminOrSuper() {
   const profile = await getCurrentProfile();
   if (!profile) throw new Error("No autenticado");
-  if (profile.role !== "admin" && profile.role !== "super_admin") {
+  if (!isAdminRole(profile)) {
     throw new Error("Solo administradores");
   }
   if (!profile.organization_id) throw new Error("Sin organización");
@@ -62,7 +63,7 @@ async function requireUnitAccess(unitId: string, requireRole?: MemberRole) {
   const supabase = await createClient();
 
   // Admins tienen acceso a cualquier unidad de su org
-  if (profile.role === "admin" || profile.role === "super_admin") {
+  if (isAdminRole(profile)) {
     const { data: unit } = await supabase
       .from("units")
       .select("id, organization_id")
