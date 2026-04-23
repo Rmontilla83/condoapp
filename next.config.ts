@@ -23,6 +23,16 @@ const nextConfig: NextConfig = {
           { key: "Permissions-Policy", value: "camera=(self), microphone=()" },
         ],
       },
+      {
+        // Forzar no-cache en HTML de páginas dinámicas del dashboard.
+        // Evita que cualquier layer (CDN/Vercel edge/browser) sirva versión
+        // stale después de una mutation. Los assets (_next/static) siguen
+        // con su cache inmutable normal porque no matchea esta source.
+        source: "/((?!_next|brand|icon|apple|favicon|manifest|sw|robots|sitemap).*)",
+        headers: [
+          { key: "Cache-Control", value: "no-store, must-revalidate" },
+        ],
+      },
     ];
   },
 };

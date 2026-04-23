@@ -82,16 +82,36 @@ export default function RootLayout({
         />
       </head>
       <body className="min-h-full flex flex-col bg-background text-foreground antialiased">
-        {children}
         {/*
-          SW registration desactivado. El SW viejo cacheaba HTML/RSC y
-          rompía router.refresh(). Cargamos igual /sw.js porque los
-          browsers que lo tenían registrado lo consultan en cada navegación;
-          la nueva versión se auto-desinstala (ver public/sw.js).
+          SW cleanup AGRESIVO (beforeInteractive).
+          Si detecta un SW registrado, lo desinstala, borra TODOS los
+          caches, y fuerza reload con bypass de caché. Sin esto los
+          browsers que tenían el SW viejo seguían sirviendo HTML stale
+          aunque hiciéramos router.refresh() o location.reload() normal.
+          Guard con sessionStorage para no caer en loop infinito de reload.
         */}
-        <Script id="sw-cleanup" strategy="afterInteractive">
-          {`if('serviceWorker' in navigator){navigator.serviceWorker.getRegistrations().then(regs=>regs.forEach(r=>r.unregister()))}`}
+        <Script id="sw-kill" strategy="beforeInteractive">
+          {`(function(){
+  if (typeof window === 'undefined' || !('serviceWorker' in navigator)) return;
+  if (sessionStorage.getItem('__atryum_sw_killed')) return;
+  navigator.serviceWorker.getRegistrations().then(function(regs){
+    if (!regs.length) return;
+    sessionStorage.setItem('__atryum_sw_killed','1');
+    Promise.all(regs.map(function(r){return r.unregister();})).then(function(){
+      if ('caches' in window) {
+        caches.keys().then(function(keys){
+          Promise.all(keys.map(function(k){return caches.delete(k);})).then(function(){
+            window.location.reload();
+          });
+        });
+      } else {
+        window.location.reload();
+      }
+    });
+  }).catch(function(){});
+})();`}
         </Script>
+        {children}
       </body>
     </html>
   );
