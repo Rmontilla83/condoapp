@@ -11,6 +11,7 @@ import { AtryumLogo } from "@/components/brand/atryum-logo";
 type Stage = "email" | "otp" | "verifying" | "success";
 
 const RESEND_COOLDOWN_SECONDS = 45;
+const LAST_EMAIL_KEY = "atryum:lastEmail";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -18,6 +19,7 @@ export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [token, setToken] = useState("");
   const [loading, setLoading] = useState(false);
+  const [codeSent, setCodeSent] = useState(false);
   const [error, setError] = useState(() => {
     if (typeof window !== "undefined") {
       const params = new URLSearchParams(window.location.search);
@@ -27,12 +29,25 @@ export default function LoginPage() {
   });
   const [cooldown, setCooldown] = useState(0);
   const otpInputRef = useRef<HTMLInputElement>(null);
+  const emailInOtpRef = useRef<HTMLInputElement>(null);
+
+  // Precargar último email usado
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const saved = localStorage.getItem(LAST_EMAIL_KEY);
+    if (saved) setEmail(saved);
+  }, []);
 
   useEffect(() => {
     if (stage === "otp") {
-      otpInputRef.current?.focus();
+      // Si ya hay email, focus al OTP. Si no, al email.
+      if (email) {
+        otpInputRef.current?.focus();
+      } else {
+        emailInOtpRef.current?.focus();
+      }
     }
-  }, [stage]);
+  }, [stage, email]);
 
   useEffect(() => {
     if (cooldown <= 0) return;
@@ -53,6 +68,7 @@ export default function LoginPage() {
 
   async function handleRequest(e: React.FormEvent) {
     e.preventDefault();
+    if (!email) return;
     setLoading(true);
     setError("");
 
@@ -64,16 +80,16 @@ export default function LoginPage() {
       return;
     }
 
+    localStorage.setItem(LAST_EMAIL_KEY, email);
     setStage("otp");
+    setCodeSent(true);
     setCooldown(RESEND_COOLDOWN_SECONDS);
     setLoading(false);
   }
 
   async function handleVerify(e: React.FormEvent) {
     e.preventDefault();
-    // Supabase OTP length es configurable (6-10). Aceptamos cualquier tamaño
-    // razonable y dejamos que el servidor valide.
-    if (token.length < 6) return;
+    if (!email || token.length < 6) return;
 
     setLoading(true);
     setError("");
@@ -93,18 +109,20 @@ export default function LoginPage() {
       return;
     }
 
+    localStorage.setItem(LAST_EMAIL_KEY, email);
     setStage("success");
     router.push("/dashboard");
   }
 
   async function handleResend() {
-    if (cooldown > 0 || loading) return;
+    if (cooldown > 0 || loading || !email) return;
     setLoading(true);
     setError("");
     const sendError = await sendCode(email);
     if (sendError) {
       setError("No pudimos reenviar el código. Intenta de nuevo en unos minutos.");
     } else {
+      setCodeSent(true);
       setCooldown(RESEND_COOLDOWN_SECONDS);
     }
     setLoading(false);
@@ -115,6 +133,12 @@ export default function LoginPage() {
     setToken("");
     setError("");
     setCooldown(0);
+    setCodeSent(false);
+  }
+
+  function jumpToOtp() {
+    setStage("otp");
+    setError("");
   }
 
   return (
@@ -128,62 +152,92 @@ export default function LoginPage() {
           <div className="mb-8">
             <span className="font-meta-loose text-steel">ACCESO · ATRYUM</span>
             <h1 className="mt-5 font-display text-[clamp(1.75rem,4vw,2.5rem)] leading-[1.1] tracking-[-0.03em] text-ink">
-              {stage === "email" ? (
-                <>
-                  Entra a tu{" "}
-                  <em className="font-editorial text-steel">condominio</em>.
-                </>
-              ) : stage === "success" ? (
+              {stage === "success" ? (
                 <>
                   Acceso <em className="font-editorial text-steel">confirmado</em>.
                 </>
+              ) : stage === "otp" || stage === "verifying" ? (
+                <>
+                  Pega tu <em className="font-editorial text-steel">código</em>.
+                </>
               ) : (
                 <>
-                  Revisa tu <em className="font-editorial text-steel">correo</em>.
+                  Entra a tu{" "}
+                  <em className="font-editorial text-steel">condominio</em>.
                 </>
               )}
             </h1>
             <p className="mt-3 text-[15px] text-mute leading-relaxed">
               {stage === "email"
                 ? "Te enviamos un código por correo. Sin contraseñas, sin complicaciones."
-                : `Enviamos un código a ${email}.`}
+                : codeSent
+                ? `Enviamos un código a ${email}.`
+                : "Si ya pediste un código, pégalo aquí."}
             </p>
           </div>
 
           <div className="bg-card rounded-2xl border border-border p-6 md:p-7">
             {stage === "email" && (
-              <form onSubmit={handleRequest} className="space-y-5">
-                <div className="space-y-2">
-                  <Label htmlFor="email" className="font-meta text-mute">CORREO ELECTRÓNICO</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    placeholder="tu@correo.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                    autoFocus
-                    autoComplete="email"
-                    className="h-11 text-[15px]"
-                  />
+              <>
+                <form onSubmit={handleRequest} className="space-y-5">
+                  <div className="space-y-2">
+                    <Label htmlFor="email" className="font-meta text-mute">
+                      CORREO ELECTRÓNICO
+                    </Label>
+                    <Input
+                      id="email"
+                      type="email"
+                      placeholder="tu@correo.com"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      required
+                      autoFocus
+                      autoComplete="email"
+                      className="h-11 text-[15px]"
+                    />
+                  </div>
+                  {error && <p className="text-[13px] text-destructive">{error}</p>}
+                  <Button type="submit" className="w-full h-11" disabled={loading || !email}>
+                    {loading ? "Enviando..." : "Enviar código"}
+                  </Button>
+                </form>
+
+                <div className="mt-5 pt-5 border-t border-border text-center">
+                  <button
+                    type="button"
+                    onClick={jumpToOtp}
+                    className="font-meta text-steel hover:text-ink transition-colors"
+                  >
+                    YA TENGO UN CÓDIGO →
+                  </button>
                 </div>
-                {error && (
-                  <p className="text-[13px] text-destructive">{error}</p>
-                )}
-                <Button type="submit" className="w-full h-11" disabled={loading}>
-                  {loading ? "Enviando..." : "Enviar código"}
-                </Button>
-                <p className="text-center font-meta text-mute">
-                  SIN CONTRASEÑA · CÓDIGO EXPIRA EN 1 HORA
-                </p>
-              </form>
+              </>
             )}
 
             {(stage === "otp" || stage === "verifying") && (
               <>
                 <form onSubmit={handleVerify} className="space-y-5">
                   <div className="space-y-2">
-                    <Label htmlFor="otp" className="font-meta text-mute">CÓDIGO DEL CORREO</Label>
+                    <Label htmlFor="email-otp" className="font-meta text-mute">
+                      CORREO
+                    </Label>
+                    <Input
+                      ref={emailInOtpRef}
+                      id="email-otp"
+                      type="email"
+                      placeholder="tu@correo.com"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      required
+                      autoComplete="email"
+                      disabled={loading}
+                      className="h-11 text-[15px]"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="otp" className="font-meta text-mute">
+                      CÓDIGO DEL CORREO
+                    </Label>
                     <Input
                       ref={otpInputRef}
                       id="otp"
@@ -203,30 +257,34 @@ export default function LoginPage() {
                       disabled={loading}
                     />
                   </div>
-                  {error && (
-                    <p className="text-[13px] text-destructive">{error}</p>
-                  )}
+                  {error && <p className="text-[13px] text-destructive">{error}</p>}
                   <Button
                     type="submit"
                     className="w-full h-11"
-                    disabled={loading || token.length < 6}
+                    disabled={loading || !email || token.length < 6}
                   >
-                    {stage === "verifying" ? "Verificando..." : "Verificar código"}
+                    {stage === "verifying" ? "Verificando..." : "Verificar y entrar"}
                   </Button>
                 </form>
 
                 <div className="mt-6 pt-5 border-t border-border space-y-3 text-center">
                   <p className="text-[12px] text-mute leading-relaxed">
-                    También puedes hacer clic en el enlace del correo si lo abres en este mismo dispositivo.
+                    {codeSent
+                      ? "También puedes hacer clic en el enlace del correo si lo abres en este mismo dispositivo."
+                      : "Si aún no tienes código, pide uno nuevo."}
                   </p>
-                  <div className="flex items-center justify-center gap-4 font-meta">
+                  <div className="flex items-center justify-center gap-4 font-meta flex-wrap">
                     <button
                       type="button"
                       onClick={handleResend}
-                      disabled={cooldown > 0 || loading}
+                      disabled={cooldown > 0 || loading || !email}
                       className="text-steel hover:text-ink transition-colors disabled:opacity-40"
                     >
-                      {cooldown > 0 ? `REENVIAR · ${cooldown}s` : "REENVIAR CÓDIGO"}
+                      {cooldown > 0
+                        ? `REENVIAR · ${cooldown}s`
+                        : codeSent
+                        ? "REENVIAR CÓDIGO"
+                        : "ENVIAR CÓDIGO"}
                     </button>
                     <span className="text-mute/40" aria-hidden="true">·</span>
                     <button
@@ -235,7 +293,7 @@ export default function LoginPage() {
                       disabled={loading}
                       className="text-steel hover:text-ink transition-colors disabled:opacity-40"
                     >
-                      OTRO CORREO
+                      VOLVER
                     </button>
                   </div>
                 </div>
