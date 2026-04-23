@@ -1,6 +1,10 @@
 import Link from "next/link";
 import { Reveal } from "@/components/reveal";
 
+const PORTAL_LOGIN = process.env.NEXT_PUBLIC_PORTAL_URL
+  ? `${process.env.NEXT_PUBLIC_PORTAL_URL}/login`
+  : "/login";
+
 export default function HomePage() {
   return (
     <div className="min-h-screen bg-[#FAFBFC] overflow-hidden">
@@ -23,7 +27,7 @@ export default function HomePage() {
               <a href="#solucion" className="px-3 py-1.5 rounded-lg hover:text-[#0F172A] hover:bg-black/[0.03] transition-all duration-200">Solucion</a>
               <a href="#precio" className="px-3 py-1.5 rounded-lg hover:text-[#0F172A] hover:bg-black/[0.03] transition-all duration-200">Precio</a>
             </div>
-            <Link href="/login" className="bg-[#0F172A] text-white text-[13px] font-semibold px-5 py-2.5 rounded-xl hover:bg-[#1E293B] transition-colors btn-press">
+            <Link href={PORTAL_LOGIN} className="bg-[#0F172A] text-white text-[13px] font-semibold px-5 py-2.5 rounded-xl hover:bg-[#1E293B] transition-colors btn-press">
               Entrar
             </Link>
           </div>
@@ -56,7 +60,7 @@ export default function HomePage() {
               </p>
 
               <div className="hero-text hero-text-d3 mt-8 flex flex-wrap items-center gap-3">
-                <Link href="/login" className="group bg-[#0F172A] text-white text-[15px] font-semibold pl-7 pr-5 py-4 rounded-2xl hover:bg-[#1E293B] transition-all duration-300 flex items-center gap-3 shadow-[0_4px_24px_rgba(15,23,42,0.15)] hover:shadow-[0_8px_32px_rgba(15,23,42,0.2)] hover:-translate-y-0.5 btn-press">
+                <Link href={PORTAL_LOGIN} className="group bg-[#0F172A] text-white text-[15px] font-semibold pl-7 pr-5 py-4 rounded-2xl hover:bg-[#1E293B] transition-all duration-300 flex items-center gap-3 shadow-[0_4px_24px_rgba(15,23,42,0.15)] hover:shadow-[0_8px_32px_rgba(15,23,42,0.2)] hover:-translate-y-0.5 btn-press">
                   Empezar gratis
                   <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/10 group-hover:bg-white/20 transition-colors duration-200">
                     <svg className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-0.5" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor">
@@ -438,7 +442,7 @@ export default function HomePage() {
                 <p className="text-[12px] font-bold text-[#6B7280] uppercase tracking-wider">Starter</p>
                 <p className="mt-3 text-[40px] font-extrabold text-[#0F172A]" style={{fontFamily:'Outfit,sans-serif'}}>Gratis</p>
                 <p className="text-[13px] text-[#6B7280] mt-1">Hasta 15 unidades, para siempre</p>
-                <Link href="/login" className="mt-6 w-full py-3 rounded-xl border-2 border-[#E2E8F0] text-[13px] font-semibold text-[#0F172A] hover:border-[#CBD5E1] transition-colors btn-press flex items-center justify-center">
+                <Link href={PORTAL_LOGIN} className="mt-6 w-full py-3 rounded-xl border-2 border-[#E2E8F0] text-[13px] font-semibold text-[#0F172A] hover:border-[#CBD5E1] transition-colors btn-press flex items-center justify-center">
                   Crear cuenta gratis
                 </Link>
                 <div className="mt-6 pt-6 border-t border-[#F1F5F9] space-y-3">
@@ -462,7 +466,7 @@ export default function HomePage() {
                 </div>
                 <p className="text-[13px] text-[#94A3B8] mt-1">Todo incluido</p>
 
-                <Link href="/login" className="mt-6 w-full py-3 rounded-xl bg-[#2DD4BF] text-[#042F2E] text-[13px] font-bold hover:bg-[#5EEAD4] transition-colors btn-press flex items-center justify-center">
+                <Link href={PORTAL_LOGIN} className="mt-6 w-full py-3 rounded-xl bg-[#2DD4BF] text-[#042F2E] text-[13px] font-bold hover:bg-[#5EEAD4] transition-colors btn-press flex items-center justify-center">
                   Iniciar prueba gratis
                 </Link>
                 <div className="mt-6 pt-6 border-t border-white/10 space-y-3">
@@ -484,7 +488,7 @@ export default function HomePage() {
                   <span className="text-[14px] text-[#6B7280]">/ud/mes</span>
                 </div>
                 <p className="text-[13px] text-[#6B7280] mt-1">Administradoras profesionales</p>
-                <Link href="/login" className="mt-6 w-full py-3 rounded-xl border-2 border-[#E2E8F0] text-[13px] font-semibold text-[#0F172A] hover:border-[#CBD5E1] transition-colors btn-press flex items-center justify-center">
+                <Link href={PORTAL_LOGIN} className="mt-6 w-full py-3 rounded-xl border-2 border-[#E2E8F0] text-[13px] font-semibold text-[#0F172A] hover:border-[#CBD5E1] transition-colors btn-press flex items-center justify-center">
                   Contactar ventas
                 </Link>
                 <div className="mt-6 pt-6 border-t border-[#F1F5F9] space-y-3">
@@ -512,7 +516,7 @@ export default function HomePage() {
               2 minutos para registrarte. Sin tarjeta. Sin contrato. Gratis hasta 15 unidades.
             </p>
             <div className="mt-10">
-              <Link href="/login" className="group bg-[#0F172A] text-white text-[16px] font-bold pl-8 pr-6 py-5 rounded-2xl hover:bg-[#1E293B] transition-all duration-300 inline-flex items-center gap-4 shadow-[0_8px_32px_rgba(15,23,42,0.18)] hover:shadow-[0_12px_48px_rgba(15,23,42,0.24)] hover:-translate-y-1 btn-press" style={{fontFamily:'Outfit,sans-serif'}}>
+              <Link href={PORTAL_LOGIN} className="group bg-[#0F172A] text-white text-[16px] font-bold pl-8 pr-6 py-5 rounded-2xl hover:bg-[#1E293B] transition-all duration-300 inline-flex items-center gap-4 shadow-[0_8px_32px_rgba(15,23,42,0.18)] hover:shadow-[0_12px_48px_rgba(15,23,42,0.24)] hover:-translate-y-1 btn-press" style={{fontFamily:'Outfit,sans-serif'}}>
                 Empezar gratis ahora
                 <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/10 group-hover:bg-white/20 transition-colors duration-200">
                   <svg className="h-5 w-5 transition-transform duration-300 group-hover:translate-x-0.5" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12h15m0 0l-6.75-6.75M19.5 12l-6.75 6.75"/></svg>
