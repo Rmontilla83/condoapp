@@ -84,12 +84,14 @@ export function Sidebar({ isAdmin = false }: { isAdmin?: boolean }) {
   const pathname = usePathname();
 
   return (
-    <aside className="hidden md:flex md:w-60 md:flex-col bg-sidebar text-sidebar-foreground">
-      <div className="flex h-24 items-center px-5 pt-2">
+    <aside className="hidden md:flex md:w-64 md:flex-col bg-sidebar text-sidebar-foreground">
+      {/* Logo hero — lockup es aspect ~1.3:1 (símbolo + wordmark apilado).
+          Dimensionamos por ancho para darle presencia real en el sidebar. */}
+      <div className="flex items-center justify-center px-5 pt-8 pb-6">
         <AtryumLogo
           variant="horizontal"
           tone="color"
-          className="h-12 w-auto"
+          className="w-40 h-auto"
           priority
         />
       </div>
