@@ -57,6 +57,23 @@ export async function getInvoicesForUser(unitIds: string[]) {
   return (data ?? []) as Invoice[];
 }
 
+/**
+ * Set de invoice_ids con al menos 1 transaction `pending` (comprobante
+ * subido pero aún no aprobado por admin). Útil para mostrar badge
+ * "EN REVISIÓN" en la UI sin re-querar.
+ */
+export async function getInvoiceIdsWithPendingTransactions(invoiceIds: string[]): Promise<Set<string>> {
+  if (invoiceIds.length === 0) return new Set();
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("transactions")
+    .select("invoice_id")
+    .in("invoice_id", invoiceIds)
+    .eq("status", "pending");
+
+  return new Set((data ?? []).map((r) => r.invoice_id as string));
+}
+
 export async function getOrgInvoices(orgId: string) {
   const supabase = await createClient();
   const { data } = await supabase

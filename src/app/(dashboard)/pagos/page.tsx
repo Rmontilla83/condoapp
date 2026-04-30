@@ -2,6 +2,7 @@ import {
   getCurrentProfile,
   getUserUnitIds,
   getInvoicesForUser,
+  getInvoiceIdsWithPendingTransactions,
   getFeeBreakdown,
   getCurrentRate,
   getOrganization,
@@ -31,12 +32,23 @@ export default async function PagosPage() {
     .filter((i) => i.status === "pending" || i.status === "overdue")
     .sort((a, b) => new Date(a.due_date).getTime() - new Date(b.due_date).getTime());
   const paidInvoices = invoices.filter((i) => i.status === "paid");
-  const pendingTotal = pendingInvoices.reduce((sum, i) => sum + Number(i.amount), 0);
+
+  // Comprobantes ya subidos esperando aprobación admin
+  const pendingTxInvoiceIds = await getInvoiceIdsWithPendingTransactions(
+    pendingInvoices.map((i) => i.id),
+  );
+
+  const inReviewInvoices = pendingInvoices.filter((i) => pendingTxInvoiceIds.has(i.id));
+  const actionableInvoices = pendingInvoices.filter((i) => !pendingTxInvoiceIds.has(i.id));
+
+  const inReviewTotal = inReviewInvoices.reduce((sum, i) => sum + Number(i.amount), 0);
+  const actionableTotal = actionableInvoices.reduce((sum, i) => sum + Number(i.amount), 0);
+  const pendingTotal = actionableTotal + inReviewTotal;
   const pendingTotalBs = pendingTotal * rate;
   const feeTotal = feeBreakdown.reduce((sum, f) => sum + Number(f.amount), 0);
 
   const lastPaid = paidInvoices[0];
-  const nextDue = pendingInvoices[0];
+  const nextDue = actionableInvoices[0];
 
   return (
     <div className="space-y-8">
@@ -65,13 +77,18 @@ export default async function PagosPage() {
           <p className="font-meta text-mute">SALDO PENDIENTE</p>
           <p
             className={`mt-3 font-display text-[32px] leading-none tracking-[-0.02em] ${
-              pendingTotal > 0 ? "text-marine-deep" : "text-cyan"
+              actionableTotal > 0 ? "text-marine-deep" : "text-cyan"
             }`}
           >
-            ${pendingTotal.toFixed(2)}
+            ${actionableTotal.toFixed(2)}
           </p>
-          {rate > 0 && pendingTotal > 0 && (
-            <p className="mt-2 text-[13px] text-mute">Bs {pendingTotalBs.toFixed(2)}</p>
+          {rate > 0 && actionableTotal > 0 && (
+            <p className="mt-2 text-[13px] text-mute">Bs {(actionableTotal * rate).toFixed(2)}</p>
+          )}
+          {inReviewTotal > 0 && (
+            <p className="mt-2 font-meta text-amber-700">
+              ${inReviewTotal.toFixed(2)} EN REVISIÓN
+            </p>
           )}
           {pendingTotal === 0 && (
             <p className="mt-2 font-meta text-cyan">AL DÍA</p>
@@ -108,26 +125,52 @@ export default async function PagosPage() {
         </div>
       </div>
 
-      {/* Datos bancarios reales del condo */}
-      {pendingTotal > 0 && (
+      {/* Datos bancarios reales del condo (solo si hay invoices accionables) */}
+      {actionableTotal > 0 && (
         <PaymentMethods
           accounts={bankAccounts}
-          total={pendingTotal}
+          total={actionableTotal}
           rate={rate}
-          pendingCount={pendingInvoices.length}
+          pendingCount={actionableInvoices.length}
         />
       )}
 
-      {/* Pendientes con selección múltiple */}
-      {pendingInvoices.length > 0 && (
+      {/* Comprobantes en revisión */}
+      {inReviewInvoices.length > 0 && (
+        <div className="rounded-2xl bg-amber-50 border border-amber-200 p-6">
+          <div className="mb-4">
+            <p className="font-meta text-amber-800">COMPROBANTES EN REVISIÓN</p>
+            <p className="mt-2 text-[15px] font-medium text-amber-900">
+              {inReviewInvoices.length} cuota{inReviewInvoices.length !== 1 ? "s" : ""} esperando
+              aprobación del administrador
+            </p>
+            <p className="mt-1 text-[12px] text-amber-700/80">
+              El admin del condominio aprobará tu pago. Recibirás notificación cuando se confirme.
+            </p>
+          </div>
+          <div className="space-y-3">
+            {inReviewInvoices.map((invoice) => (
+              <InvoiceRow
+                key={invoice.id}
+                invoice={invoice}
+                rate={rate}
+                inReview={true}
+              />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Pendientes accionables (con selección múltiple) */}
+      {actionableInvoices.length > 0 && (
         <div className="rounded-2xl bg-card border border-border p-6">
           <div className="mb-4">
             <p className="font-meta text-mute">CUOTAS PENDIENTES</p>
             <p className="mt-2 text-[15px] font-medium text-marine-deep">
-              {pendingInvoices.length} pendiente{pendingInvoices.length !== 1 ? "s" : ""}
+              {actionableInvoices.length} pendiente{actionableInvoices.length !== 1 ? "s" : ""} de pago
             </p>
           </div>
-          <PendingInvoices invoices={pendingInvoices} rate={rate} />
+          <PendingInvoices invoices={actionableInvoices} rate={rate} />
         </div>
       )}
 
