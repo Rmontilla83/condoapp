@@ -10,6 +10,33 @@ export type MaintenanceStatus =
   | "cancelled";
 
 export type PaymentStatus = "pending" | "paid" | "overdue" | "cancelled";
+export type TransactionStatus = "pending" | "approved" | "rejected";
+
+export type FeeMode = "flat" | "by_aliquot" | "by_type" | "manual";
+export type InvoiceKind = "monthly" | "extraordinary";
+export type BankAccountKind =
+  | "transfer"
+  | "mobile_payment"
+  | "zelle"
+  | "paypal"
+  | "binance"
+  | "other";
+
+export interface BankAccount {
+  id: string;
+  label: string;
+  kind: BankAccountKind;
+  currency: string;
+  bank_name: string;
+  account_number: string;
+  account_type?: "corriente" | "ahorro" | null;
+  holder_name: string;
+  holder_id?: string;
+  extra?: string;
+  instructions?: string;
+  active: boolean;
+  sort_order: number;
+}
 
 export interface Organization {
   id: string;
@@ -25,6 +52,28 @@ export interface Organization {
   tenant_can_vote: boolean;
   tenant_can_see_delinquents: boolean;
   tenant_can_reserve: boolean;
+  fee_mode: FeeMode;
+  fee_base_amount: number | null;
+  bank_accounts: BankAccount[];
+  late_fee_pct: number | null;
+  created_at: string;
+}
+
+export interface FeeTypeAmount {
+  id: string;
+  organization_id: string;
+  unit_type: string;
+  amount: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface FeeBreakdownItem {
+  id: string;
+  organization_id: string;
+  concept: string;
+  amount: number;
+  is_active: boolean;
   created_at: string;
 }
 
@@ -124,6 +173,9 @@ export interface Invoice {
   description: string;
   due_date: string;
   status: PaymentStatus;
+  kind: InvoiceKind;
+  exchange_rate: number | null;
+  amount_bs: number | null;
   created_at: string;
 }
 
@@ -135,7 +187,13 @@ export interface Transaction {
   payment_method: string;
   reference: string | null;
   receipt_url: string | null;
+  paid_by: string | null;
   paid_at: string;
+  status: TransactionStatus;
+  amount_bs: number | null;
+  currency_paid: string;
+  payment_group_id: string | null;
+  notes: string | null;
   created_at: string;
 }
 

@@ -5,6 +5,7 @@ import {
   getAdminStats,
   getOrgMaintenance,
   getCurrentRate,
+  getFeeTypeAmounts,
 } from "@/lib/queries";
 import { createClient } from "@/lib/supabase/server";
 import { RequestManager } from "./request-manager";
@@ -13,6 +14,7 @@ import { RateUpdater } from "./rate-updater";
 import { GenerateInvoicesDialog } from "./generate-invoices-dialog";
 import { AddUnitDialog } from "./add-unit-dialog";
 import { AnimatedCounter } from "@/components/ui/animated-counter";
+import type { FeeTypeAmount, Organization } from "@/types/database";
 
 export default async function AdminPage() {
   const profile = await getCurrentProfile();
@@ -27,7 +29,7 @@ export default async function AdminPage() {
 
   const rateData = await getCurrentRate(profile.organization_id);
 
-  const [stats, maintenance, pendingPaymentsRes, morosRes] = await Promise.all([
+  const [stats, maintenance, pendingPaymentsRes, morosRes, orgRes, unitsRes, feeTypeAmounts] = await Promise.all([
     getAdminStats(profile.organization_id),
     getOrgMaintenance(profile.organization_id),
     supabase
@@ -41,7 +43,28 @@ export default async function AdminPage() {
       .eq("organization_id", profile.organization_id)
       .in("status", ["pending", "overdue"])
       .order("due_date", { ascending: true }),
+    supabase
+      .from("organizations")
+      .select("*")
+      .eq("id", profile.organization_id)
+      .single<Organization>(),
+    supabase
+      .from("units")
+      .select("id, unit_number, block, type, aliquot")
+      .eq("organization_id", profile.organization_id)
+      .order("block", { ascending: true })
+      .order("unit_number", { ascending: true }),
+    getFeeTypeAmounts(profile.organization_id),
   ]);
+
+  const org = orgRes.data;
+  const units = (unitsRes.data ?? []).map((u) => ({
+    id: u.id as string,
+    unit_number: u.unit_number as string,
+    block: (u.block as string | null) ?? null,
+    type: (u.type as string) ?? "apartment",
+    aliquot: Number(u.aliquot ?? 0),
+  }));
 
   const pendingPayments = pendingPaymentsRes.data ?? [];
   const overdueInvoices = morosRes.data ?? [];
@@ -110,7 +133,14 @@ export default async function AdminPage() {
               Genera cuotas para todas las unidades de un mes.
             </p>
           </div>
-          <GenerateInvoicesDialog />
+          {org && (
+            <GenerateInvoicesDialog
+              org={org}
+              units={units}
+              feeTypeAmounts={feeTypeAmounts as FeeTypeAmount[]}
+              exchangeRate={Number(rateData.rate) || null}
+            />
+          )}
         </div>
         <div className="rounded-2xl bg-card border border-border p-5 flex flex-col justify-between gap-4">
           <div>
