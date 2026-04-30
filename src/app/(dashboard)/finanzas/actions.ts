@@ -3,6 +3,7 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getCurrentProfile } from "@/lib/queries";
 import { isAdminRole } from "@/lib/permissions";
+import { validateVoidReason } from "@/lib/schemas/finance";
 import { revalidatePath } from "next/cache";
 
 export async function createExpense(formData: FormData) {
@@ -89,6 +90,45 @@ export async function createExpense(formData: FormData) {
     expense_date: expenseDate,
     recorded_by: profile.id,
   });
+
+  if (error) return { error: error.message };
+
+  revalidatePath("/finanzas");
+  revalidatePath("/admin");
+  revalidatePath("/dashboard");
+  return { success: true };
+}
+
+export async function voidExpense(expenseId: string, reason: string) {
+  const profile = await getCurrentProfile();
+  if (!profile?.organization_id) return { error: "No autenticado" };
+  if (!isAdminRole(profile)) return { error: "Solo administradores pueden anular gastos" };
+
+  const reasonCheck = validateVoidReason(reason);
+  if (!reasonCheck.ok || !reasonCheck.reason) {
+    return { error: reasonCheck.error ?? "Razón inválida" };
+  }
+
+  const supabase = createAdminClient();
+
+  // Verificar que existe y pertenece a la org y NO está ya anulado
+  const { data: expense } = await supabase
+    .from("expense_records")
+    .select("id, organization_id, voided_at")
+    .eq("id", expenseId)
+    .eq("organization_id", profile.organization_id)
+    .single();
+  if (!expense) return { error: "Gasto no encontrado" };
+  if (expense.voided_at) return { error: "Este gasto ya está anulado" };
+
+  const { error } = await supabase
+    .from("expense_records")
+    .update({
+      voided_at: new Date().toISOString(),
+      voided_reason: reasonCheck.reason,
+    })
+    .eq("id", expenseId)
+    .eq("organization_id", profile.organization_id);
 
   if (error) return { error: error.message };
 

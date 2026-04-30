@@ -1,6 +1,7 @@
 import { getCurrentProfile, getEffectiveRole, getExpenseCategories } from "@/lib/queries";
 import { createClient } from "@/lib/supabase/server";
 import { NewExpenseDialog } from "./new-expense-dialog";
+import { VoidExpenseDialog } from "./void-expense-dialog";
 import type { ExpenseCategory } from "@/types/database";
 
 interface ExpenseRow {
@@ -229,6 +230,13 @@ export default async function FinanzasPage() {
                     <span className={`text-[14px] font-medium text-marine-deep ${voided ? "line-through" : ""}`}>
                       −${Number(expense.amount).toFixed(2)}
                     </span>
+                    {isAdmin && !voided && (
+                      <VoidExpenseDialog
+                        expenseId={expense.id}
+                        expenseDescription={expense.description}
+                        expenseAmount={Number(expense.amount)}
+                      />
+                    )}
                   </div>
                 </div>
               );
