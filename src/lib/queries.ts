@@ -379,11 +379,12 @@ export interface DashboardContext {
     common_area_name: string;
     notes: string | null;
   } | null;
-  openPollsNotVoted: Array<{
+  openDecisionsNotVoted: Array<{
     id: string;
-    question: string;
-    ends_at: string | null;
-    total_votes: number;
+    kind: import("@/types/database").DecisionKind;
+    title: string;
+    closes_at: string | null;
+    total_voters: number;
   }>;
   urgentAnnouncements: Announcement[];
   totalRecentAnnouncements: number;
@@ -473,10 +474,10 @@ export async function getDashboardContext(
       .limit(1)
       .maybeSingle(),
     supabase
-      .from("polls")
-      .select("id, question, ends_at, poll_votes(voter_id)")
+      .from("decisions")
+      .select("id, kind, title, closes_at, decision_questions(id, decision_responses(voter_id))")
       .eq("organization_id", orgId)
-      .eq("is_open", true),
+      .eq("status", "open"),
     supabase
       .from("announcements")
       .select("*")
@@ -502,23 +503,40 @@ export async function getDashboardContext(
     pendingInvoices.map((i) => i.id),
   );
 
-  // Filtro client-side: polls donde el user NO ha votado
-  type PollRow = { id: string; question: string; ends_at: string | null; poll_votes: { voter_id: string }[] };
-  const polls = ((pollsRes.data ?? []) as unknown as PollRow[])
-    .filter((p) => !(p.poll_votes ?? []).some((v) => v.voter_id === profileWithView.id))
-    .map((p) => ({
-      id: p.id,
-      question: p.question,
-      ends_at: p.ends_at,
-      total_votes: (p.poll_votes ?? []).length,
-    }))
+  // Filtro client-side: decisions donde el user NO ha votado en NINGUNA pregunta.
+  // Criterio conservador: si votó al menos una pregunta del formal_assembly,
+  // se considera "ya votó" (la card del dashboard desaparece). El detalle
+  // muestra "VOTASTE 1 DE N" para que pueda completar.
+  type DecisionRow = {
+    id: string;
+    kind: import("@/types/database").DecisionKind;
+    title: string;
+    closes_at: string | null;
+    decision_questions: Array<{ id: string; decision_responses: Array<{ voter_id: string }> }>;
+  };
+  const decisions = ((pollsRes.data ?? []) as unknown as DecisionRow[])
+    .filter((d) => {
+      const allResponses = (d.decision_questions ?? []).flatMap((q) => q.decision_responses ?? []);
+      return !allResponses.some((r) => r.voter_id === profileWithView.id);
+    })
+    .map((d) => {
+      const allResponses = (d.decision_questions ?? []).flatMap((q) => q.decision_responses ?? []);
+      const uniqueVoters = new Set(allResponses.map((r) => r.voter_id));
+      return {
+        id: d.id,
+        kind: d.kind,
+        title: d.title,
+        closes_at: d.closes_at,
+        total_voters: uniqueVoters.size,
+      };
+    })
     .sort((a, b) => {
-      if (!a.ends_at) return 1;
-      if (!b.ends_at) return -1;
-      return new Date(a.ends_at).getTime() - new Date(b.ends_at).getTime();
+      if (!a.closes_at) return 1;
+      if (!b.closes_at) return -1;
+      return new Date(a.closes_at).getTime() - new Date(b.closes_at).getTime();
     });
 
-  // Si tenant en su primaria y org tenant_can_vote=false → no mostrar polls
+  // Si tenant en su primaria y org tenant_can_vote=false → no mostrar decisiones
   const orgTyped = org as Organization | null;
   const isPrimaryTenant = memberships[0]?.role === "tenant";
   const canSeeVotes = !isPrimaryTenant || !!orgTyped?.tenant_can_vote;
@@ -555,7 +573,7 @@ export async function getDashboardContext(
     inReviewInvoiceIds,
     pendingTotalUsd: pendingInvoices.reduce((s, i) => s + Number(i.amount), 0),
     upcomingReservation,
-    openPollsNotVoted: canSeeVotes ? polls : [],
+    openDecisionsNotVoted: canSeeVotes ? decisions : [],
     urgentAnnouncements: (urgentRes.data ?? []) as Announcement[],
     totalRecentAnnouncements: recentCountRes.count ?? 0,
     recentRequests: (requestsRes.data ?? []) as MaintenanceRequest[],
