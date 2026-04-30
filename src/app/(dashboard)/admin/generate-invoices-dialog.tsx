@@ -455,22 +455,22 @@ function KindStep({
         </label>
 
         <label
-          className="flex items-start gap-3 rounded-lg border p-3 cursor-not-allowed opacity-60"
+          className={`flex items-start gap-3 rounded-lg border p-3 cursor-pointer transition ${
+            form.kind === "extraordinary" ? "border-primary bg-primary/5" : "hover:border-primary"
+          }`}
         >
           <input
             type="radio"
             name="kind"
-            disabled
-            checked={false}
-            onChange={() => {}}
-            className="mt-1 h-4 w-4"
+            checked={form.kind === "extraordinary"}
+            onChange={() => onChange((p) => ({ ...p, kind: "extraordinary" }))}
+            className="mt-1 h-4 w-4 cursor-pointer"
           />
           <div className="flex-1">
-            <p className="text-sm font-semibold">
-              Derrama extraordinaria <span className="text-mute">· próximamente</span>
-            </p>
+            <p className="text-sm font-semibold">Derrama extraordinaria</p>
             <p className="text-xs text-muted-foreground mt-0.5">
-              Cobro puntual con fecha libre y descripción obligatoria. Se habilita en la próxima entrega.
+              Cobro puntual con fecha libre y descripción obligatoria. Pintura de fachada, reparación de techo,
+              cuota especial aprobada en asamblea, etc.
             </p>
           </div>
         </label>
