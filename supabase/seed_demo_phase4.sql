@@ -446,56 +446,63 @@ WHERE receipt_url IS NULL
 -- 15. Más access_passes (delivery, Uber, familia, mudanza, proveedor)
 -- ---------------------------------------------------------------------
 
-INSERT INTO access_passes (organization_id, created_by, visitor_name, visitor_id_number, qr_code, valid_from, valid_until, unit_number, status) VALUES
+INSERT INTO access_passes (organization_id, created_by, visitor_name, visitor_id_number, qr_code, valid_from, valid_until, unit_id, visitor_kind, vehicle_plate, status) VALUES
   -- Costa: delivery rappi (corta vigencia)
   ('b3b1107d-c614-4c02-80a1-14f1da4079bc'::uuid,
     (SELECT id FROM profiles WHERE email='ana.torres@costa.atryum.test'),
     'Rappi — Mensajero', 'V-DEL01',
     'COS-QR-' || substr(md5(random()::text), 1, 12),
     '2026-04-26 12:00:00'::timestamptz, '2026-04-26 13:00:00'::timestamptz,
-    '1-A', 'active'),
+    (SELECT id FROM units WHERE organization_id='b3b1107d-c614-4c02-80a1-14f1da4079bc'::uuid AND unit_number='1-A'),
+    'delivery', NULL, 'active'),
   -- Costa: Uber con placa
   ('b3b1107d-c614-4c02-80a1-14f1da4079bc'::uuid,
     (SELECT id FROM profiles WHERE email='carlos.perez@costa.atryum.test'),
-    'Uber — placa AB123CD', 'V-UBER',
+    'Uber Black', 'V-UBER',
     'COS-QR-' || substr(md5(random()::text), 1, 12),
     '2026-04-25 18:00:00'::timestamptz, '2026-04-25 19:00:00'::timestamptz,
-    '1-B', 'used'),
+    (SELECT id FROM units WHERE organization_id='b3b1107d-c614-4c02-80a1-14f1da4079bc'::uuid AND unit_number='1-B'),
+    'rideshare', 'AB123CD', 'used'),
   -- Costa: mudanza con vehículo
   ('b3b1107d-c614-4c02-80a1-14f1da4079bc'::uuid,
     (SELECT id FROM profiles WHERE email='jose.parra@costa.atryum.test'),
     'Mudanza Express — camion 350kg', 'V-MUD01',
     'COS-QR-' || substr(md5(random()::text), 1, 12),
     '2026-04-27 09:00:00'::timestamptz, '2026-04-27 17:00:00'::timestamptz,
-    'L-1', 'active'),
+    (SELECT id FROM units WHERE organization_id='b3b1107d-c614-4c02-80a1-14f1da4079bc'::uuid AND unit_number='L-1'),
+    'moving', 'MUD123', 'active'),
   -- Costa: técnico Cantv
   ('b3b1107d-c614-4c02-80a1-14f1da4079bc'::uuid,
     (SELECT id FROM profiles WHERE email='diego.silva@costa.atryum.test'),
     'Tecnico CANTV — Andres Ruiz', 'V-CT789',
     'COS-QR-' || substr(md5(random()::text), 1, 12),
     '2026-04-24 10:00:00'::timestamptz, '2026-04-24 14:00:00'::timestamptz,
-    '4-A', 'active'),
+    (SELECT id FROM units WHERE organization_id='b3b1107d-c614-4c02-80a1-14f1da4079bc'::uuid AND unit_number='4-A'),
+    'service', NULL, 'active'),
   -- Olivos: familia visitante 3 días
   ('c05ade01-0000-0000-0000-000000000001'::uuid,
     (SELECT id FROM profiles WHERE email='paula.duran@olivos.atryum.test'),
     'Familia Duran (3 personas)', 'V-FAM01',
     'OLI-QR-' || substr(md5(random()::text), 1, 12),
     '2026-04-26 10:00:00'::timestamptz, '2026-04-29 22:00:00'::timestamptz,
-    'T1-301', 'active'),
+    (SELECT id FROM units WHERE organization_id='c05ade01-0000-0000-0000-000000000001'::uuid AND unit_number='T1-301'),
+    'family', NULL, 'active'),
   -- Olivos: PedidosYa
   ('c05ade01-0000-0000-0000-000000000001'::uuid,
     (SELECT id FROM profiles WHERE email='lucia.bravo@olivos.atryum.test'),
     'PedidosYa — Mensajero', 'V-PY01',
     'OLI-QR-' || substr(md5(random()::text), 1, 12),
     '2026-04-26 19:30:00'::timestamptz, '2026-04-26 20:30:00'::timestamptz,
-    'T1-201', 'used'),
-  -- Olivos: contratista (jornada completa)
+    (SELECT id FROM units WHERE organization_id='c05ade01-0000-0000-0000-000000000001'::uuid AND unit_number='T1-201'),
+    'delivery', NULL, 'used'),
+  -- Olivos: contratista (jornada completa, área común sin unit)
   ('c05ade01-0000-0000-0000-000000000001'::uuid,
     (SELECT id FROM profiles WHERE email='admin.olivos@atryum.test'),
     'Constructora Sierra — equipo de 4', 'V-CONS01',
     'OLI-QR-' || substr(md5(random()::text), 1, 12),
     '2026-04-28 07:00:00'::timestamptz, '2026-04-28 18:00:00'::timestamptz,
-    'COMUN', 'active')
+    NULL,
+    'service', 'CON456', 'active')
 ON CONFLICT DO NOTHING;
 
 -- ---------------------------------------------------------------------

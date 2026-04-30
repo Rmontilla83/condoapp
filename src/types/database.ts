@@ -227,6 +227,15 @@ export interface CommonArea {
 
 export type PassStatus = "active" | "used" | "expired" | "cancelled";
 
+export type VisitorKind =
+  | "guest"
+  | "family"
+  | "delivery"
+  | "rideshare"
+  | "service"
+  | "moving"
+  | "other";
+
 export interface AccessPass {
   id: string;
   organization_id: string;
@@ -234,7 +243,9 @@ export interface AccessPass {
   visitor_name: string;
   visitor_id_number: string | null;
   qr_code: string;
-  unit_number: string | null;
+  unit_id: string | null;
+  visitor_kind: VisitorKind;
+  vehicle_plate: string | null;
   status: PassStatus;
   valid_from: string;
   valid_until: string;

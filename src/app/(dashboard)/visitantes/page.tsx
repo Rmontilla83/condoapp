@@ -17,12 +17,13 @@ export default async function VisitantesPage() {
   const supabase = await createClient();
   const { data } = await supabase
     .from("access_passes")
-    .select("*")
+    .select("*, units:unit_id(unit_number)")
     .eq("created_by", profile.id)
     .order("created_at", { ascending: false })
     .limit(20);
 
-  const passes = (data ?? []) as AccessPass[];
+  type PassWithUnit = AccessPass & { units: { unit_number: string } | null };
+  const passes = (data ?? []) as PassWithUnit[];
 
   const now = new Date();
   const displayPasses = passes.map((p) => {
@@ -95,7 +96,7 @@ export default async function VisitantesPage() {
                       <p className="text-[14px] font-medium text-marine-deep truncate">{pass.visitor_name}</p>
                       <p className="mt-0.5 font-meta text-mute truncate">
                         {pass.visitor_id_number}
-                        {pass.unit_number ? ` · APTO ${pass.unit_number}` : ""}
+                        {pass.units?.unit_number ? ` · APTO ${pass.units.unit_number}` : ""}
                       </p>
                     </div>
                   </div>
