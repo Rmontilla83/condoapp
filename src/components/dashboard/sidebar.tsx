@@ -12,7 +12,7 @@ const navItems = [
   { href: "/visitantes", label: "Visitantes", icon: "qr" },
   { href: "/finanzas", label: "Finanzas", icon: "finanzas" },
   { href: "/reservas", label: "Reservas", icon: "reservas" },
-  { href: "/votaciones", label: "Votaciones", icon: "votaciones" },
+  { href: "/decisiones", label: "Decisiones", icon: "votaciones" },
 ];
 
 const adminItems = [
