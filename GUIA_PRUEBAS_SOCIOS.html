@@ -1,0 +1,1055 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Atryum · Guía de pruebas para socios</title>
+<style>
+  :root {
+    --marine: #1E4D8F;
+    --marine-deep: #0F2E5A;
+    --cyan: #2FB4E6;
+    --ember: #E8732C;
+    --frost: #F4F7FB;
+    --cloud: #EAEEF4;
+    --slate: #3B4A63;
+    --mute: #6B7A94;
+    --line: #D8DEE8;
+    --ok: #16A34A;
+    --warn: #D97706;
+    --danger: #DC2626;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    background: var(--frost);
+    color: var(--marine-deep);
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+  .container { max-width: 1100px; margin: 0 auto; padding: 0 24px; }
+
+  /* HERO */
+  header.hero {
+    background: linear-gradient(135deg, var(--marine-deep) 0%, var(--marine) 50%, var(--cyan) 100%);
+    color: white;
+    padding: 72px 24px 96px;
+    position: relative;
+    overflow: hidden;
+  }
+  header.hero::before {
+    content: "";
+    position: absolute; inset: 0;
+    background: radial-gradient(circle at 80% 20%, rgba(232,115,44,0.25) 0%, transparent 50%);
+  }
+  .hero-inner { position: relative; max-width: 1100px; margin: 0 auto; }
+  .brand {
+    display: inline-flex; align-items: center; gap: 14px;
+    font-weight: 800; font-size: 14px; letter-spacing: 0.2em; text-transform: uppercase;
+    margin-bottom: 24px; opacity: 0.9;
+  }
+  .brand-dot {
+    width: 36px; height: 36px; border-radius: 8px;
+    background: linear-gradient(135deg, var(--cyan), var(--ember));
+    display: grid; place-items: center; color: white; font-weight: 900; font-size: 18px;
+    box-shadow: 0 4px 16px rgba(47,180,230,0.5);
+  }
+  h1 {
+    font-size: clamp(32px, 5vw, 48px); font-weight: 800; line-height: 1.1;
+    margin-bottom: 16px; max-width: 800px;
+  }
+  .hero p { font-size: 18px; opacity: 0.92; max-width: 720px; }
+  .pill-row { display: flex; gap: 12px; margin-top: 32px; flex-wrap: wrap; }
+  .pill {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 8px 16px; border-radius: 999px;
+    background: rgba(255,255,255,0.15); backdrop-filter: blur(8px);
+    font-size: 13px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase;
+    border: 1px solid rgba(255,255,255,0.2);
+  }
+  .pill-emoji { font-size: 16px; }
+
+  /* SECTION */
+  section { padding: 64px 0; }
+  section.alt { background: white; }
+  h2 {
+    font-size: clamp(24px, 3vw, 32px); font-weight: 800;
+    color: var(--marine-deep); margin-bottom: 8px;
+  }
+  .section-sub { color: var(--mute); font-size: 15px; margin-bottom: 32px; max-width: 720px; }
+
+  /* TOC */
+  .toc-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px;
+  }
+  .toc-card {
+    background: white; border: 1px solid var(--line); border-radius: 16px; padding: 20px;
+    text-decoration: none; color: var(--marine-deep);
+    display: flex; flex-direction: column; gap: 8px;
+    transition: all 0.2s cubic-bezier(0.34, 1.4, 0.64, 1);
+  }
+  .toc-card:hover {
+    transform: translateY(-4px); border-color: var(--cyan);
+    box-shadow: 0 12px 32px rgba(30,77,143,0.12);
+  }
+  .toc-num {
+    font-size: 11px; font-weight: 800; letter-spacing: 0.15em; color: var(--cyan); text-transform: uppercase;
+  }
+  .toc-emoji { font-size: 32px; line-height: 1; }
+  .toc-title { font-weight: 700; font-size: 17px; }
+
+  /* ASSIGNMENTS */
+  .assign-table {
+    background: white; border: 1px solid var(--line); border-radius: 20px;
+    overflow: hidden; margin-bottom: 24px;
+  }
+  .assign-row {
+    display: grid; grid-template-columns: 60px 1fr 1fr 140px;
+    align-items: center; padding: 16px 24px; border-top: 1px solid var(--line);
+    gap: 16px;
+  }
+  .assign-row:first-child { border-top: none; background: var(--frost); font-weight: 700; font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--mute); }
+  .avatar {
+    width: 44px; height: 44px; border-radius: 50%;
+    display: grid; place-items: center; font-weight: 700; color: white; font-size: 16px;
+  }
+  .av-1 { background: linear-gradient(135deg, var(--marine), var(--cyan)); }
+  .av-2 { background: linear-gradient(135deg, var(--cyan), var(--marine)); }
+  .av-3 { background: linear-gradient(135deg, var(--ember), #F4A261); }
+  .av-4 { background: linear-gradient(135deg, var(--marine-deep), var(--marine)); }
+  .assign-name { font-weight: 600; }
+  .assign-email { font-size: 13px; color: var(--mute); }
+  .assign-org-tag {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: 700;
+    letter-spacing: 0.05em; text-transform: uppercase;
+  }
+  .tag-costa { background: rgba(47,180,230,0.15); color: var(--marine); }
+  .tag-olivos { background: rgba(232,115,44,0.15); color: var(--ember); }
+  .unit-chip {
+    background: var(--marine-deep); color: white; padding: 6px 12px; border-radius: 8px;
+    font-family: "SF Mono", Consolas, monospace; font-size: 13px; font-weight: 700;
+    text-align: center;
+  }
+
+  /* HOW TO LOGIN */
+  .login-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; }
+  .login-card {
+    background: white; border: 1px solid var(--line); border-radius: 16px; padding: 24px;
+  }
+  .login-step {
+    display: flex; gap: 16px; padding: 12px 0; border-top: 1px solid var(--line);
+  }
+  .login-step:first-of-type { border-top: none; padding-top: 0; }
+  .step-num {
+    flex-shrink: 0; width: 32px; height: 32px; border-radius: 50%;
+    background: var(--marine); color: white; font-weight: 700;
+    display: grid; place-items: center; font-size: 14px;
+  }
+  .login-card h3 { font-size: 18px; margin-bottom: 12px; color: var(--marine-deep); }
+
+  /* EPIC */
+  .epic {
+    background: white; border-radius: 24px; padding: 40px;
+    margin-bottom: 28px; border: 1px solid var(--line);
+    overflow: hidden; position: relative;
+  }
+  .epic-header {
+    display: flex; align-items: center; gap: 20px; margin-bottom: 8px;
+  }
+  .epic-num {
+    width: 64px; height: 64px; border-radius: 16px;
+    display: grid; place-items: center; color: white;
+    font-weight: 900; font-size: 28px; flex-shrink: 0;
+  }
+  .e1 { background: linear-gradient(135deg, var(--cyan), var(--marine)); }
+  .e2 { background: linear-gradient(135deg, var(--ember), #F4A261); }
+  .e3 { background: linear-gradient(135deg, var(--marine), var(--marine-deep)); }
+  .e4 { background: linear-gradient(135deg, var(--cyan), #6FCAEC); }
+  .e5 { background: linear-gradient(135deg, var(--marine-deep), var(--marine)); }
+  .epic-title { font-size: 26px; font-weight: 800; color: var(--marine-deep); }
+  .epic-desc { color: var(--mute); margin-top: 4px; font-size: 15px; }
+
+  .test {
+    background: var(--frost); border-radius: 16px; padding: 24px; margin-top: 20px;
+    border-left: 4px solid var(--cyan);
+  }
+  .test-title {
+    display: flex; align-items: center; gap: 12px; margin-bottom: 12px; flex-wrap: wrap;
+  }
+  .test-badge {
+    background: var(--marine-deep); color: white; padding: 4px 10px; border-radius: 6px;
+    font-size: 11px; font-weight: 800; letter-spacing: 0.1em;
+  }
+  .test h3 { font-size: 18px; font-weight: 700; color: var(--marine-deep); }
+  .who {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: white; padding: 4px 10px; border-radius: 6px; font-size: 12px;
+    color: var(--mute); border: 1px solid var(--line); font-weight: 600;
+  }
+
+  ol.steps { list-style: none; counter-reset: step; margin: 16px 0; padding: 0; }
+  ol.steps li {
+    counter-increment: step;
+    padding: 12px 16px 12px 56px; position: relative;
+    margin-bottom: 8px; background: white; border-radius: 10px;
+    border: 1px solid var(--line);
+  }
+  ol.steps li::before {
+    content: counter(step);
+    position: absolute; left: 16px; top: 50%; transform: translateY(-50%);
+    width: 28px; height: 28px; border-radius: 50%;
+    background: var(--cyan); color: white; font-weight: 700;
+    display: grid; place-items: center; font-size: 13px;
+  }
+  ol.steps code {
+    background: var(--cloud); padding: 2px 6px; border-radius: 4px;
+    font-family: "SF Mono", Consolas, monospace; font-size: 13px; color: var(--marine);
+  }
+  ol.steps strong { color: var(--marine-deep); }
+
+  .expected {
+    background: rgba(22,163,74,0.08); border-left: 4px solid var(--ok);
+    padding: 14px 18px; border-radius: 10px; margin-top: 12px;
+    display: flex; gap: 12px; align-items: flex-start;
+  }
+  .expected::before { content: "✓"; color: var(--ok); font-weight: 800; font-size: 18px; flex-shrink: 0; }
+  .expected strong { color: var(--ok); display: block; margin-bottom: 2px; font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase; }
+
+  .warn-box {
+    background: rgba(217,119,6,0.08); border-left: 4px solid var(--warn);
+    padding: 14px 18px; border-radius: 10px; margin-top: 12px;
+    display: flex; gap: 12px; align-items: flex-start;
+  }
+  .warn-box::before { content: "⚠"; font-size: 18px; flex-shrink: 0; }
+  .warn-box strong { color: var(--warn); display: block; margin-bottom: 2px; font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase; }
+
+  .url-button {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: var(--marine-deep); color: white; padding: 6px 12px;
+    border-radius: 6px; text-decoration: none; font-size: 13px; font-weight: 600;
+    font-family: "SF Mono", Consolas, monospace;
+    transition: all 0.15s;
+  }
+  .url-button:hover { background: var(--cyan); }
+
+  /* FEEDBACK */
+  .feedback-card {
+    background: linear-gradient(135deg, var(--marine-deep), var(--marine));
+    color: white; border-radius: 24px; padding: 40px;
+    text-align: center;
+  }
+  .feedback-card h2 { color: white; }
+  .feedback-card p { opacity: 0.9; margin: 12px 0 24px; max-width: 600px; margin-left: auto; margin-right: auto; }
+  .cta-row { display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; }
+  .cta-button {
+    background: var(--ember); color: white; padding: 14px 28px; border-radius: 12px;
+    font-weight: 700; text-decoration: none; font-size: 15px;
+    transition: all 0.2s; display: inline-flex; align-items: center; gap: 8px;
+  }
+  .cta-button:hover { transform: translateY(-2px); box-shadow: 0 12px 24px rgba(232,115,44,0.4); }
+  .cta-button.secondary { background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3); }
+
+  /* KNOWN ISSUES */
+  .issues-list { background: white; border: 1px solid var(--line); border-radius: 16px; overflow: hidden; }
+  .issue-row { padding: 16px 24px; border-top: 1px solid var(--line); display: flex; gap: 16px; align-items: flex-start; }
+  .issue-row:first-child { border-top: none; }
+  .issue-icon { font-size: 20px; flex-shrink: 0; }
+  .issue-text strong { display: block; color: var(--marine-deep); margin-bottom: 2px; }
+  .issue-text { font-size: 14px; color: var(--mute); }
+
+  /* FOOTER */
+  footer {
+    background: var(--marine-deep); color: white; padding: 32px 0;
+    text-align: center; font-size: 14px; opacity: 0.95;
+  }
+  footer .small { opacity: 0.7; font-size: 12px; margin-top: 8px; }
+
+  @media (max-width: 700px) {
+    .assign-row { grid-template-columns: 1fr; gap: 8px; }
+    .assign-row:first-child { display: none; }
+    .epic { padding: 24px; }
+    section { padding: 40px 0; }
+  }
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="hero-inner">
+    <div class="brand">
+      <span class="brand-dot">A</span>
+      <span>Atryum · Pruebas internas</span>
+    </div>
+    <h1>Guía de pruebas para socios</h1>
+    <p>Cinco épicas listas para validar. Cada uno de ustedes tiene su propio condominio, su unidad, y un rol de owner para probar todo el flujo: cobranza, decisiones, visitantes, mantenimiento y presupuesto.</p>
+    <div class="pill-row">
+      <span class="pill"><span class="pill-emoji">🚀</span> 5 épicas en producción</span>
+      <span class="pill"><span class="pill-emoji">🔐</span> Login con magic link</span>
+      <span class="pill"><span class="pill-emoji">📱</span> Probar en móvil + escritorio</span>
+      <span class="pill"><span class="pill-emoji">🐛</span> Reportar bugs por WhatsApp</span>
+    </div>
+  </div>
+</header>
+
+<section>
+  <div class="container">
+    <h2>👋 Quién es quién</h2>
+    <p class="section-sub">Cada socio tiene una unidad asignada en uno de los dos condominios demo. Esto les permite probar el lado de residente. Como además son super_admin, también pueden entrar al panel de administración del mismo condominio.</p>
+    <div class="assign-table">
+      <div class="assign-row">
+        <div></div>
+        <div>Socio</div>
+        <div>Unidad asignada</div>
+        <div>Rol</div>
+      </div>
+      <div class="assign-row">
+        <div class="avatar av-1">RM</div>
+        <div>
+          <div class="assign-name">Rafael Montilla</div>
+          <div class="assign-email">rafaelmontilla8@gmail.com</div>
+        </div>
+        <div>
+          <div class="assign-name">1-A · Bloque A</div>
+          <div><span class="assign-org-tag tag-costa">Costa de Plata</span></div>
+        </div>
+        <div class="unit-chip">OWNER</div>
+      </div>
+      <div class="assign-row">
+        <div class="avatar av-2">IA</div>
+        <div>
+          <div class="assign-name">Iker Ascención</div>
+          <div class="assign-email">iker.ascencion@gmail.com</div>
+        </div>
+        <div>
+          <div class="assign-name">2-A · Bloque A</div>
+          <div><span class="assign-org-tag tag-costa">Costa de Plata</span></div>
+        </div>
+        <div class="unit-chip">OWNER</div>
+      </div>
+      <div class="assign-row">
+        <div class="avatar av-3">HR</div>
+        <div>
+          <div class="assign-name">HR Montilla</div>
+          <div class="assign-email">hrmontilla@gmail.com</div>
+        </div>
+        <div>
+          <div class="assign-name">T1-101 · Torre 1</div>
+          <div><span class="assign-org-tag tag-olivos">Residencias Los Olivos</span></div>
+        </div>
+        <div class="unit-chip">OWNER</div>
+      </div>
+      <div class="assign-row">
+        <div class="avatar av-4">JM</div>
+        <div>
+          <div class="assign-name">Jodany Monasterio</div>
+          <div class="assign-email">monasteriojodany@gmail.com</div>
+        </div>
+        <div>
+          <div class="assign-name">T2-101 · Torre 2</div>
+          <div><span class="assign-org-tag tag-olivos">Residencias Los Olivos</span></div>
+        </div>
+        <div class="unit-chip">OWNER</div>
+      </div>
+    </div>
+    <div class="warn-box" style="margin-top: 16px;">
+      <div>
+        <strong>Importante</strong>
+        Rafael e Iker comparten Costa de Plata. HR y Jodany comparten Los Olivos. Esto les permite probar interacciones de a dos: uno crea, el otro responde. Si ven datos del otro condominio, repórtenlo: nadie de un condominio debe ver nada del otro.
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="alt">
+  <div class="container">
+    <h2>🔐 Cómo entrar</h2>
+    <p class="section-sub">No hay contraseña. Usamos magic link: introducen su email, reciben un código de 6 dígitos en el correo y entran. Funciona en móvil y escritorio.</p>
+    <div class="login-grid">
+      <div class="login-card">
+        <h3>Paso a paso</h3>
+        <div class="login-step">
+          <div class="step-num">1</div>
+          <div>Abrir <a class="url-button" href="https://portal.atryum.net" target="_blank">portal.atryum.net ↗</a></div>
+        </div>
+        <div class="login-step">
+          <div class="step-num">2</div>
+          <div>Escribir su correo (el de la tabla anterior) y tocar <strong>Enviar código</strong>.</div>
+        </div>
+        <div class="login-step">
+          <div class="step-num">3</div>
+          <div>Revisar la bandeja de entrada (puede tardar 30 seg). El correo viene de <code>noreply@atryum.net</code>.</div>
+        </div>
+        <div class="login-step">
+          <div class="step-num">4</div>
+          <div>Pegar el código de 6 dígitos en la página y entrar.</div>
+        </div>
+      </div>
+      <div class="login-card">
+        <h3>Si algo no funciona</h3>
+        <div class="login-step">
+          <div class="step-num">!</div>
+          <div><strong>No llega el correo:</strong> revisar spam. Si igual no llega, esperar 1 min y reenviar (límite 4 por hora).</div>
+        </div>
+        <div class="login-step">
+          <div class="step-num">!</div>
+          <div><strong>El código es viejo:</strong> caduca a los 10 min. Pedir uno nuevo.</div>
+        </div>
+        <div class="login-step">
+          <div class="step-num">!</div>
+          <div><strong>Dispositivo recordado:</strong> si entraron antes en este navegador, puede saltar directo sin código. Es esperado.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="container">
+    <h2>🧭 Las 5 épicas a probar</h2>
+    <p class="section-sub">Cada épica es un cambio fundamental que hicimos. Tóquenla para ir directo a sus pruebas.</p>
+    <div class="toc-grid">
+      <a href="#e1" class="toc-card">
+        <span class="toc-emoji">💰</span>
+        <span class="toc-num">Épica 1</span>
+        <span class="toc-title">Cobranza coherente</span>
+      </a>
+      <a href="#e4" class="toc-card">
+        <span class="toc-emoji">🏠</span>
+        <span class="toc-num">Épica 4</span>
+        <span class="toc-title">Estado del residente</span>
+      </a>
+      <a href="#e2" class="toc-card">
+        <span class="toc-emoji">🚪</span>
+        <span class="toc-num">Épica 2</span>
+        <span class="toc-title">Visitantes con QR</span>
+      </a>
+      <a href="#e3" class="toc-card">
+        <span class="toc-emoji">🗳️</span>
+        <span class="toc-num">Épica 3</span>
+        <span class="toc-title">Decisiones unificadas</span>
+      </a>
+      <a href="#e5" class="toc-card">
+        <span class="toc-emoji">📊</span>
+        <span class="toc-num">Épica 5</span>
+        <span class="toc-title">Ciclo de gasto</span>
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- ==== ÉPICA 1 ==== -->
+<section class="alt" id="e1">
+  <div class="container">
+    <div class="epic">
+      <div class="epic-header">
+        <div class="epic-num e1">1</div>
+        <div>
+          <div class="epic-title">💰 Cobranza coherente</div>
+          <div class="epic-desc">Cuotas por alícuota, datos bancarios del condominio, derrama extraordinaria, reportar pago con un solo comprobante para varias facturas.</div>
+        </div>
+      </div>
+
+      <div class="test">
+        <div class="test-title">
+          <span class="test-badge">TEST 1.1</span>
+          <h3>Configurar datos bancarios del condominio</h3>
+          <span class="who">👤 Como administrador</span>
+        </div>
+        <ol class="steps">
+          <li>Ir a <a class="url-button" href="https://portal.atryum.net/admin/settings" target="_blank">/admin/settings</a></li>
+          <li>Bajar a la sección <strong>Cuentas bancarias</strong>.</li>
+          <li>Tocar <strong>Agregar cuenta</strong>. Llenar: tipo (transferencia / pago móvil / Zelle / etc), banco, titular, número, moneda.</li>
+          <li>Guardar. Repetir con una segunda cuenta de tipo distinto.</li>
+        </ol>
+        <div class="expected">
+          <div>
+            <strong>Resultado esperado</strong>
+            La cuenta queda visible en /admin/settings. En <code>/pagos</code> los residentes ven instrucciones de pago con esos datos antes de subir comprobante.
+          </div>
+        </div>
+      </div>
+
+      <div class="test">
+        <div class="test-title">
+          <span class="test-badge">TEST 1.2</span>
+          <h3>Configurar modo de cuota</h3>
+          <span class="who">👤 Como administrador</span>
+        </div>
+        <ol class="steps">
+          <li>En <a class="url-button" href="https://portal.atryum.net/admin/settings" target="_blank">/admin/settings</a> ir a <strong>Configuración de cuota</strong>.</li>
+          <li>Probar los 4 modos: <em>Plano</em> (todos pagan lo mismo), <em>Por alícuota</em> (% × monto base), <em>Por tipo</em> (apartamento vs penthouse vs local), <em>Manual</em>.</li>
+          <li>Si elige <strong>Por alícuota</strong>: poner monto base $1000. Verificar que el desglose se muestre.</li>
+          <li>Guardar.</li>
+        </ol>
+        <div class="expected">
+          <div>
+            <strong>Resultado esperado</strong>
+            Cuando se generen las próximas cuotas mensuales, cada unidad pagará según el modo elegido. Una unidad de 6.5% pagaría $65, una de 13.6% pagaría $136.
+          </div>
+        </div>
+      </div>
+
+      <div class="test">
+        <div class="test-title">
+          <span class="test-badge">TEST 1.3</span>
+          <h3>Generar cuotas mensuales</h3>
+          <span class="who">👤 Como administrador</span>
+        </div>
+        <ol class="steps">
+          <li>Ir a <a class="url-button" href="https://portal.atryum.net/admin/billing" target="_blank">/admin/billing</a></li>
+          <li>Tocar <strong>Generar facturas mensuales</strong>.</li>
+          <li>Elegir período (ej: marzo 2026). Confirmar.</li>
+        </ol>
+        <div class="expected">
+          <div>
+            <strong>Resultado esperado</strong>
+            Aparecen N facturas (una por unidad) con monto según el modo. Cada residente las ve en su <code>/pagos</code>.
+          </div>
+        </div>
+        <div class="warn-box">
+          <div>
+            <strong>Bug a buscar</strong>
+            Si genera 2 veces el mismo período debe rechazarlo (anti-duplicado). Si lo permite y crea facturas duplicadas: reportar.
+          </div>
+        </div>
+      </div>
+
+      <div class="test">
+        <div class="test-title">
+          <span class="test-badge">TEST 1.4</span>
+          <h3>Reportar pago con un comprobante para varias facturas</h3>
+          <span class="who">🏠 Como residente</span>
+        </div>
+        <ol class="steps">
+          <li>Ir a <a class="url-button" href="https://portal.atryum.net/pagos" target="_blank">/pagos</a></li>
+          <li>Seleccionar 2 o más facturas pendientes (checkbox).</li>
+          <li>Tocar <strong>Reportar pago</strong>.</li>
+          <li>Subir 1 sola foto de comprobante. Indicar banco, referencia, monto total.</li>
+          <li>Confirmar.</li>
+        </ol>
+        <div class="expected">
+          <div>
+            <strong>Resultado esperado</strong>
+            Las facturas pasan a <strong>EN REVISIÓN</strong> (banner ámbar con icono pulsante). El KPI "saldo pendiente" baja, y aparece sub-línea "$X EN REVISIÓN".
+          </div>
+        </div>
+      </div>
+
+      <div class="test">
+        <div class="test-title">
+          <span class="test-badge">TEST 1.5</span>
+          <h3>Aprobar el pago como admin</h3>
+          <span class="who">👤 Como administrador</span>
+        </div>
+        <ol class="steps">
+          <li>Ir a <a class="url-button" href="https://portal.atryum.net/admin/billing" target="_blank">/admin/billing</a> tab <strong>Comprobantes pendientes</strong>.</li>
+          <li>Ver el comprobante subido en el test anterior. Tocar para abrir.</li>
+          <li>Aprobar. Las facturas vinculadas pasan a <strong>PAGADO</strong>.</li>
+        </ol>
+        <div class="expected">
+          <div>
+            <strong>Resultado esperado</strong>
+            En el lado del residente, las facturas aparecen ahora como pagadas. El admin sigue viendo el comprobante en historial.
+          </div>
+        </div>
+      </div>
+
+      <div class="test">
+        <div class="test-title">
+          <span class="test-badge">TEST 1.6</span>
+          <h3>Crear derrama extraordinaria</h3>
+          <span class="who">👤 Como administrador</span>
+        </div>
+        <ol class="steps">
+          <li>En <a class="url-button" href="https://portal.atryum.net/admin/billing" target="_blank">/admin/billing</a> tocar <strong>Generar facturas</strong>.</li>
+          <li>En el wizard, elegir tab <strong>Derrama extraordinaria</strong>.</li>
+          <li>Poner descripción: "Reparación portón principal". Fecha vencimiento. Monto total a derramar.</li>
+          <li>Confirmar.</li>
+        </ol>
+        <div class="expected">
+          <div>
+            <strong>Resultado esperado</strong>
+            Cada unidad recibe una factura extra con badge <strong>EXTRAORDINARIA</strong>. Convive con la cuota mensual normal.
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ==== ÉPICA 4 ==== -->
+<section id="e4">
+  <div class="container">
+    <div class="epic">
+      <div class="epic-header">
+        <div class="epic-num e4">4</div>
+        <div>
+          <div class="epic-title">🏠 Estado del residente visible</div>
+          <div class="epic-desc">Dashboard refactor para que al entrar el residente vea de un vistazo: su unidad, alertas urgentes, qué tiene pendiente, qué reservó.</div>
+        </div>
+      </div>
+
+      <div class="test">
+        <div class="test-title">
+          <span class="test-badge">TEST 4.1</span>
+          <h3>Identity strip al entrar</h3>
+          <span class="who">🏠 Como residente</span>
+        </div>
+        <ol class="steps">
+          <li>Entrar al <a class="url-button" href="https://portal.atryum.net/dashboard" target="_blank">/dashboard</a></li>
+          <li>Mirar arriba: debe haber un saludo + chip con su unidad.</li>
+        </ol>
+        <div class="expected">
+          <div>
+            <strong>Resultado esperado</strong>
+            El chip muestra: <code>APTO 1-A · BLOQUE A · COSTA DE PLATA · PROPIETARIO</code>. Saludo según la hora ("Buenas tardes Rafael").
+          </div>
+        </div>
+      </div>
+
+      <div class="test">
+        <div class="test-title">
+          <span class="test-badge">TEST 4.2</span>
+          <h3>Banner de anuncios urgentes</h3>
+          <span class="who">🏠 Como residente</span>
+        </div>
+        <ol class="steps">
+          <li>Como admin, ir a <a class="url-button" href="https://portal.atryum.net/anuncios" target="_blank">/anuncios</a> y crear uno con prioridad <strong>Urgente</strong>.</li>
+          <li>Cambiar a vista de residente (cerrar sesión y entrar con la otra cuenta del mismo condo, o usar view_as).</li>
+          <li>Volver al dashboard.</li>
+        </ol>
+        <div class="expected">
+          <div>
+            <strong>Resultado esperado</strong>
+            Banner rojo arriba del dashboard con el anuncio urgente. Click → va a /anuncios.
+          </div>
+        </div>
+      </div>
+
+      <div class="test">
+        <div class="test-title">
+          <span class="test-badge">TEST 4.3</span>
+          <h3>FAB de pago si tiene saldo</h3>
+          <span class="who">🏠 Como residente</span>
+        </div>
+        <ol class="steps">
+          <li>Si hay facturas pendientes, en el dashboard debe aparecer un botón flotante (FAB) abajo a la derecha "Pagar saldo $X".</li>
+          <li>Tocar → debe llevar a /pagos.</li>
+          <li>Si no hay facturas pendientes: el FAB no debe aparecer.</li>
+        </ol>
+      </div>
+
+      <div class="test">
+        <div class="test-title">
+          <span class="test-badge">TEST 4.4</span>
+          <h3>Reportar mantenimiento — área común vs unidad</h3>
+          <span class="who">🏠 Como residente</span>
+        </div>
+        <ol class="steps">
+          <li>Ir a <a class="url-button" href="https://portal.atryum.net/mantenimiento" target="_blank">/mantenimiento</a></li>
+          <li>Tocar <strong>Reportar problema</strong>.</li>
+          <li>Primero pide ubicación: cards "MI UNIDAD: 1-A" o "ÁREA COMÚN" con cada zona del condominio.</li>
+          <li>Probar reportar uno en su unidad y otro en piscina/gimnasio.</li>
+        </ol>
+        <div class="expected">
+          <div>
+            <strong>Resultado esperado</strong>
+            Ambos reportes se guardan con la ubicación correcta. El admin los ve diferenciados.
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ==== ÉPICA 2 ==== -->
+<section class="alt" id="e2">
+  <div class="container">
+    <div class="epic">
+      <div class="epic-header">
+        <div class="epic-num e2">2</div>
+        <div>
+          <div class="epic-title">🚪 Comunicación honesta — Visitantes</div>
+          <div class="epic-desc">Pases con QR, tipos de visitante (Uber, delivery, mudanza, familia, etc), placa de vehículo, compartir por WhatsApp.</div>
+        </div>
+      </div>
+
+      <div class="test">
+        <div class="test-title">
+          <span class="test-badge">TEST 2.1</span>
+          <h3>Crear pase con tipo de visitante</h3>
+          <span class="who">🏠 Como residente</span>
+        </div>
+        <ol class="steps">
+          <li>Ir a <a class="url-button" href="https://portal.atryum.net/visitantes" target="_blank">/visitantes</a></li>
+          <li>Tocar <strong>Nuevo pase</strong>.</li>
+          <li>Probar los 7 tipos: Familia · Delivery · Uber/rideshare · Servicio · Mudanza · Invitado · Otro. Cada uno tiene icono + duración por defecto distinta.</li>
+          <li>Para Uber: agregar la placa <code>AB123CD</code>. Nombre "Conductor Uber".</li>
+          <li>Crear.</li>
+        </ol>
+        <div class="expected">
+          <div>
+            <strong>Resultado esperado</strong>
+            Aparece el pase con QR + sub-meta "VIGENTE 4 HORAS · HASTA Sábado 3 May 18:00". Cada tipo tiene su duración default (delivery 2h, mudanza 8h, etc).
+          </div>
+        </div>
+      </div>
+
+      <div class="test">
+        <div class="test-title">
+          <span class="test-badge">TEST 2.2</span>
+          <h3>Compartir el pase por WhatsApp</h3>
+          <span class="who">🏠 Como residente</span>
+        </div>
+        <ol class="steps">
+          <li>Abrir el pase recién creado.</li>
+          <li>Tocar <strong>Compartir por WhatsApp</strong>.</li>
+          <li>Debe abrir WhatsApp con un mensaje pre-rellenado que incluye el link al QR + datos del pase.</li>
+        </ol>
+        <div class="expected">
+          <div>
+            <strong>Resultado esperado</strong>
+            En el celular del visitante, abrir el link → muestra QR escaneable, nombre, validez, condominio.
+          </div>
+        </div>
+      </div>
+
+      <div class="test">
+        <div class="test-title">
+          <span class="test-badge">TEST 2.3</span>
+          <h3>Verificar pase en la entrada (vista vigilante)</h3>
+          <span class="who">🛡 Como cualquier persona</span>
+        </div>
+        <ol class="steps">
+          <li>Copiar el código del pase.</li>
+          <li>Abrir <code>portal.atryum.net/verificar/[codigo]</code> en cualquier dispositivo.</li>
+          <li>Ver: nombre, tipo de visitante (con icono), placa si aplica, vigencia.</li>
+        </ol>
+        <div class="expected">
+          <div>
+            <strong>Resultado esperado</strong>
+            Si el pase está vigente: card verde con todos los datos. Si está expirado: card roja "PASE EXPIRADO".
+          </div>
+        </div>
+      </div>
+
+      <div class="test">
+        <div class="test-title">
+          <span class="test-badge">TEST 2.4</span>
+          <h3>Pase a quién — admin ve a todo el condominio</h3>
+          <span class="who">👤 Como administrador</span>
+        </div>
+        <ol class="steps">
+          <li>En <a class="url-button" href="https://portal.atryum.net/visitantes" target="_blank">/visitantes</a> el admin ve TODOS los pases del condominio (no solo los suyos).</li>
+          <li>Cada fila debe mostrar: tipo, residente que invita, unidad de origen.</li>
+        </ol>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ==== ÉPICA 3 ==== -->
+<section id="e3">
+  <div class="container">
+    <div class="epic">
+      <div class="epic-header">
+        <div class="epic-num e3">3</div>
+        <div>
+          <div class="epic-title">🗳️ Decisiones unificadas</div>
+          <div class="epic-desc">Antes había votaciones rápidas y asambleas formales en sitios distintos. Ahora todo es <em>Decisiones</em>: encuestas rápidas o asambleas con quórum, voto ponderado por alícuota.</div>
+        </div>
+      </div>
+
+      <div class="test">
+        <div class="test-title">
+          <span class="test-badge">TEST 3.1</span>
+          <h3>Crear encuesta rápida</h3>
+          <span class="who">👤 Como administrador</span>
+        </div>
+        <ol class="steps">
+          <li>Ir a <a class="url-button" href="https://portal.atryum.net/decisiones" target="_blank">/decisiones</a></li>
+          <li>Tocar <strong>Nueva decisión</strong>.</li>
+          <li>Wizard 4 pasos. <strong>Paso 1:</strong> elegir <em>Encuesta rápida</em>.</li>
+          <li><strong>Paso 2:</strong> título "¿Pintamos la fachada este año?".</li>
+          <li><strong>Paso 3:</strong> 1 pregunta con 3 opciones (Sí · No · Indiferente).</li>
+          <li><strong>Paso 4:</strong> sin quórum, sin ponderado. Cierre en 7 días.</li>
+          <li>Crear.</li>
+        </ol>
+        <div class="expected">
+          <div>
+            <strong>Resultado esperado</strong>
+            Aparece en /decisiones tab "Abiertas". Card muestra opciones con barras de progreso.
+          </div>
+        </div>
+      </div>
+
+      <div class="test">
+        <div class="test-title">
+          <span class="test-badge">TEST 3.2</span>
+          <h3>Crear asamblea formal con quórum y voto ponderado</h3>
+          <span class="who">👤 Como administrador</span>
+        </div>
+        <ol class="steps">
+          <li>En /decisiones, <strong>Nueva decisión</strong>.</li>
+          <li><strong>Paso 1:</strong> <em>Asamblea formal</em>.</li>
+          <li><strong>Paso 2:</strong> título "Aprobación presupuesto 2026".</li>
+          <li><strong>Paso 3:</strong> 3 preguntas (Aprobar presupuesto / Aprobar derrama / Aprobar nuevo conserje).</li>
+          <li><strong>Paso 4:</strong> activar <strong>Voto ponderado por alícuota</strong> + quórum 50%. Fecha cierre +14 días.</li>
+          <li>Crear.</li>
+        </ol>
+        <div class="expected">
+          <div>
+            <strong>Resultado esperado</strong>
+            Card en /decisiones con barra de quórum dinámica ("0 de N · 0%"). Cada pregunta vota independiente.
+          </div>
+        </div>
+      </div>
+
+      <div class="test">
+        <div class="test-title">
+          <span class="test-badge">TEST 3.3</span>
+          <h3>Votar como propietario en asamblea ponderada</h3>
+          <span class="who">🏠 Como residente owner</span>
+        </div>
+        <ol class="steps">
+          <li>Entrar como Rafael (Costa 1-A, alícuota 6.5%) o como Iker (Costa 2-A, alícuota 6.5%).</li>
+          <li>Abrir la asamblea recién creada.</li>
+          <li>Votar las 3 preguntas. La barra "VOTASTE 3 DE 3" debe llenarse.</li>
+        </ol>
+        <div class="expected">
+          <div>
+            <strong>Resultado esperado</strong>
+            El voto se registra con peso = alícuota (6.5). Como admin, viendo resultados: "Sí · 6.5 / 100".
+          </div>
+        </div>
+      </div>
+
+      <div class="test">
+        <div class="test-title">
+          <span class="test-badge">TEST 3.4</span>
+          <h3>Ver resultados en tiempo real</h3>
+          <span class="who">👤 Como administrador</span>
+        </div>
+        <ol class="steps">
+          <li>Pedir a otro socio del mismo condominio que vote también.</li>
+          <li>Refrescar la página.</li>
+          <li>Ver barras actualizadas y barra de quórum subir.</li>
+        </ol>
+      </div>
+
+      <div class="test">
+        <div class="test-title">
+          <span class="test-badge">TEST 3.5</span>
+          <h3>Cerrar decisión</h3>
+          <span class="who">👤 Como administrador</span>
+        </div>
+        <ol class="steps">
+          <li>Abrir la decisión.</li>
+          <li>Tocar <strong>Cerrar decisión</strong>. Confirmar.</li>
+          <li>Pasa a tab "Cerradas". Resultados quedan congelados.</li>
+        </ol>
+        <div class="expected">
+          <div>
+            <strong>Resultado esperado</strong>
+            Una vez cerrada, no se puede votar más. Aparece en histórico con resultados finales.
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ==== ÉPICA 5 ==== -->
+<section class="alt" id="e5">
+  <div class="container">
+    <div class="epic">
+      <div class="epic-header">
+        <div class="epic-num e5">5</div>
+        <div>
+          <div class="epic-title">📊 Ciclo completo de gasto</div>
+          <div class="epic-desc">Categorías normalizadas (13 default), proveedores, presupuesto anual con override mensual, vista ejecutado vs aprobado, anular gasto con razón obligatoria.</div>
+        </div>
+      </div>
+
+      <div class="test">
+        <div class="test-title">
+          <span class="test-badge">TEST 5.1</span>
+          <h3>Ver categorías default</h3>
+          <span class="who">👤 Como administrador</span>
+        </div>
+        <ol class="steps">
+          <li>Ir a <a class="url-button" href="https://portal.atryum.net/finanzas" target="_blank">/finanzas</a></li>
+          <li>Tocar <strong>Nuevo gasto</strong>.</li>
+          <li>El selector de categoría debe tener <strong>13 opciones</strong> con icono cada una: Vigilancia, Mantenimiento, Aseo, Servicios, Jardinería, Nómina, Seguros, Impuestos, Repuestos, Oficina, Eventos, Piscina, Otros.</li>
+        </ol>
+      </div>
+
+      <div class="test">
+        <div class="test-title">
+          <span class="test-badge">TEST 5.2</span>
+          <h3>Registrar gasto con proveedor</h3>
+          <span class="who">👤 Como administrador</span>
+        </div>
+        <ol class="steps">
+          <li>En <strong>Nuevo gasto</strong>: descripción "Reparación bomba piscina".</li>
+          <li>Categoría: Mantenimiento.</li>
+          <li>Proveedor: escribir "Aquatics SA" — debe ofrecer crearlo si no existe.</li>
+          <li>Monto $450. Fecha hoy. Subir foto recibo.</li>
+          <li>Guardar.</li>
+        </ol>
+        <div class="expected">
+          <div>
+            <strong>Resultado esperado</strong>
+            El gasto aparece en la lista con icono de la categoría + nombre del proveedor + monto. Si vuelve a registrar otro gasto, "Aquatics SA" ya existe en el autocomplete.
+          </div>
+        </div>
+      </div>
+
+      <div class="test">
+        <div class="test-title">
+          <span class="test-badge">TEST 5.3</span>
+          <h3>Crear y aprobar presupuesto anual</h3>
+          <span class="who">👤 Como administrador</span>
+        </div>
+        <ol class="steps">
+          <li>Ir a <a class="url-button" href="https://portal.atryum.net/admin/budget" target="_blank">/admin/budget</a></li>
+          <li>Si no hay borrador, crear uno para 2026.</li>
+          <li>Editar línea por línea: <em>Vigilancia $580/mes · Mantenimiento $2000/mes · Aseo $400/mes · Jardinería $250/mes</em> ...</li>
+          <li>Guardar borrador.</li>
+          <li>Tocar <strong>Aprobar presupuesto</strong>. Confirmar.</li>
+        </ol>
+        <div class="expected">
+          <div>
+            <strong>Resultado esperado</strong>
+            Status pasa de DRAFT a APPROVED. Total anual computado se muestra arriba. Los residentes empiezan a ver el presupuesto en /finanzas.
+          </div>
+        </div>
+      </div>
+
+      <div class="test">
+        <div class="test-title">
+          <span class="test-badge">TEST 5.4</span>
+          <h3>Ver ejecutado vs aprobado</h3>
+          <span class="who">🏠 Como residente o admin</span>
+        </div>
+        <ol class="steps">
+          <li>Ir a <a class="url-button" href="https://portal.atryum.net/finanzas" target="_blank">/finanzas</a></li>
+          <li>Arriba aparece la card <strong>Presupuesto 2026</strong> con barras por categoría.</li>
+          <li>Cada barra: ejecutado / aprobado · % usado.</li>
+          <li>Color: cyan si va bien, ámbar si pasa de 80%, rojo si excede 100%.</li>
+        </ol>
+      </div>
+
+      <div class="test">
+        <div class="test-title">
+          <span class="test-badge">TEST 5.5</span>
+          <h3>Anular gasto con razón obligatoria</h3>
+          <span class="who">👤 Como administrador</span>
+        </div>
+        <ol class="steps">
+          <li>En /finanzas tocar el botón <strong>ANULAR</strong> de cualquier gasto reciente.</li>
+          <li>Aparece dialog con textarea. Probar con razón corta ("error") → debe rechazar (mín 10 chars).</li>
+          <li>Probar con razón válida: "Pago duplicado, reembolsado al admin el 30/04". Confirmar.</li>
+          <li>El gasto queda con strikethrough + badge "ANULADO".</li>
+          <li>La barra de presupuesto recalcula (descuenta el monto anulado).</li>
+        </ol>
+        <div class="expected">
+          <div>
+            <strong>Resultado esperado</strong>
+            Razón mínimo 10 caracteres. Ya anulado no se puede re-anular. KPI total decrementa.
+          </div>
+        </div>
+      </div>
+
+      <div class="test">
+        <div class="test-title">
+          <span class="test-badge">TEST 5.6</span>
+          <h3>Residente NO puede anular</h3>
+          <span class="who">🏠 Como residente</span>
+        </div>
+        <ol class="steps">
+          <li>Como residente abrir /finanzas.</li>
+          <li>Verificar que NO aparece el botón "Anular" en ninguna fila.</li>
+          <li>Intentar entrar a /admin/budget directamente desde el navegador.</li>
+        </ol>
+        <div class="expected">
+          <div>
+            <strong>Resultado esperado</strong>
+            Sin acceso al editor de presupuesto. Solo ve la vista de progreso.
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ==== ISSUES CONOCIDOS ==== -->
+<section>
+  <div class="container">
+    <h2>⚠️ Bugs conocidos (no reportar)</h2>
+    <p class="section-sub">Estos los detectamos durante el desarrollo y están en backlog. Si los ven, no hace falta reportar.</p>
+    <div class="issues-list">
+      <div class="issue-row">
+        <span class="issue-icon">📑</span>
+        <div class="issue-text">
+          <strong>Aprobación de comprobantes 1-a-1</strong>
+          Si subiste 1 comprobante para 5 facturas, el admin las aprueba una por una. Mejora pendiente: aprobación grupal.
+        </div>
+      </div>
+      <div class="issue-row">
+        <span class="issue-icon">⏱️</span>
+        <div class="issue-text">
+          <strong>Pases que expiran no se marcan automáticamente</strong>
+          El status="expired" se calcula al cargar la página, no en la base. Visualmente correcto, pero queda en la DB como "active". No afecta uso.
+        </div>
+      </div>
+      <div class="issue-row">
+        <span class="issue-icon">🎯</span>
+        <div class="issue-text">
+          <strong>Banner urgente sin filtro por audiencia</strong>
+          Si un anuncio dice "solo para Bloque B", el banner igual lo muestra a todos. Filtro pendiente.
+        </div>
+      </div>
+      <div class="issue-row">
+        <span class="issue-icon">🎨</span>
+        <div class="issue-text">
+          <strong>UI de override mensual de presupuesto</strong>
+          El backend soporta presupuestos con override por mes (marzo $3500, resto $2000), pero el editor solo expone monto mensual fijo. Modal pendiente.
+        </div>
+      </div>
+      <div class="issue-row">
+        <span class="issue-icon">🛠</span>
+        <div class="issue-text">
+          <strong>CRUD de categorías custom y proveedores</strong>
+          Las 13 categorías default cubren los casos. Si necesitan crear "Piscina Premium" o gestionar lista de proveedores explícita, está pendiente.
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ==== FEEDBACK ==== -->
+<section class="alt">
+  <div class="container">
+    <div class="feedback-card">
+      <h2 style="color: white;">🐛 ¿Encontraste un bug?</h2>
+      <p>Si algo no funciona, no se ve bien, o se siente raro, repórtalo con: pantalla donde estabas, qué hiciste, qué esperabas, qué pasó. Captura de pantalla siempre suma. Mándalo al chat de socios.</p>
+      <div class="cta-row">
+        <a href="https://wa.me/" class="cta-button" target="_blank">📲 Reportar por WhatsApp</a>
+        <a href="mailto:rafaelmontilla8@gmail.com?subject=Bug Atryum" class="cta-button secondary">✉️ Email a Rafael</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="container">
+    <div>Atryum · Plan curado completo (5/5 épicas en producción)</div>
+    <div class="small">Generado 2026-04-30 · portal.atryum.net</div>
+  </div>
+</footer>
+
+</body>
+</html>

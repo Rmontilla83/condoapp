@@ -24,6 +24,19 @@ interface DecisionWithQuestions extends Decision {
   decision_questions: QuestionWithResponses[];
 }
 
+function normalizeOptions(options: unknown): string[] {
+  if (Array.isArray(options)) return options as string[];
+  if (typeof options === "string") {
+    try {
+      const parsed = JSON.parse(options);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
+  }
+  return [];
+}
+
 const statusBadge: Record<DecisionStatus, { label: string; className: string }> = {
   draft: { label: "BORRADOR", className: "border-gray-300 text-gray-700 bg-gray-50" },
   open: { label: "ABIERTA", className: "border-emerald-300 text-emerald-700 bg-emerald-50" },
@@ -56,7 +69,9 @@ export default async function DecisionDetailPage({ params }: { params: Promise<{
     redirect(`/decisiones#decision-${decision.id}`);
   }
 
-  const questions = (decision.decision_questions ?? []).sort((a, b) => a.position - b.position);
+  const questions = (decision.decision_questions ?? [])
+    .map((q) => ({ ...q, options: normalizeOptions(q.options) }))
+    .sort((a, b) => a.position - b.position);
   const status = statusBadge[decision.status];
   const isOpen = decision.status === "open";
   const isExpired = !!(decision.closes_at && new Date(decision.closes_at) <= new Date());

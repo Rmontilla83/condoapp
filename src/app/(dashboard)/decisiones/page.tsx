@@ -23,6 +23,22 @@ interface DecisionWithQuestions extends Decision {
   decision_questions: QuestionWithResponses[];
 }
 
+// Defensa contra filas legacy donde options se grabó como string JSON.
+// Migration 023 ya arregló los datos en DB; esto evita que un nuevo
+// registro corrupto rompa la página.
+function normalizeOptions(options: unknown): string[] {
+  if (Array.isArray(options)) return options as string[];
+  if (typeof options === "string") {
+    try {
+      const parsed = JSON.parse(options);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
+  }
+  return [];
+}
+
 export default async function DecisionesPage() {
   const profile = await getCurrentProfile();
   if (!profile?.organization_id) redirect("/dashboard");
@@ -41,7 +57,9 @@ export default async function DecisionesPage() {
 
   const decisions = ((data ?? []) as unknown as DecisionWithQuestions[]).map((d) => ({
     ...d,
-    decision_questions: (d.decision_questions ?? []).sort((a, b) => a.position - b.position),
+    decision_questions: (d.decision_questions ?? [])
+      .map((q) => ({ ...q, options: normalizeOptions(q.options) }))
+      .sort((a, b) => a.position - b.position),
   }));
 
   const openDecisions = decisions.filter((d) => d.status === "open" || d.status === "draft");
