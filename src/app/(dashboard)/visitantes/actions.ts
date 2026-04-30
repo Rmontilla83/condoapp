@@ -3,6 +3,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentProfile, getUserUnitIds } from "@/lib/queries";
 import { revalidatePath } from "next/cache";
+import { normalizeVisitorKind, resolveDurationHours } from "./visitor-kinds";
 
 export async function createAccessPass(formData: FormData) {
   const profile = await getCurrentProfile();
@@ -12,27 +13,23 @@ export async function createAccessPass(formData: FormData) {
 
   const visitorName = (formData.get("visitor_name") as string)?.trim();
   const visitorId = (formData.get("visitor_id") as string)?.trim();
+  const kind = normalizeVisitorKind(formData.get("kind"));
+  const vehiclePlateRaw = (formData.get("vehicle_plate") as string)?.trim() ?? "";
+  const vehiclePlate = vehiclePlateRaw.length > 0 ? vehiclePlateRaw.toUpperCase().slice(0, 16) : null;
+  const customHoursRaw = formData.get("custom_hours");
+  const customHours =
+    typeof customHoursRaw === "string" && customHoursRaw.length > 0
+      ? Number.parseFloat(customHoursRaw)
+      : null;
 
   if (!visitorName) return { error: "Nombre del visitante es requerido" };
   if (!visitorId) return { error: "Cedula del visitante es requerida" };
 
-  // Get unit number for display
   const supabase = await createClient();
-  let unitNumber = "";
-  if (unitIds.length > 0) {
-    const { data: unit } = await supabase
-      .from("units")
-      .select("unit_number")
-      .eq("id", unitIds[0])
-      .single();
-    unitNumber = unit?.unit_number ?? "";
-  }
-
-  // Generate unique QR code
   const qrCode = crypto.randomUUID();
-
   const validFrom = new Date();
-  const validUntil = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+  const hours = resolveDurationHours(kind, customHours);
+  const validUntil = new Date(Date.now() + hours * 60 * 60 * 1000);
 
   const { data, error } = await supabase
     .from("access_passes")
@@ -42,7 +39,9 @@ export async function createAccessPass(formData: FormData) {
       visitor_name: visitorName,
       visitor_id_number: visitorId,
       qr_code: qrCode,
-      unit_number: unitNumber,
+      unit_id: unitIds[0] ?? null,
+      visitor_kind: kind,
+      vehicle_plate: vehiclePlate,
       status: "active",
       valid_from: validFrom.toISOString(),
       valid_until: validUntil.toISOString(),

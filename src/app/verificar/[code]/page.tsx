@@ -1,6 +1,9 @@
 import { createClient } from "@/lib/supabase/server";
 import { GrantAccessButton } from "./grant-access-button";
 import { AtryumLogo } from "@/components/brand/atryum-logo";
+import { computeDisplayStatus } from "@/app/(dashboard)/visitantes/pass-list-helpers";
+import { VISITOR_KIND_BY_ID } from "@/app/(dashboard)/visitantes/visitor-kinds";
+import type { VisitorKind } from "@/types/database";
 
 type PassStatus = "valid" | "used" | "cancelled" | "expired" | "not_found";
 
@@ -22,7 +25,7 @@ export default async function VerificarPage({
 
   const { data: pass } = await supabase
     .from("access_passes")
-    .select("*, profiles:created_by(full_name)")
+    .select("*, profiles:created_by(full_name), units:unit_id(unit_number)")
     .eq("qr_code", code)
     .single();
 
@@ -30,28 +33,26 @@ export default async function VerificarPage({
     return <VerificarShell status="not_found" />;
   }
 
-  const now = new Date();
   const validUntil = new Date(pass.valid_until);
-  const isExpired = validUntil < now;
-  const isUsed = pass.status === "used";
-  const isCancelled = pass.status === "cancelled";
-  const isValid = pass.status === "active" && !isExpired;
-
-  const status: PassStatus = isValid
-    ? "valid"
-    : isUsed
-    ? "used"
-    : isCancelled
-    ? "cancelled"
-    : "expired";
+  const displayStatus = computeDisplayStatus(pass);
+  const status: PassStatus =
+    displayStatus === "active"
+      ? "valid"
+      : displayStatus === "used"
+      ? "used"
+      : displayStatus === "cancelled"
+      ? "cancelled"
+      : "expired";
 
   const ownerName = pass.profiles?.full_name ?? "Propietario";
+  const visitorKind = (pass.visitor_kind as VisitorKind | null) ?? "guest";
+  const kindMeta = VISITOR_KIND_BY_ID[visitorKind] ?? VISITOR_KIND_BY_ID.guest;
 
   return (
     <VerificarShell status={status}>
       <div className="mt-6 space-y-4">
         <div className="rounded-xl bg-cloud/40 border border-border p-4">
-          <p className="font-meta text-mute">VISITANTE</p>
+          <p className="font-meta text-mute">{kindMeta.icon} {kindMeta.label.toUpperCase()}</p>
           <p className="mt-2 font-display text-[20px] text-marine-deep leading-tight">
             {pass.visitor_name}
           </p>
@@ -62,7 +63,7 @@ export default async function VerificarPage({
           <div className="rounded-xl bg-cloud/40 border border-border p-4">
             <p className="font-meta text-mute">DESTINO</p>
             <p className="mt-2 text-[15px] font-medium text-marine-deep">
-              Apto {pass.unit_number || "—"}
+              {pass.units?.unit_number ? `Apto ${pass.units.unit_number}` : "Área común / sin asignar"}
             </p>
           </div>
           <div className="rounded-xl bg-cloud/40 border border-border p-4">
@@ -70,6 +71,15 @@ export default async function VerificarPage({
             <p className="mt-2 text-[15px] font-medium text-marine-deep">{ownerName}</p>
           </div>
         </div>
+
+        {pass.vehicle_plate && (
+          <div className="rounded-xl bg-cloud/40 border border-border p-4">
+            <p className="font-meta text-mute">VEHÍCULO</p>
+            <p className="mt-2 text-[15px] font-mono font-medium text-marine-deep">
+              🚗 {pass.vehicle_plate}
+            </p>
+          </div>
+        )}
 
         <div className="rounded-xl bg-cloud/40 border border-border p-4">
           <p className="font-meta text-mute">VÁLIDO HASTA</p>

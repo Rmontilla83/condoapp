@@ -1,7 +1,6 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -15,13 +14,33 @@ import {
 } from "@/components/ui/dialog";
 import { createAccessPass } from "./actions";
 import { QRDisplay } from "./qr-display";
+import { buildVerifyUrl, buildWhatsAppMessage, buildWhatsAppUrl } from "./pass-list-helpers";
+import { VISITOR_KINDS, VISITOR_KIND_BY_ID, resolveDurationHours } from "./visitor-kinds";
+import type { VisitorKind } from "@/types/database";
 
-export function NewPassDialog() {
-  const router = useRouter();
+export function NewPassDialog({ orgName }: { orgName: string }) {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [result, setResult] = useState<{ qrCode: string; passId: string } | null>(null);
+  const [result, setResult] = useState<{ qrCode: string; passId: string; visitorName: string } | null>(null);
+  const [kind, setKind] = useState<VisitorKind>("guest");
+  const [customHours, setCustomHours] = useState<string>("");
+
+  const effectiveHours = useMemo(() => {
+    const parsed = customHours ? Number.parseFloat(customHours) : null;
+    return resolveDurationHours(kind, parsed);
+  }, [kind, customHours]);
+
+  const validUntilLabel = useMemo(() => {
+    const dt = new Date(Date.now() + effectiveHours * 60 * 60 * 1000);
+    return dt.toLocaleDateString("es", {
+      weekday: "short",
+      day: "numeric",
+      month: "short",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  }, [effectiveHours]);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -29,33 +48,41 @@ export function NewPassDialog() {
     setError("");
 
     const formData = new FormData(e.currentTarget);
+    const visitorName = (formData.get("visitor_name") as string)?.trim() ?? "";
     const res = await createAccessPass(formData);
 
-    if (res.error) {
+    if ("error" in res && res.error) {
       setError(res.error);
       setLoading(false);
       return;
     }
 
-    setResult({ qrCode: res.qrCode!, passId: res.passId! });
+    if ("success" in res && res.qrCode && res.passId) {
+      setResult({ qrCode: res.qrCode, passId: res.passId, visitorName });
+    }
     setLoading(false);
-    window.location.reload();
   }
 
   function handleClose() {
+    if (result) {
+      // Cerrar después de generar exitosamente → recargar para mostrar el pase nuevo en lista
+      window.location.reload();
+      return;
+    }
     setOpen(false);
     setResult(null);
     setError("");
+    setKind("guest");
+    setCustomHours("");
   }
 
-  const qrUrl = result
-    ? `${typeof window !== "undefined" ? window.location.origin : ""}/verificar/${result.qrCode}`
-    : "";
+  const qrUrl =
+    result && typeof window !== "undefined"
+      ? buildVerifyUrl(result.qrCode, window.location.origin)
+      : "";
 
   const whatsappUrl = result
-    ? `https://wa.me/?text=${encodeURIComponent(
-        `Tu pase de visitante para Residencias Los Robles esta listo. Muestra este QR en la puerta: ${qrUrl}`
-      )}`
+    ? buildWhatsAppUrl(buildWhatsAppMessage(orgName, { visitor_name: result.visitorName }, qrUrl))
     : "";
 
   return (
@@ -72,29 +99,96 @@ export function NewPassDialog() {
             <DialogHeader>
               <DialogTitle>Registrar visitante</DialogTitle>
               <DialogDescription>
-                Ingresa los datos de tu visitante. Se generara un QR de acceso valido por 24 horas.
+                Selecciona el tipo de visita y completa los datos. La duración se ajusta al tipo, pero
+                puedes sobreescribirla si tu visita necesita más tiempo.
               </DialogDescription>
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="visitor_name">Nombre completo</Label>
+                <Label>Tipo de visita</Label>
+                <input type="hidden" name="kind" value={kind} />
+                <div className="grid grid-cols-3 sm:grid-cols-4 gap-1.5">
+                  {VISITOR_KINDS.map((k) => (
+                    <button
+                      key={k.id}
+                      type="button"
+                      onClick={() => setKind(k.id)}
+                      disabled={loading}
+                      aria-pressed={kind === k.id}
+                      className={`flex flex-col items-center gap-1 rounded-lg border p-2 text-center transition ${
+                        kind === k.id
+                          ? "border-primary bg-primary/5 text-marine-deep"
+                          : "border-border hover:border-primary/40 text-mute"
+                      }`}
+                    >
+                      <span className="text-[18px] leading-none">{k.icon}</span>
+                      <span className="text-[11px] font-meta">{k.label.toUpperCase()}</span>
+                    </button>
+                  ))}
+                </div>
+                <p className="text-[12px] text-mute">
+                  VIGENTE {effectiveHours} HORA{effectiveHours !== 1 ? "S" : ""} · HASTA {validUntilLabel.toUpperCase()}
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="visitor_name">Nombre del visitante</Label>
                 <Input
                   id="visitor_name"
                   name="visitor_name"
-                  placeholder="Ej: Maria Garcia Lopez"
+                  placeholder={
+                    kind === "delivery" ? "Ej: Rappi — Mensajero" :
+                    kind === "rideshare" ? "Ej: Uber Black" :
+                    kind === "service" ? "Ej: Técnico CANTV" :
+                    kind === "moving" ? "Ej: Mudanza Express" :
+                    kind === "family" ? "Ej: María García Pérez" :
+                    "Ej: Juan Pérez"
+                  }
                   required
                   autoFocus
                 />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="visitor_id">Cedula de identidad</Label>
-                <Input
-                  id="visitor_id"
-                  name="visitor_id"
-                  placeholder="Ej: V-18.456.789"
-                  required
-                />
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-2">
+                  <Label htmlFor="visitor_id">Cédula / ID</Label>
+                  <Input
+                    id="visitor_id"
+                    name="visitor_id"
+                    placeholder="Ej: V-18.456.789"
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="vehicle_plate">Placa (opcional)</Label>
+                  <Input
+                    id="vehicle_plate"
+                    name="vehicle_plate"
+                    placeholder="AB123CD"
+                    maxLength={16}
+                    style={{ textTransform: "uppercase" }}
+                  />
+                </div>
               </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="custom_hours">
+                  Horas válidas (opcional · default {VISITOR_KIND_BY_ID[kind].defaultHours}h)
+                </Label>
+                <Input
+                  id="custom_hours"
+                  name="custom_hours"
+                  type="number"
+                  min={1}
+                  max={168}
+                  step={1}
+                  placeholder={`${VISITOR_KIND_BY_ID[kind].defaultHours}`}
+                  value={customHours}
+                  onChange={(e) => setCustomHours(e.target.value)}
+                />
+                <p className="text-[11px] text-mute">Entre 1 y 168 horas (1 semana máximo).</p>
+              </div>
+
               {error && <p className="text-sm text-destructive">{error}</p>}
               <div className="flex gap-3 pt-2">
                 <Button
@@ -107,7 +201,7 @@ export function NewPassDialog() {
                   Cancelar
                 </Button>
                 <Button type="submit" className="flex-1" disabled={loading}>
-                  {loading ? "Generando..." : "Generar QR"}
+                  {loading ? "Generando…" : "Generar QR"}
                 </Button>
               </div>
             </form>
@@ -117,7 +211,8 @@ export function NewPassDialog() {
             <DialogHeader>
               <DialogTitle>QR generado</DialogTitle>
               <DialogDescription>
-                Comparte este QR con tu visitante por WhatsApp. Es valido por 24 horas.
+                Comparte este QR con tu visitante por WhatsApp. Vigente por {effectiveHours} hora
+                {effectiveHours !== 1 ? "s" : ""}.
               </DialogDescription>
             </DialogHeader>
             <div className="flex flex-col items-center gap-4 py-4">
@@ -125,7 +220,7 @@ export function NewPassDialog() {
                 <QRDisplay value={qrUrl} size={180} />
               </div>
               <p className="text-sm text-muted-foreground text-center">
-                El vigilante escaneara este codigo para verificar los datos del visitante.
+                El vigilante revisará este QR en pantalla del visitante para permitir el acceso.
               </p>
               <div className="flex gap-3 w-full">
                 <a
