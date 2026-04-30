@@ -2,8 +2,11 @@
 
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getCurrentProfile, getCurrentRate } from "@/lib/queries";
-import { isAdminRole } from "@/lib/permissions";
+import { isAdminRole, requireAdmin } from "@/lib/permissions";
 import { revalidatePath } from "next/cache";
+import { computeInvoiceAmounts } from "@/lib/cobranza/compute-invoices";
+import type { ComputeUnit } from "@/lib/cobranza/compute-invoices";
+import type { FeeMode, InvoiceKind, Organization } from "@/types/database";
 
 export async function updateExchangeRate(rate: number) {
   const profile = await getCurrentProfile();
@@ -28,65 +31,179 @@ export async function updateExchangeRate(rate: number) {
   return { success: true };
 }
 
+/**
+ * Genera cuotas (mensuales o derramas extraordinarias) según el modo de
+ * cobranza configurado en la organización. Soporta 4 modos:
+ * - flat: monto plano por unidad (formData: flat_amount o amount legacy)
+ * - by_aliquot: base * aliquot/100 (formData: base_amount)
+ * - by_type: lookup en fee_type_amounts según unit.type
+ * - manual: amounts por unit_id (formData: manual_amounts JSON)
+ *
+ * formData esperado:
+ * - kind: "monthly" | "extraordinary" (default monthly)
+ * - mode: FeeMode (default = org.fee_mode)
+ * - description: string (obligatorio si extraordinary)
+ * - due_date: ISO date (extraordinary) | month + year + due_day (monthly)
+ * - flat_amount | base_amount | manual_amounts (según mode)
+ * - amount: legacy compat — se trata como flat_amount con mode='flat'
+ */
 export async function generateMonthlyInvoices(formData: FormData) {
   const profile = await getCurrentProfile();
-  if (!profile?.organization_id) return { error: "No autorizado" };
-  if (!isAdminRole(profile)) return { error: "Solo administradores" };
-
-  const month = formData.get("month") as string;
-  const year = formData.get("year") as string;
-  const amount = parseFloat(formData.get("amount") as string);
-  const description =
-    (formData.get("description") as string)?.trim() || `Cuota ${month}/${year}`;
-  const dueDay = parseInt(formData.get("due_day") as string) || 15;
-
-  if (!month || !year || !amount || amount <= 0) return { error: "Completa todos los campos" };
+  const guard = requireAdmin(profile);
+  if (guard) return guard;
 
   const supabase = createAdminClient();
 
-  // Get exchange rate
-  const rateData = await getCurrentRate(profile.organization_id);
-  const rate = Number(rateData.rate);
+  // Cargar org para defaults de modo + currency
+  const { data: org } = await supabase
+    .from("organizations")
+    .select("*")
+    .eq("id", profile!.organization_id!)
+    .single<Organization>();
+  if (!org) return { error: "Organización no encontrada" };
 
-  const { data: units } = await supabase
+  const kind: InvoiceKind =
+    (formData.get("kind") as InvoiceKind) === "extraordinary" ? "extraordinary" : "monthly";
+
+  const mode: FeeMode =
+    (formData.get("mode") as FeeMode) || (org.fee_mode ?? "flat");
+
+  // Resolver due_date
+  let dueDate: string;
+  if (kind === "extraordinary") {
+    const raw = (formData.get("due_date") as string)?.trim();
+    if (!raw || !raw.match(/^\d{4}-\d{2}-\d{2}$/)) {
+      return { error: "Fecha de vencimiento inválida" };
+    }
+    dueDate = raw;
+  } else {
+    const month = formData.get("month") as string;
+    const year = formData.get("year") as string;
+    const dueDay = parseInt(formData.get("due_day") as string) || 15;
+    if (!month || !year) return { error: "Completa mes y año" };
+    dueDate = `${year}-${month.padStart(2, "0")}-${String(dueDay).padStart(2, "0")}`;
+  }
+
+  // Description: obligatoria para extraordinary, default razonable para monthly
+  const rawDesc = (formData.get("description") as string)?.trim();
+  if (kind === "extraordinary" && !rawDesc) {
+    return { error: "La descripción es obligatoria para derramas extraordinarias" };
+  }
+  const description =
+    rawDesc || (kind === "monthly"
+      ? `Cuota ${formData.get("month")}/${formData.get("year")}`
+      : "Derrama extraordinaria");
+
+  // Resolver inputs según modo
+  let flat_amount: number | undefined;
+  let base_amount: number | undefined;
+  let manual_amounts: Record<string, number> | undefined;
+  let type_amounts: Record<string, number> | undefined;
+
+  if (mode === "flat") {
+    const raw =
+      (formData.get("flat_amount") as string) ?? (formData.get("amount") as string);
+    flat_amount = parseFloat(raw ?? "");
+    if (Number.isNaN(flat_amount)) return { error: "Monto plano requerido" };
+  } else if (mode === "by_aliquot") {
+    const raw = (formData.get("base_amount") as string) ?? String(org.fee_base_amount ?? "");
+    base_amount = parseFloat(raw);
+    if (Number.isNaN(base_amount)) return { error: "Monto base requerido" };
+  } else if (mode === "manual") {
+    const raw = formData.get("manual_amounts") as string;
+    if (!raw) return { error: "Faltan los montos por unidad" };
+    try {
+      const parsed = JSON.parse(raw);
+      if (!parsed || typeof parsed !== "object") throw new Error("not object");
+      manual_amounts = {};
+      for (const [k, v] of Object.entries(parsed)) {
+        const n = typeof v === "string" ? parseFloat(v) : Number(v);
+        if (Number.isNaN(n)) return { error: `Monto inválido para unidad ${k}` };
+        manual_amounts[k] = n;
+      }
+    } catch {
+      return { error: "Formato de manual_amounts inválido" };
+    }
+  } else if (mode === "by_type") {
+    const { data: rows } = await supabase
+      .from("fee_type_amounts")
+      .select("unit_type, amount")
+      .eq("organization_id", profile!.organization_id!);
+    type_amounts = Object.fromEntries(
+      (rows ?? []).map((r) => [r.unit_type as string, Number(r.amount)]),
+    );
+  }
+
+  // Cargar units (id, type, aliquot)
+  const { data: rawUnits } = await supabase
     .from("units")
-    .select("id")
-    .eq("organization_id", profile.organization_id);
+    .select("id, type, aliquot")
+    .eq("organization_id", profile!.organization_id!);
+  if (!rawUnits || rawUnits.length === 0) {
+    return { error: "No hay unidades registradas" };
+  }
+  const units: ComputeUnit[] = rawUnits.map((u) => ({
+    id: u.id as string,
+    type: u.type as string,
+    aliquot: Number(u.aliquot ?? 0),
+  }));
 
-  if (!units || units.length === 0) return { error: "No hay unidades registradas" };
+  const rateData = await getCurrentRate(profile!.organization_id!);
+  const exchange_rate = Number(rateData.rate) || null;
 
-  const dueDate = `${year}-${month.padStart(2, "0")}-${dueDay.toString().padStart(2, "0")}`;
+  const result = computeInvoiceAmounts({
+    organization_id: profile!.organization_id!,
+    fee_mode: mode,
+    due_date: dueDate,
+    description,
+    kind,
+    currency: org.currency || "USD",
+    units,
+    exchange_rate,
+    flat_amount,
+    base_amount,
+    type_amounts,
+    manual_amounts,
+  });
 
+  if (result.errors.length > 0) {
+    return { error: result.errors.join(" · ") };
+  }
+
+  // Pre-check de duplicados (mejor mensaje que el 23505 de Postgres)
   const { data: existing } = await supabase
     .from("invoices")
     .select("id")
-    .eq("organization_id", profile.organization_id)
+    .eq("organization_id", profile!.organization_id!)
     .eq("due_date", dueDate)
+    .eq("kind", kind)
+    .eq("description", description)
     .limit(1);
 
   if (existing && existing.length > 0) {
-    return { error: `Ya existen cuotas para ${month}/${year}. Elimina las existentes primero.` };
+    return {
+      error: `Ya existen cuotas para "${description}" el ${dueDate}. Cancela las anteriores antes de regenerar.`,
+    };
   }
 
-  const invoices = units.map((unit) => ({
-    organization_id: profile.organization_id,
-    unit_id: unit.id,
-    amount,
-    currency: "USD",
-    description,
-    due_date: dueDate,
-    status: "pending",
-    exchange_rate: rate || null,
-    amount_bs: rate ? amount * rate : null,
-  }));
-
-  const { error } = await supabase.from("invoices").insert(invoices);
-  if (error) return { error: error.message };
+  const { error } = await supabase.from("invoices").insert(result.invoices);
+  if (error) {
+    if ((error as { code?: string }).code === "23505") {
+      return {
+        error: "Ya existen cuotas con esa fecha y descripción. Cancela las previas antes de regenerar.",
+      };
+    }
+    return { error: error.message };
+  }
 
   revalidatePath("/pagos");
   revalidatePath("/admin");
   revalidatePath("/dashboard");
-  return { success: true, count: units.length };
+  return {
+    success: true as const,
+    count: result.invoices.length,
+    warnings: result.warnings,
+  };
 }
 
 export async function addUnit(formData: FormData) {

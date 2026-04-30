@@ -25,9 +25,14 @@ export function GenerateInvoicesDialog() {
     setLoading(true);
     setError("");
     setResult(null);
-    const res = await generateMonthlyInvoices(new FormData(e.currentTarget));
-    if (res.error) { setError(res.error); setLoading(false); return; }
-    setResult(`${res.count} cuotas generadas exitosamente`);
+    const fd = new FormData(e.currentTarget);
+    fd.set("mode", "flat");
+    fd.set("kind", "monthly");
+    const res = await generateMonthlyInvoices(fd);
+    if ("error" in res && res.error) { setError(res.error); setLoading(false); return; }
+    if ("count" in res) {
+      setResult(`${res.count} cuotas generadas exitosamente`);
+    }
     setLoading(false);
     window.location.reload();
   }
