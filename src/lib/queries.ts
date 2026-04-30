@@ -147,7 +147,8 @@ export async function getAdminStats(orgId: string) {
       supabase
         .from("expense_records")
         .select("amount")
-        .eq("organization_id", orgId),
+        .eq("organization_id", orgId)
+        .is("voided_at", null),
       supabase
         .from("transactions")
         .select("amount, paid_at, invoice_id, invoices!inner(organization_id)")
@@ -245,6 +246,32 @@ export async function getOrgUnitTypes(orgId: string): Promise<string[]> {
 
   const types = new Set((data ?? []).map((r) => r.type as string).filter(Boolean));
   return [...types].sort();
+}
+
+// ── Finance (E5) ────────────────────────────────────────
+
+export async function getExpenseCategories(orgId: string) {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("expense_categories")
+    .select("*")
+    .eq("organization_id", orgId)
+    .eq("is_active", true)
+    .order("position", { ascending: true });
+
+  return data ?? [];
+}
+
+export async function getActiveVendors(orgId: string) {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("vendors")
+    .select("*")
+    .eq("organization_id", orgId)
+    .eq("active", true)
+    .order("name", { ascending: true });
+
+  return data ?? [];
 }
 
 // ── Common Areas ────────────────────────────────────────

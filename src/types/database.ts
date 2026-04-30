@@ -227,6 +227,70 @@ export interface CommonArea {
 
 export type PassStatus = "active" | "used" | "expired" | "cancelled";
 
+// ── Finance (E5) ─────────────────────────────────────────
+
+export interface ExpenseCategory {
+  id: string;
+  organization_id: string;
+  code: string;
+  label: string;
+  icon: string | null;
+  is_system: boolean;
+  position: number;
+  is_active: boolean;
+  created_at: string;
+}
+
+export interface Vendor {
+  id: string;
+  organization_id: string;
+  name: string;
+  rif: string | null;
+  contact_phone: string | null;
+  contact_email: string | null;
+  notes: string | null;
+  active: boolean;
+  created_at: string;
+}
+
+export interface ExpenseRecord {
+  id: string;
+  organization_id: string;
+  category_id: string;
+  vendor_id: string | null;
+  description: string;
+  amount: number;
+  currency: string;
+  receipt_url: string | null;
+  expense_date: string;
+  recorded_by: string | null;
+  voided_at: string | null;
+  voided_reason: string | null;
+  created_at: string;
+}
+
+export type BudgetStatus = "draft" | "approved" | "archived";
+
+export interface OrgBudget {
+  id: string;
+  organization_id: string;
+  year: number;
+  status: BudgetStatus;
+  approved_at: string | null;
+  approved_by_decision_id: string | null;
+  notes: string | null;
+  created_at: string;
+}
+
+export interface OrgBudgetItem {
+  id: string;
+  budget_id: string;
+  category_id: string;
+  monthly_amount: number;
+  monthly_overrides: Record<string, number> | null;
+  notes: string | null;
+}
+
 // ── Decisions (E3) ─────────────────────────────────────────
 
 export type DecisionKind = "quick_poll" | "formal_assembly";

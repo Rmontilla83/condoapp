@@ -118,25 +118,34 @@ WHERE i.status = 'paid'
 -- EXPENSE RECORDS (gastos del mes)
 -- -------------------------------------------------------------------
 
-INSERT INTO expense_records (organization_id, category, description, amount, currency, expense_date, recorded_by)
-VALUES
-  -- Costa de Plata (admin Jodany registra)
-  ('b3b1107d-c614-4c02-80a1-14f1da4079bc'::uuid, 'vigilancia',    'Empresa Segurvip — mes marzo',        580.00, 'USD', '2026-03-05', '03232926-a120-453e-b97f-a7ab31dee839'::uuid),
-  ('b3b1107d-c614-4c02-80a1-14f1da4079bc'::uuid, 'mantenimiento', 'Reparacion bomba de agua',            350.00, 'USD', '2026-03-12', '03232926-a120-453e-b97f-a7ab31dee839'::uuid),
-  ('b3b1107d-c614-4c02-80a1-14f1da4079bc'::uuid, 'aseo',          'Servicio de limpieza quincenal',      200.00, 'USD', '2026-03-15', '03232926-a120-453e-b97f-a7ab31dee839'::uuid),
-  ('b3b1107d-c614-4c02-80a1-14f1da4079bc'::uuid, 'servicios',     'Electricidad areas comunes',          180.00, 'USD', '2026-04-03', '03232926-a120-453e-b97f-a7ab31dee839'::uuid),
-  ('b3b1107d-c614-4c02-80a1-14f1da4079bc'::uuid, 'vigilancia',    'Empresa Segurvip — mes abril',        580.00, 'USD', '2026-04-05', '03232926-a120-453e-b97f-a7ab31dee839'::uuid),
-  ('b3b1107d-c614-4c02-80a1-14f1da4079bc'::uuid, 'aseo',          'Productos de limpieza',                95.00, 'USD', '2026-04-10', '03232926-a120-453e-b97f-a7ab31dee839'::uuid),
-  ('b3b1107d-c614-4c02-80a1-14f1da4079bc'::uuid, 'mantenimiento', 'Pintura pasillos piso 3',             420.00, 'USD', '2026-04-18', '03232926-a120-453e-b97f-a7ab31dee839'::uuid),
-  -- Los Olivos (admin Carmen registra)
-  ('c05ade01-0000-0000-0000-000000000001'::uuid, 'vigilancia',    'Empresa Guardia Total — marzo',       850.00, 'USD', '2026-03-04', (SELECT id FROM profiles WHERE email='admin.olivos@atryum.test')),
-  ('c05ade01-0000-0000-0000-000000000001'::uuid, 'piscina',       'Quimicos piscina y mantenimiento',    280.00, 'USD', '2026-03-10', (SELECT id FROM profiles WHERE email='admin.olivos@atryum.test')),
-  ('c05ade01-0000-0000-0000-000000000001'::uuid, 'jardineria',    'Poda y fertilizacion jardines',       340.00, 'USD', '2026-03-14', (SELECT id FROM profiles WHERE email='admin.olivos@atryum.test')),
-  ('c05ade01-0000-0000-0000-000000000001'::uuid, 'servicios',     'Internet fibra areas comunes',         90.00, 'USD', '2026-04-02', (SELECT id FROM profiles WHERE email='admin.olivos@atryum.test')),
-  ('c05ade01-0000-0000-0000-000000000001'::uuid, 'vigilancia',    'Empresa Guardia Total — abril',       850.00, 'USD', '2026-04-04', (SELECT id FROM profiles WHERE email='admin.olivos@atryum.test')),
-  ('c05ade01-0000-0000-0000-000000000001'::uuid, 'mantenimiento', 'Reparacion ascensor T2',              680.00, 'USD', '2026-04-08', (SELECT id FROM profiles WHERE email='admin.olivos@atryum.test')),
-  ('c05ade01-0000-0000-0000-000000000001'::uuid, 'piscina',       'Calentador solar — revision anual',   220.00, 'USD', '2026-04-15', (SELECT id FROM profiles WHERE email='admin.olivos@atryum.test'))
-ON CONFLICT DO NOTHING;
+INSERT INTO expense_records (organization_id, category_id, description, amount, currency, expense_date, recorded_by)
+SELECT v.org_id::uuid, ec.id, v.description, v.amount, v.currency, v.expense_date::date,
+  COALESCE(v.recorded_by_id::uuid, (SELECT id FROM profiles WHERE email=v.recorded_by_email LIMIT 1))
+FROM (VALUES
+  -- Costa de Plata
+  ('b3b1107d-c614-4c02-80a1-14f1da4079bc', 'vigilancia',    'Empresa Segurvip — mes marzo',        580.00, 'USD', '2026-03-05', '03232926-a120-453e-b97f-a7ab31dee839', NULL),
+  ('b3b1107d-c614-4c02-80a1-14f1da4079bc', 'mantenimiento', 'Reparacion bomba de agua',            350.00, 'USD', '2026-03-12', '03232926-a120-453e-b97f-a7ab31dee839', NULL),
+  ('b3b1107d-c614-4c02-80a1-14f1da4079bc', 'aseo',          'Servicio de limpieza quincenal',      200.00, 'USD', '2026-03-15', '03232926-a120-453e-b97f-a7ab31dee839', NULL),
+  ('b3b1107d-c614-4c02-80a1-14f1da4079bc', 'servicios',     'Electricidad areas comunes',          180.00, 'USD', '2026-04-03', '03232926-a120-453e-b97f-a7ab31dee839', NULL),
+  ('b3b1107d-c614-4c02-80a1-14f1da4079bc', 'vigilancia',    'Empresa Segurvip — mes abril',        580.00, 'USD', '2026-04-05', '03232926-a120-453e-b97f-a7ab31dee839', NULL),
+  ('b3b1107d-c614-4c02-80a1-14f1da4079bc', 'aseo',          'Productos de limpieza',                95.00, 'USD', '2026-04-10', '03232926-a120-453e-b97f-a7ab31dee839', NULL),
+  ('b3b1107d-c614-4c02-80a1-14f1da4079bc', 'mantenimiento', 'Pintura pasillos piso 3',             420.00, 'USD', '2026-04-18', '03232926-a120-453e-b97f-a7ab31dee839', NULL),
+  -- Los Olivos
+  ('c05ade01-0000-0000-0000-000000000001', 'vigilancia',    'Empresa Guardia Total — marzo',       850.00, 'USD', '2026-03-04', NULL, 'admin.olivos@atryum.test'),
+  ('c05ade01-0000-0000-0000-000000000001', 'piscina',       'Quimicos piscina y mantenimiento',    280.00, 'USD', '2026-03-10', NULL, 'admin.olivos@atryum.test'),
+  ('c05ade01-0000-0000-0000-000000000001', 'jardineria',    'Poda y fertilizacion jardines',       340.00, 'USD', '2026-03-14', NULL, 'admin.olivos@atryum.test'),
+  ('c05ade01-0000-0000-0000-000000000001', 'servicios',     'Internet fibra areas comunes',         90.00, 'USD', '2026-04-02', NULL, 'admin.olivos@atryum.test'),
+  ('c05ade01-0000-0000-0000-000000000001', 'vigilancia',    'Empresa Guardia Total — abril',       850.00, 'USD', '2026-04-04', NULL, 'admin.olivos@atryum.test'),
+  ('c05ade01-0000-0000-0000-000000000001', 'mantenimiento', 'Reparacion ascensor T2',              680.00, 'USD', '2026-04-08', NULL, 'admin.olivos@atryum.test'),
+  ('c05ade01-0000-0000-0000-000000000001', 'piscina',       'Calentador solar — revision anual',   220.00, 'USD', '2026-04-15', NULL, 'admin.olivos@atryum.test')
+) AS v(org_id, code, description, amount, currency, expense_date, recorded_by_id, recorded_by_email)
+JOIN expense_categories ec ON ec.organization_id = v.org_id::uuid AND ec.code = v.code
+WHERE NOT EXISTS (
+  SELECT 1 FROM expense_records er
+  WHERE er.organization_id = v.org_id::uuid
+    AND er.description = v.description
+    AND er.expense_date = v.expense_date::date
+);
 
 -- -------------------------------------------------------------------
 -- ANNOUNCEMENTS
