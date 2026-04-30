@@ -1,13 +1,12 @@
 import {
   getCurrentProfile,
-  getUserUnitIds,
-  getInvoicesForUser,
+  getDashboardContext,
   getAnnouncements,
-  getMaintenanceForUser,
 } from "@/lib/queries";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { AnimatedCounter } from "@/components/ui/animated-counter";
+import { IdentityStrip } from "@/components/dashboard/identity-strip";
 
 const statusLabels: Record<string, string> = {
   new: "NUEVO",
@@ -25,45 +24,24 @@ const statusTone: Record<string, string> = {
   cancelled: "bg-mute/15 text-mute",
 };
 
-function getGreeting(): string {
-  const hour = new Date().getHours();
-  if (hour < 12) return "BUENOS DÍAS";
-  if (hour < 19) return "BUENAS TARDES";
-  return "BUENAS NOCHES";
-}
-
 export default async function DashboardPage() {
   const profile = await getCurrentProfile();
   if (!profile?.organization_id) return null;
 
-  const unitIds = await getUserUnitIds(profile.id);
-  const [invoices, announcements, requests] = await Promise.all([
-    getInvoicesForUser(unitIds),
-    getAnnouncements(profile.organization_id),
-    getMaintenanceForUser(profile.id),
-  ]);
+  const ctx = await getDashboardContext(profile);
+  if (!ctx) return null;
 
-  const pendingTotal = invoices
-    .filter((i) => i.status === "pending" || i.status === "overdue")
-    .reduce((sum, i) => sum + Number(i.amount), 0);
-
+  // Comunicados completos sólo para la sección "Hoy en la comunidad" (3 últimos sin filtrar prioridad).
+  // En PR #2 esta sección se borra y se reemplaza por banner urgent + counter.
+  const announcements = await getAnnouncements(profile.organization_id);
   const recentAnnouncements = announcements.slice(0, 3);
-  const recentRequests = requests.slice(0, 3);
 
-  const firstName = (profile.full_name || "vecino").split(" ")[0];
+  const pendingTotal = ctx.pendingTotalUsd;
+  const recentRequests = ctx.recentRequests;
 
   return (
     <div className="space-y-10">
-      {/* Saludo editorial */}
-      <div>
-        <span className="font-meta-loose text-cyan">{getGreeting()}</span>
-        <h1 className="mt-4 font-display text-[clamp(2rem,4.5vw,3.25rem)] leading-[1.02] tracking-[-0.035em] text-marine-deep">
-          <em className="font-editorial">{firstName}</em>
-        </h1>
-        <p className="mt-3 text-[15px] text-mute">
-          Aquí está lo que pasa hoy en tu comunidad.
-        </p>
-      </div>
+      <IdentityStrip ctx={ctx} />
 
       {/* Saldo card — con count-up dramático */}
       <div className="group rounded-2xl bg-card border border-border p-6 md:p-8 transition-all duration-500 hover:border-marine/25 hover:shadow-[0_18px_50px_-18px_rgb(15,46,90,0.18)]">

@@ -4,6 +4,9 @@ import type {
   Invoice,
   MaintenanceRequest,
   Announcement,
+  Organization,
+  MemberRole,
+  TenantPermissions,
 } from "@/types/database";
 
 // ── User & Profile ──────────────────────────────────────
@@ -270,4 +273,220 @@ export async function getCurrentRate(orgId: string) {
     .single();
 
   return data ?? { rate: 0, effective_date: "", source: "bcv" };
+}
+
+// ── Dashboard Context ───────────────────────────────────
+
+export interface DashboardMembership {
+  unit_member_id: string;
+  unit_id: string;
+  role: MemberRole;
+  permissions: TenantPermissions;
+  unit: {
+    id: string;
+    unit_number: string;
+    block: string | null;
+    floor: number | null;
+    type: string;
+  };
+}
+
+export interface DashboardContext {
+  profile: Profile & { view_as?: string | null };
+  org: Organization | null;
+  rate: { rate: number; effective_date: string; source: string };
+  memberships: DashboardMembership[];
+  primaryMembership: DashboardMembership | null;
+  pendingInvoices: Invoice[];
+  inReviewInvoiceIds: Set<string>;
+  pendingTotalUsd: number;
+  upcomingReservation: {
+    id: string;
+    start_time: string;
+    end_time: string;
+    common_area_name: string;
+    notes: string | null;
+  } | null;
+  openPollsNotVoted: Array<{
+    id: string;
+    question: string;
+    ends_at: string | null;
+    total_votes: number;
+  }>;
+  urgentAnnouncements: Announcement[];
+  totalRecentAnnouncements: number;
+  recentRequests: MaintenanceRequest[];
+  /** True si el residente puede ver/pagar fees: owner en alguna unit, o tenant con can_see_fee=true. */
+  canSeeFee: boolean;
+}
+
+/**
+ * Snapshot completo del estado del residente para el dashboard.
+ * Una sola roundtrip mental, paralelización interna con Promise.all.
+ *
+ * NULL cases manejados:
+ * - Sin memberships → memberships=[], primaryMembership=null, canSeeFee=false
+ * - Sin reserva futura → upcomingReservation=null
+ * - Sin polls abiertos → openPollsNotVoted=[]
+ * - Tenant con tenant_can_vote=false → openPollsNotVoted=[] (filtrado)
+ */
+export async function getDashboardContext(
+  profileWithView: Profile & { view_as?: string | null },
+): Promise<DashboardContext | null> {
+  if (!profileWithView.organization_id) return null;
+  const supabase = await createClient();
+  const orgId = profileWithView.organization_id;
+
+  // Round 1: memberships + org + rate (paralelo)
+  const [membersRes, org, rateData] = await Promise.all([
+    supabase
+      .from("unit_members")
+      .select("id, unit_id, role, permissions, joined_at, units(id, unit_number, block, floor, type)")
+      .eq("profile_id", profileWithView.id)
+      .eq("active", true)
+      .order("joined_at", { ascending: false }),
+    getOrganization(orgId),
+    getCurrentRate(orgId),
+  ]);
+
+  const memberships: DashboardMembership[] = (membersRes.data ?? [])
+    .map((m) => {
+      const unit = Array.isArray(m.units) ? m.units[0] : m.units;
+      if (!unit) return null;
+      return {
+        unit_member_id: m.id as string,
+        unit_id: m.unit_id as string,
+        role: m.role as MemberRole,
+        permissions: (m.permissions as TenantPermissions) ?? {},
+        unit: {
+          id: unit.id as string,
+          unit_number: unit.unit_number as string,
+          block: (unit.block as string | null) ?? null,
+          floor: (unit.floor as number | null) ?? null,
+          type: (unit.type as string) ?? "apartment",
+        },
+      };
+    })
+    .filter((m): m is DashboardMembership => m !== null);
+
+  const unitIds = memberships.map((m) => m.unit_id);
+  const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 3600_000).toISOString();
+  const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 3600_000).toISOString();
+  const nowIso = new Date().toISOString();
+
+  // Round 2: todo en paralelo
+  const [
+    invoicesRes,
+    reservationRes,
+    pollsRes,
+    urgentRes,
+    recentCountRes,
+    requestsRes,
+  ] = await Promise.all([
+    unitIds.length
+      ? supabase
+          .from("invoices")
+          .select("*")
+          .in("unit_id", unitIds)
+          .in("status", ["pending", "overdue"])
+          .order("due_date", { ascending: true })
+      : Promise.resolve({ data: [] as Invoice[] }),
+    supabase
+      .from("reservations")
+      .select("id, start_time, end_time, notes, common_areas(name)")
+      .eq("reserved_by", profileWithView.id)
+      .eq("status", "confirmed")
+      .gte("end_time", nowIso)
+      .order("start_time", { ascending: true })
+      .limit(1)
+      .maybeSingle(),
+    supabase
+      .from("polls")
+      .select("id, question, ends_at, poll_votes(voter_id)")
+      .eq("organization_id", orgId)
+      .eq("is_open", true),
+    supabase
+      .from("announcements")
+      .select("*")
+      .eq("organization_id", orgId)
+      .eq("priority", "urgent")
+      .gte("published_at", sevenDaysAgo)
+      .order("published_at", { ascending: false }),
+    supabase
+      .from("announcements")
+      .select("id", { count: "exact", head: true })
+      .eq("organization_id", orgId)
+      .gte("published_at", thirtyDaysAgo),
+    supabase
+      .from("maintenance_requests")
+      .select("*")
+      .eq("reported_by", profileWithView.id)
+      .order("created_at", { ascending: false })
+      .limit(3),
+  ]);
+
+  const pendingInvoices = (invoicesRes.data ?? []) as Invoice[];
+  const inReviewInvoiceIds = await getInvoiceIdsWithPendingTransactions(
+    pendingInvoices.map((i) => i.id),
+  );
+
+  // Filtro client-side: polls donde el user NO ha votado
+  type PollRow = { id: string; question: string; ends_at: string | null; poll_votes: { voter_id: string }[] };
+  const polls = ((pollsRes.data ?? []) as unknown as PollRow[])
+    .filter((p) => !(p.poll_votes ?? []).some((v) => v.voter_id === profileWithView.id))
+    .map((p) => ({
+      id: p.id,
+      question: p.question,
+      ends_at: p.ends_at,
+      total_votes: (p.poll_votes ?? []).length,
+    }))
+    .sort((a, b) => {
+      if (!a.ends_at) return 1;
+      if (!b.ends_at) return -1;
+      return new Date(a.ends_at).getTime() - new Date(b.ends_at).getTime();
+    });
+
+  // Si tenant en su primaria y org tenant_can_vote=false → no mostrar polls
+  const orgTyped = org as Organization | null;
+  const isPrimaryTenant = memberships[0]?.role === "tenant";
+  const canSeeVotes = !isPrimaryTenant || !!orgTyped?.tenant_can_vote;
+
+  // Reservation shape unwrap
+  const r = reservationRes.data;
+  const upcomingReservation = r
+    ? {
+        id: r.id as string,
+        start_time: r.start_time as string,
+        end_time: r.end_time as string,
+        notes: (r.notes as string | null) ?? null,
+        common_area_name: (() => {
+          const ca = r.common_areas;
+          if (Array.isArray(ca)) return ca[0]?.name ?? "";
+          if (ca && typeof ca === "object") return (ca as { name: string }).name;
+          return "";
+        })(),
+      }
+    : null;
+
+  // canSeeFee: owner en alguna unit, o tenant con can_see_fee !== false en alguna
+  const canSeeFee = memberships.some(
+    (m) => m.role === "owner" || m.permissions?.can_see_fee !== false,
+  );
+
+  return {
+    profile: profileWithView,
+    org: orgTyped,
+    rate: rateData,
+    memberships,
+    primaryMembership: memberships[0] ?? null,
+    pendingInvoices,
+    inReviewInvoiceIds,
+    pendingTotalUsd: pendingInvoices.reduce((s, i) => s + Number(i.amount), 0),
+    upcomingReservation,
+    openPollsNotVoted: canSeeVotes ? polls : [],
+    urgentAnnouncements: (urgentRes.data ?? []) as Announcement[],
+    totalRecentAnnouncements: recentCountRes.count ?? 0,
+    recentRequests: (requestsRes.data ?? []) as MaintenanceRequest[],
+    canSeeFee,
+  };
 }
