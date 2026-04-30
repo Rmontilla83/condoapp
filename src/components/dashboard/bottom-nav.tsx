@@ -47,7 +47,7 @@ const moreItemsBase = [
   { href: "/comunicados", label: "Comunicados", adminOnly: false },
   { href: "/finanzas", label: "Finanzas", adminOnly: false },
   { href: "/reservas", label: "Reservas", adminOnly: false },
-  { href: "/votaciones", label: "Votaciones", adminOnly: false },
+  { href: "/decisiones", label: "Decisiones", adminOnly: false },
   { href: "/mi-unidad", label: "Mi unidad", adminOnly: false },
   { href: "/admin", label: "Admin", adminOnly: true },
   { href: "/perfil", label: "Perfil", adminOnly: false },

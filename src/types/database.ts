@@ -227,6 +227,43 @@ export interface CommonArea {
 
 export type PassStatus = "active" | "used" | "expired" | "cancelled";
 
+// ── Decisions (E3) ─────────────────────────────────────────
+
+export type DecisionKind = "quick_poll" | "formal_assembly";
+export type DecisionStatus = "draft" | "open" | "closed" | "cancelled";
+
+export interface Decision {
+  id: string;
+  organization_id: string;
+  created_by: string;
+  kind: DecisionKind;
+  title: string;
+  description: string | null;
+  status: DecisionStatus;
+  weighted_by_aliquot: boolean;
+  quorum_pct: number | null;
+  scheduled_at: string | null;
+  closes_at: string | null;
+  created_at: string;
+}
+
+export interface DecisionQuestion {
+  id: string;
+  decision_id: string;
+  question: string;
+  options: string[];
+  position: number;
+}
+
+export interface DecisionResponse {
+  id: string;
+  question_id: string;
+  voter_id: string;
+  selected_option: string;
+  weight: number;
+  created_at: string;
+}
+
 export type VisitorKind =
   | "guest"
   | "family"

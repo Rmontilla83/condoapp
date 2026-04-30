@@ -83,7 +83,7 @@ export default async function DashboardPage() {
       )}
 
       {/* Decisión pendiente (si aplica) */}
-      <PendingDecisionCard polls={ctx.openPollsNotVoted} />
+      <PendingDecisionCard decisions={ctx.openDecisionsNotVoted} />
 
       {/* Próxima reserva (si aplica) */}
       <UpcomingReservationCard reservation={ctx.upcomingReservation} />

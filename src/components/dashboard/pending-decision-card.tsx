@@ -1,15 +1,17 @@
 import Link from "next/link";
+import type { DecisionKind } from "@/types/database";
 
-interface Poll {
+interface OpenDecision {
   id: string;
-  question: string;
-  ends_at: string | null;
-  total_votes: number;
+  kind: DecisionKind;
+  title: string;
+  closes_at: string | null;
+  total_voters: number;
 }
 
-function formatEndsAt(endsAt: string | null): string {
-  if (!endsAt) return "SIN FECHA LÍMITE";
-  const end = new Date(endsAt);
+function formatClosesAt(closesAt: string | null): string {
+  if (!closesAt) return "SIN FECHA LÍMITE";
+  const end = new Date(closesAt);
   const now = new Date();
   const diffMs = end.getTime() - now.getTime();
   const diffDays = Math.round(diffMs / (1000 * 60 * 60 * 24));
@@ -19,12 +21,13 @@ function formatEndsAt(endsAt: string | null): string {
   return `VENCE EN ${diffDays} DÍAS`;
 }
 
-export function PendingDecisionCard({ polls }: { polls: Poll[] }) {
-  if (!polls || polls.length === 0) return null;
-  const main = polls[0];
-  const extra = polls.length - 1;
-  const endsLabel = formatEndsAt(main.ends_at);
-  const isOverdue = main.ends_at && new Date(main.ends_at) < new Date();
+export function PendingDecisionCard({ decisions }: { decisions: OpenDecision[] }) {
+  if (!decisions || decisions.length === 0) return null;
+  const main = decisions[0];
+  const extra = decisions.length - 1;
+  const endsLabel = formatClosesAt(main.closes_at);
+  const isOverdue = main.closes_at && new Date(main.closes_at) < new Date();
+  const isFormal = main.kind === "formal_assembly";
 
   return (
     <div className="rounded-2xl border border-cyan/30 bg-cyan/5 p-5">
@@ -35,9 +38,16 @@ export function PendingDecisionCard({ polls }: { polls: Poll[] }) {
           </svg>
         </div>
         <div className="min-w-0 flex-1">
-          <p className="font-meta text-cyan">DECISIÓN PENDIENTE</p>
+          <div className="flex items-center gap-2 flex-wrap">
+            <p className="font-meta text-cyan">DECISIÓN PENDIENTE</p>
+            {isFormal && (
+              <span className="font-meta bg-marine-deep/5 border border-marine-deep/10 text-marine-deep px-2 py-0.5 rounded-md">
+                ASAMBLEA FORMAL
+              </span>
+            )}
+          </div>
           <p className="mt-1.5 text-[15px] font-semibold text-marine-deep line-clamp-2">
-            {main.question}
+            {main.title}
           </p>
           <p
             className={`mt-1 font-meta ${
@@ -48,14 +58,14 @@ export function PendingDecisionCard({ polls }: { polls: Poll[] }) {
           </p>
           <div className="mt-3 flex flex-wrap items-center gap-3">
             <Link
-              href={`/votaciones#poll-${main.id}`}
+              href={`/decisiones#decision-${main.id}`}
               className="inline-flex items-center font-meta text-cyan hover:text-marine-deep transition-colors"
             >
               VOTAR AHORA →
             </Link>
             {extra > 0 && (
               <Link
-                href="/votaciones"
+                href="/decisiones"
                 className="font-meta text-mute hover:text-marine-deep transition-colors"
               >
                 + {extra} DECISI{extra > 1 ? "ONES" : "ÓN"} MÁS
