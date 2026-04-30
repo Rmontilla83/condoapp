@@ -191,6 +191,42 @@ export async function getFeeBreakdown(orgId: string) {
   return data ?? [];
 }
 
+/**
+ * Igual que getFeeBreakdown pero incluye items inactivos. Para el editor de admin.
+ */
+export async function getFeeBreakdownAll(orgId: string) {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("fee_breakdown")
+    .select("*")
+    .eq("organization_id", orgId)
+    .order("amount", { ascending: false });
+
+  return data ?? [];
+}
+
+export async function getFeeTypeAmounts(orgId: string) {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("fee_type_amounts")
+    .select("*")
+    .eq("organization_id", orgId)
+    .order("unit_type", { ascending: true });
+
+  return data ?? [];
+}
+
+export async function getOrgUnitTypes(orgId: string): Promise<string[]> {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("units")
+    .select("type")
+    .eq("organization_id", orgId);
+
+  const types = new Set((data ?? []).map((r) => r.type as string).filter(Boolean));
+  return [...types].sort();
+}
+
 // ── Organization ────────────────────────────────────────
 
 export async function getOrganization(orgId: string) {
