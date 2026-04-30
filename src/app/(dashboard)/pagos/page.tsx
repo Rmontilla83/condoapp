@@ -4,31 +4,39 @@ import {
   getInvoicesForUser,
   getFeeBreakdown,
   getCurrentRate,
+  getOrganization,
 } from "@/lib/queries";
 import { InvoiceRow } from "./invoice-row";
+import { PendingInvoices } from "./pending-invoices";
+import { PaymentMethods } from "./payment-methods";
+import type { BankAccount, Organization } from "@/types/database";
 
 export default async function PagosPage() {
   const profile = await getCurrentProfile();
   if (!profile?.organization_id) return null;
 
   const unitIds = await getUserUnitIds(profile.id);
-  const [invoices, feeBreakdown, rateData] = await Promise.all([
+  const [invoices, feeBreakdown, rateData, orgRaw] = await Promise.all([
     getInvoicesForUser(unitIds),
     getFeeBreakdown(profile.organization_id),
     getCurrentRate(profile.organization_id),
+    getOrganization(profile.organization_id),
   ]);
 
+  const org = orgRaw as Organization | null;
+  const bankAccounts: BankAccount[] = org && Array.isArray(org.bank_accounts) ? org.bank_accounts : [];
+
   const rate = Number(rateData.rate);
-  const pendingInvoices = invoices.filter((i) => i.status === "pending" || i.status === "overdue");
+  const pendingInvoices = invoices
+    .filter((i) => i.status === "pending" || i.status === "overdue")
+    .sort((a, b) => new Date(a.due_date).getTime() - new Date(b.due_date).getTime());
   const paidInvoices = invoices.filter((i) => i.status === "paid");
   const pendingTotal = pendingInvoices.reduce((sum, i) => sum + Number(i.amount), 0);
   const pendingTotalBs = pendingTotal * rate;
   const feeTotal = feeBreakdown.reduce((sum, f) => sum + Number(f.amount), 0);
 
   const lastPaid = paidInvoices[0];
-  const nextDue = pendingInvoices.sort(
-    (a, b) => new Date(a.due_date).getTime() - new Date(b.due_date).getTime()
-  )[0];
+  const nextDue = pendingInvoices[0];
 
   return (
     <div className="space-y-8">
@@ -100,51 +108,47 @@ export default async function PagosPage() {
         </div>
       </div>
 
-      {/* Métodos de pago */}
+      {/* Datos bancarios reales del condo */}
       {pendingTotal > 0 && (
-        <div className="rounded-2xl bg-marine-deep text-frost p-6 md:p-7">
-          <p className="font-meta text-ember">MÉTODOS DISPONIBLES</p>
-          <p className="mt-3 font-display text-[20px] leading-tight">
-            Tienes {pendingInvoices.length} cuota{pendingInvoices.length > 1 ? "s" : ""}{" "}
-            <em className="font-editorial text-ember">pendiente{pendingInvoices.length > 1 ? "s" : ""}</em>
-          </p>
-          <p className="mt-1 text-[13px] text-frost/60">
-            Total: ${pendingTotal.toFixed(2)}{rate > 0 ? ` (Bs ${pendingTotalBs.toFixed(2)})` : ""}
-          </p>
-          <div className="mt-5 flex flex-wrap gap-2">
-            {[
-              "Débito Inmediato (Bs)",
-              "Stripe (USD)",
-              "Transferencia + comprobante",
-            ].map((method) => (
-              <span key={method} className="font-meta bg-frost/5 border border-frost/10 text-frost/80 px-3 py-1.5 rounded-md">
-                {method.toUpperCase()}
-              </span>
-            ))}
+        <PaymentMethods
+          accounts={bankAccounts}
+          total={pendingTotal}
+          rate={rate}
+          pendingCount={pendingInvoices.length}
+        />
+      )}
+
+      {/* Pendientes con selección múltiple */}
+      {pendingInvoices.length > 0 && (
+        <div className="rounded-2xl bg-card border border-border p-6">
+          <div className="mb-4">
+            <p className="font-meta text-mute">CUOTAS PENDIENTES</p>
+            <p className="mt-2 text-[15px] font-medium text-marine-deep">
+              {pendingInvoices.length} pendiente{pendingInvoices.length !== 1 ? "s" : ""}
+            </p>
           </div>
+          <PendingInvoices invoices={pendingInvoices} rate={rate} />
         </div>
       )}
 
       {/* Historial */}
-      <div className="rounded-2xl bg-card border border-border p-6">
-        <div className="flex items-center justify-between mb-5">
-          <div>
-            <p className="font-meta text-mute">HISTORIAL</p>
-            <p className="mt-2 text-[15px] font-medium text-marine-deep">
-              {invoices.length} cuota{invoices.length !== 1 ? "s" : ""} registrada{invoices.length !== 1 ? "s" : ""}
-            </p>
+      {paidInvoices.length > 0 && (
+        <div className="rounded-2xl bg-card border border-border p-6">
+          <div className="flex items-center justify-between mb-5">
+            <div>
+              <p className="font-meta text-mute">HISTORIAL</p>
+              <p className="mt-2 text-[15px] font-medium text-marine-deep">
+                {paidInvoices.length} cuota{paidInvoices.length !== 1 ? "s" : ""} pagada{paidInvoices.length !== 1 ? "s" : ""}
+              </p>
+            </div>
+          </div>
+          <div className="space-y-3">
+            {paidInvoices.map((invoice) => (
+              <InvoiceRow key={invoice.id} invoice={invoice} rate={rate} />
+            ))}
           </div>
         </div>
-        <div className="space-y-3">
-          {invoices.length === 0 ? (
-            <p className="py-6 text-center text-[13px] text-mute">No hay cuotas registradas</p>
-          ) : (
-            invoices.map((invoice) => (
-              <InvoiceRow key={invoice.id} invoice={invoice} rate={rate} />
-            ))
-          )}
-        </div>
-      </div>
+      )}
 
       {/* Desglose */}
       {feeBreakdown.length > 0 && (

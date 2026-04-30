@@ -1,7 +1,7 @@
 "use client";
 
 import { Badge } from "@/components/ui/badge";
-import { PayDialog } from "./pay-dialog";
+import { Button } from "@/components/ui/button";
 import type { Invoice } from "@/types/database";
 
 const statusConfig = {
@@ -11,18 +11,43 @@ const statusConfig = {
   cancelled: { label: "Cancelado", className: "border-gray-300 text-gray-700 bg-gray-50" },
 };
 
-export function InvoiceRow({ invoice, rate = 0 }: { invoice: Invoice; rate?: number }) {
+interface Props {
+  invoice: Invoice;
+  rate?: number;
+  /** Si se pasa, la fila muestra checkbox y permite seleccionar. */
+  selected?: boolean;
+  onToggle?: () => void;
+  onPayClick?: () => void;
+}
+
+export function InvoiceRow({ invoice, rate = 0, selected, onToggle, onPayClick }: Props) {
   const config = statusConfig[invoice.status as keyof typeof statusConfig] ?? statusConfig.pending;
   const isPaid = invoice.status === "paid";
   const isOverdue = invoice.status === "overdue";
   const isPending = invoice.status === "pending" || invoice.status === "overdue";
+  const selectable = onToggle !== undefined;
 
   return (
-    <div className="flex items-center justify-between rounded-lg border p-4">
-      <div className="flex items-center gap-4">
-        <div className={`flex h-10 w-10 items-center justify-center rounded-full shrink-0 ${
-          isPaid ? "bg-emerald-100" : isOverdue ? "bg-red-100" : "bg-amber-100"
-        }`}>
+    <div
+      className={`flex items-center justify-between rounded-lg border p-4 gap-3 transition ${
+        selectable && selected ? "border-cyan bg-cyan/5" : ""
+      }`}
+    >
+      <div className="flex items-center gap-3 min-w-0 flex-1">
+        {selectable && (
+          <input
+            type="checkbox"
+            checked={selected ?? false}
+            onChange={onToggle}
+            aria-label="Seleccionar para pago múltiple"
+            className="h-5 w-5 cursor-pointer shrink-0"
+          />
+        )}
+        <div
+          className={`flex h-10 w-10 items-center justify-center rounded-full shrink-0 ${
+            isPaid ? "bg-emerald-100" : isOverdue ? "bg-red-100" : "bg-amber-100"
+          }`}
+        >
           {isPaid ? (
             <svg className="h-5 w-5 text-emerald-600" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
@@ -33,31 +58,38 @@ export function InvoiceRow({ invoice, rate = 0 }: { invoice: Invoice; rate?: num
             </svg>
           )}
         </div>
-        <div>
-          <p className="text-sm font-medium">{invoice.description}</p>
+        <div className="min-w-0">
+          <div className="flex items-center gap-2 flex-wrap">
+            <p className="text-sm font-medium truncate">{invoice.description}</p>
+            {invoice.kind === "extraordinary" && (
+              <Badge variant="outline" className="border-ember/50 text-ember bg-ember/5 text-[10px]">
+                EXTRAORDINARIA
+              </Badge>
+            )}
+          </div>
           <p className="text-xs text-muted-foreground">
             Vence: {new Date(invoice.due_date).toLocaleDateString("es")}
           </p>
         </div>
       </div>
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-3 shrink-0">
         <div className="text-right">
           <p className="text-sm font-bold">${Number(invoice.amount).toFixed(2)}</p>
           {rate > 0 && (
-            <p className="text-[11px] text-muted-foreground">Bs {(Number(invoice.amount) * rate).toFixed(2)}</p>
+            <p className="text-[11px] text-muted-foreground">
+              Bs {(Number(invoice.amount) * rate).toFixed(2)}
+            </p>
           )}
         </div>
-        {isPending ? (
-          <PayDialog
-            invoiceId={invoice.id}
-            amount={Number(invoice.amount)}
-            description={invoice.description}
-          />
-        ) : (
+        {isPending && onPayClick ? (
+          <Button size="sm" onClick={onPayClick}>
+            Subir comprobante
+          </Button>
+        ) : !isPending ? (
           <Badge variant="outline" className={config.className}>
             {config.label}
           </Badge>
-        )}
+        ) : null}
       </div>
     </div>
   );
