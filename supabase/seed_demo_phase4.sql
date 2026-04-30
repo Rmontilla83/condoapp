@@ -403,44 +403,58 @@ WHERE status = 'resolved' AND resolved_at IS NULL;
 -- 14. Más expense_records (nómina, seguros, impuestos, repuestos)
 -- ---------------------------------------------------------------------
 
-INSERT INTO expense_records (organization_id, category, description, amount, currency, expense_date, recorded_by) VALUES
+-- Insertamos via JOIN a expense_categories (E5: category_id FK reemplaza category text).
+INSERT INTO expense_records (organization_id, category_id, description, amount, currency, expense_date, recorded_by)
+SELECT v.org_id::uuid, ec.id, v.description, v.amount, v.currency, v.expense_date::date, v.recorded_by::uuid
+FROM (VALUES
   -- Costa: marzo
-  ('b3b1107d-c614-4c02-80a1-14f1da4079bc'::uuid, 'nomina', 'Nomina conserjeria — marzo (Sr. Antonio)', 320.00, 'USD', '2026-03-30', '03232926-a120-453e-b97f-a7ab31dee839'::uuid),
-  ('b3b1107d-c614-4c02-80a1-14f1da4079bc'::uuid, 'seguros', 'Poliza HCM areas comunes — trimestre', 180.00, 'USD', '2026-03-08', '03232926-a120-453e-b97f-a7ab31dee839'::uuid),
-  ('b3b1107d-c614-4c02-80a1-14f1da4079bc'::uuid, 'impuestos', 'Patente municipal Q1', 45.00, 'USD', '2026-03-20', '03232926-a120-453e-b97f-a7ab31dee839'::uuid),
-  ('b3b1107d-c614-4c02-80a1-14f1da4079bc'::uuid, 'repuestos', 'Bombillas LED reemplazo pasillos', 65.00, 'USD', '2026-03-25', '03232926-a120-453e-b97f-a7ab31dee839'::uuid),
-  ('b3b1107d-c614-4c02-80a1-14f1da4079bc'::uuid, 'servicios', 'Internet fibra optica oficina admin', 35.00, 'USD', '2026-03-01', '03232926-a120-453e-b97f-a7ab31dee839'::uuid),
+  ('b3b1107d-c614-4c02-80a1-14f1da4079bc', 'nomina', 'Nomina conserjeria — marzo (Sr. Antonio)', 320.00, 'USD', '2026-03-30', '03232926-a120-453e-b97f-a7ab31dee839'),
+  ('b3b1107d-c614-4c02-80a1-14f1da4079bc', 'seguros', 'Poliza HCM areas comunes — trimestre', 180.00, 'USD', '2026-03-08', '03232926-a120-453e-b97f-a7ab31dee839'),
+  ('b3b1107d-c614-4c02-80a1-14f1da4079bc', 'impuestos', 'Patente municipal Q1', 45.00, 'USD', '2026-03-20', '03232926-a120-453e-b97f-a7ab31dee839'),
+  ('b3b1107d-c614-4c02-80a1-14f1da4079bc', 'repuestos', 'Bombillas LED reemplazo pasillos', 65.00, 'USD', '2026-03-25', '03232926-a120-453e-b97f-a7ab31dee839'),
+  ('b3b1107d-c614-4c02-80a1-14f1da4079bc', 'servicios', 'Internet fibra optica oficina admin', 35.00, 'USD', '2026-03-01', '03232926-a120-453e-b97f-a7ab31dee839'),
   -- Costa: abril
-  ('b3b1107d-c614-4c02-80a1-14f1da4079bc'::uuid, 'nomina', 'Nomina conserjeria — abril (Sr. Antonio)', 320.00, 'USD', '2026-04-30', '03232926-a120-453e-b97f-a7ab31dee839'::uuid),
-  ('b3b1107d-c614-4c02-80a1-14f1da4079bc'::uuid, 'mantenimiento', 'Pintura fachada — proveedor (derrama febrero)', 1200.00, 'USD', '2026-04-12', '03232926-a120-453e-b97f-a7ab31dee839'::uuid),
-  ('b3b1107d-c614-4c02-80a1-14f1da4079bc'::uuid, 'oficina', 'Suministros admin (papel, tinta, archivadores)', 28.00, 'USD', '2026-04-09', '03232926-a120-453e-b97f-a7ab31dee839'::uuid),
-  ('b3b1107d-c614-4c02-80a1-14f1da4079bc'::uuid, 'aseo', 'Productos limpieza piscina — abril', 80.00, 'USD', '2026-04-14', '03232926-a120-453e-b97f-a7ab31dee839'::uuid),
+  ('b3b1107d-c614-4c02-80a1-14f1da4079bc', 'nomina', 'Nomina conserjeria — abril (Sr. Antonio)', 320.00, 'USD', '2026-04-30', '03232926-a120-453e-b97f-a7ab31dee839'),
+  ('b3b1107d-c614-4c02-80a1-14f1da4079bc', 'mantenimiento', 'Pintura fachada — proveedor (derrama febrero)', 1200.00, 'USD', '2026-04-12', '03232926-a120-453e-b97f-a7ab31dee839'),
+  ('b3b1107d-c614-4c02-80a1-14f1da4079bc', 'oficina', 'Suministros admin (papel, tinta, archivadores)', 28.00, 'USD', '2026-04-09', '03232926-a120-453e-b97f-a7ab31dee839'),
+  ('b3b1107d-c614-4c02-80a1-14f1da4079bc', 'aseo', 'Productos limpieza piscina — abril', 80.00, 'USD', '2026-04-14', '03232926-a120-453e-b97f-a7ab31dee839'),
   -- Olivos: marzo
-  ('c05ade01-0000-0000-0000-000000000001'::uuid, 'nomina', 'Nomina vigilantes — marzo (3 turnos)', 1450.00, 'USD', '2026-03-30', (SELECT id FROM profiles WHERE email='admin.olivos@atryum.test')),
-  ('c05ade01-0000-0000-0000-000000000001'::uuid, 'seguros', 'Poliza incendio edificio — anual prorrateo', 420.00, 'USD', '2026-03-05', (SELECT id FROM profiles WHERE email='admin.olivos@atryum.test')),
-  ('c05ade01-0000-0000-0000-000000000001'::uuid, 'impuestos', 'Aseo urbano alcaldia Q1', 95.00, 'USD', '2026-03-15', (SELECT id FROM profiles WHERE email='admin.olivos@atryum.test')),
-  ('c05ade01-0000-0000-0000-000000000001'::uuid, 'servicios', 'Electricidad areas comunes — marzo', 240.00, 'USD', '2026-03-28', (SELECT id FROM profiles WHERE email='admin.olivos@atryum.test')),
+  ('c05ade01-0000-0000-0000-000000000001', 'nomina', 'Nomina vigilantes — marzo (3 turnos)', 1450.00, 'USD', '2026-03-30', NULL),
+  ('c05ade01-0000-0000-0000-000000000001', 'seguros', 'Poliza incendio edificio — anual prorrateo', 420.00, 'USD', '2026-03-05', NULL),
+  ('c05ade01-0000-0000-0000-000000000001', 'impuestos', 'Aseo urbano alcaldia Q1', 95.00, 'USD', '2026-03-15', NULL),
+  ('c05ade01-0000-0000-0000-000000000001', 'servicios', 'Electricidad areas comunes — marzo', 240.00, 'USD', '2026-03-28', NULL),
   -- Olivos: abril
-  ('c05ade01-0000-0000-0000-000000000001'::uuid, 'nomina', 'Nomina vigilantes — abril (3 turnos)', 1450.00, 'USD', '2026-04-30', (SELECT id FROM profiles WHERE email='admin.olivos@atryum.test')),
-  ('c05ade01-0000-0000-0000-000000000001'::uuid, 'mantenimiento', 'Reparacion bomba presion T2', 480.00, 'USD', '2026-04-11', (SELECT id FROM profiles WHERE email='admin.olivos@atryum.test')),
-  ('c05ade01-0000-0000-0000-000000000001'::uuid, 'jardineria', 'Plantas ornamentales nuevas + abono', 165.00, 'USD', '2026-04-09', (SELECT id FROM profiles WHERE email='admin.olivos@atryum.test')),
-  ('c05ade01-0000-0000-0000-000000000001'::uuid, 'eventos', 'Anticipo dia del vecino — DJ + alquiler audio', 250.00, 'USD', '2026-04-22', (SELECT id FROM profiles WHERE email='admin.olivos@atryum.test')),
+  ('c05ade01-0000-0000-0000-000000000001', 'nomina', 'Nomina vigilantes — abril (3 turnos)', 1450.00, 'USD', '2026-04-30', NULL),
+  ('c05ade01-0000-0000-0000-000000000001', 'mantenimiento', 'Reparacion bomba presion T2', 480.00, 'USD', '2026-04-11', NULL),
+  ('c05ade01-0000-0000-0000-000000000001', 'jardineria', 'Plantas ornamentales nuevas + abono', 165.00, 'USD', '2026-04-09', NULL),
+  ('c05ade01-0000-0000-0000-000000000001', 'eventos', 'Anticipo dia del vecino — DJ + alquiler audio', 250.00, 'USD', '2026-04-22', NULL),
   -- Histórico enero/febrero costa
-  ('b3b1107d-c614-4c02-80a1-14f1da4079bc'::uuid, 'vigilancia', 'Empresa Segurvip — enero', 580.00, 'USD', '2026-01-05', '03232926-a120-453e-b97f-a7ab31dee839'::uuid),
-  ('b3b1107d-c614-4c02-80a1-14f1da4079bc'::uuid, 'vigilancia', 'Empresa Segurvip — febrero', 580.00, 'USD', '2026-02-05', '03232926-a120-453e-b97f-a7ab31dee839'::uuid),
-  ('b3b1107d-c614-4c02-80a1-14f1da4079bc'::uuid, 'aseo', 'Servicio limpieza enero', 200.00, 'USD', '2026-01-15', '03232926-a120-453e-b97f-a7ab31dee839'::uuid),
-  ('b3b1107d-c614-4c02-80a1-14f1da4079bc'::uuid, 'aseo', 'Servicio limpieza febrero', 200.00, 'USD', '2026-02-15', '03232926-a120-453e-b97f-a7ab31dee839'::uuid),
+  ('b3b1107d-c614-4c02-80a1-14f1da4079bc', 'vigilancia', 'Empresa Segurvip — enero', 580.00, 'USD', '2026-01-05', '03232926-a120-453e-b97f-a7ab31dee839'),
+  ('b3b1107d-c614-4c02-80a1-14f1da4079bc', 'vigilancia', 'Empresa Segurvip — febrero', 580.00, 'USD', '2026-02-05', '03232926-a120-453e-b97f-a7ab31dee839'),
+  ('b3b1107d-c614-4c02-80a1-14f1da4079bc', 'aseo', 'Servicio limpieza enero', 200.00, 'USD', '2026-01-15', '03232926-a120-453e-b97f-a7ab31dee839'),
+  ('b3b1107d-c614-4c02-80a1-14f1da4079bc', 'aseo', 'Servicio limpieza febrero', 200.00, 'USD', '2026-02-15', '03232926-a120-453e-b97f-a7ab31dee839'),
   -- Histórico enero/febrero olivos
-  ('c05ade01-0000-0000-0000-000000000001'::uuid, 'vigilancia', 'Guardia Total — enero', 850.00, 'USD', '2026-01-04', (SELECT id FROM profiles WHERE email='admin.olivos@atryum.test')),
-  ('c05ade01-0000-0000-0000-000000000001'::uuid, 'vigilancia', 'Guardia Total — febrero', 850.00, 'USD', '2026-02-04', (SELECT id FROM profiles WHERE email='admin.olivos@atryum.test'))
-ON CONFLICT DO NOTHING;
+  ('c05ade01-0000-0000-0000-000000000001', 'vigilancia', 'Guardia Total — enero', 850.00, 'USD', '2026-01-04', NULL),
+  ('c05ade01-0000-0000-0000-000000000001', 'vigilancia', 'Guardia Total — febrero', 850.00, 'USD', '2026-02-04', NULL)
+) AS v(org_id, code, description, amount, currency, expense_date, recorded_by)
+JOIN expense_categories ec ON ec.organization_id = v.org_id::uuid AND ec.code = v.code
+LEFT JOIN expense_records existing ON existing.organization_id = v.org_id::uuid AND existing.description = v.description AND existing.expense_date = v.expense_date::date
+WHERE existing.id IS NULL;
 
--- Receipts simulados en algunos expenses (admin sube factura)
-UPDATE expense_records SET receipt_url =
-  'https://api.dicebear.com/7.x/shapes/png?seed=expense-' || substr(id::text, 1, 8) || '&backgroundColor=F4F7FB&size=600'
-WHERE receipt_url IS NULL
-  AND amount > 100
-  AND category IN ('mantenimiento','vigilancia','seguros','nomina','servicios');
+-- Olivos: backfill recorded_by para los inserts con NULL (admin Olivos)
+UPDATE expense_records er
+SET recorded_by = (SELECT id FROM profiles WHERE email='admin.olivos@atryum.test' LIMIT 1)
+WHERE er.organization_id = 'c05ade01-0000-0000-0000-000000000001'::uuid
+  AND er.recorded_by IS NULL;
+
+-- Receipts simulados en algunos expenses (admin sube factura) — usa join a categories ya que no hay column 'category' string
+UPDATE expense_records er SET receipt_url =
+  'https://api.dicebear.com/7.x/shapes/png?seed=expense-' || substr(er.id::text, 1, 8) || '&backgroundColor=F4F7FB&size=600'
+FROM expense_categories ec
+WHERE er.receipt_url IS NULL
+  AND er.amount > 100
+  AND er.category_id = ec.id
+  AND ec.code IN ('mantenimiento','vigilancia','seguros','nomina','servicios');
 
 -- ---------------------------------------------------------------------
 -- 15. Más access_passes (delivery, Uber, familia, mudanza, proveedor)

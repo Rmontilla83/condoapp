@@ -93,12 +93,16 @@ INSERT INTO common_areas (id, organization_id, name, description, capacity) VALU
   ('a1000000-0000-0000-0000-000000000004', 'a0000000-0000-0000-0000-000000000001', 'Piscina', 'Piscina con area de descanso', 30)
 ON CONFLICT (id) DO NOTHING;
 
--- 8. Expense records
-INSERT INTO expense_records (id, organization_id, category, description, amount, currency, expense_date) VALUES
-  ('a2000000-0000-0000-0000-000000000001', 'a0000000-0000-0000-0000-000000000001', 'Mantenimiento', 'Reparacion bomba de agua', 350.00, 'USD', '2026-03-20'),
-  ('a2000000-0000-0000-0000-000000000002', 'a0000000-0000-0000-0000-000000000001', 'Limpieza', 'Servicio de limpieza mensual - Marzo', 200.00, 'USD', '2026-03-31'),
-  ('a2000000-0000-0000-0000-000000000003', 'a0000000-0000-0000-0000-000000000001', 'Seguridad', 'Pago vigilancia - Marzo', 450.00, 'USD', '2026-03-31'),
-  ('a2000000-0000-0000-0000-000000000004', 'a0000000-0000-0000-0000-000000000001', 'Servicios', 'Electricidad areas comunes - Marzo', 180.00, 'USD', '2026-03-28')
+-- 8. Expense records (E5: usa category_id FK con join a expense_categories)
+INSERT INTO expense_records (id, organization_id, category_id, description, amount, currency, expense_date)
+SELECT v.id::uuid, v.org_id::uuid, ec.id, v.description, v.amount, v.currency, v.expense_date::date
+FROM (VALUES
+  ('a2000000-0000-0000-0000-000000000001', 'a0000000-0000-0000-0000-000000000001', 'mantenimiento', 'Reparacion bomba de agua', 350.00, 'USD', '2026-03-20'),
+  ('a2000000-0000-0000-0000-000000000002', 'a0000000-0000-0000-0000-000000000001', 'aseo',          'Servicio de limpieza mensual - Marzo', 200.00, 'USD', '2026-03-31'),
+  ('a2000000-0000-0000-0000-000000000003', 'a0000000-0000-0000-0000-000000000001', 'vigilancia',    'Pago vigilancia - Marzo', 450.00, 'USD', '2026-03-31'),
+  ('a2000000-0000-0000-0000-000000000004', 'a0000000-0000-0000-0000-000000000001', 'servicios',     'Electricidad areas comunes - Marzo', 180.00, 'USD', '2026-03-28')
+) AS v(id, org_id, code, description, amount, currency, expense_date)
+JOIN expense_categories ec ON ec.organization_id = v.org_id::uuid AND ec.code = v.code
 ON CONFLICT (id) DO NOTHING;
 
 -- 9. Assign test user as admin of the org + link to unit 1-A
