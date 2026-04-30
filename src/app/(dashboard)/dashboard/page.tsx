@@ -7,6 +7,7 @@ import { UrgentBanner } from "@/components/dashboard/urgent-banner";
 import { UpcomingReservationCard } from "@/components/dashboard/upcoming-reservation-card";
 import { PendingDecisionCard } from "@/components/dashboard/pending-decision-card";
 import { RecentAnnouncementsLink } from "@/components/dashboard/recent-announcements-link";
+import { SmartPayButton } from "./smart-pay-button";
 
 const statusLabels: Record<string, string> = {
   new: "NUEVO",
@@ -31,8 +32,11 @@ export default async function DashboardPage() {
   const ctx = await getDashboardContext(profile);
   if (!ctx) return null;
 
-  const pendingTotal = ctx.pendingTotalUsd;
   const recentRequests = ctx.recentRequests;
+  const actionableInvoices = ctx.pendingInvoices.filter((i) => !ctx.inReviewInvoiceIds.has(i.id));
+  const inReviewInvoices = ctx.pendingInvoices.filter((i) => ctx.inReviewInvoiceIds.has(i.id));
+  const actionableTotal = actionableInvoices.reduce((s, i) => s + Number(i.amount), 0);
+  const inReviewTotal = inReviewInvoices.reduce((s, i) => s + Number(i.amount), 0);
 
   return (
     <div className="space-y-8 md:space-y-10">
@@ -41,34 +45,42 @@ export default async function DashboardPage() {
       {/* Banner urgent — única excepción a la jerarquía: si hay urgent, sale antes del saldo */}
       <UrgentBanner announcements={ctx.urgentAnnouncements} />
 
-      {/* Saldo card — con count-up dramático */}
-      <div className="group rounded-2xl bg-card border border-border p-6 md:p-8 transition-all duration-500 hover:border-marine/25 hover:shadow-[0_18px_50px_-18px_rgb(15,46,90,0.18)]">
-        <div className="flex items-start justify-between gap-5">
-          <div className="min-w-0">
-            <p className="font-meta text-mute">SALDO PENDIENTE · USD</p>
-            <p
-              className={`mt-4 font-display text-[clamp(2.75rem,6vw,4rem)] leading-none tracking-[-0.03em] tabular-nums ${
-                pendingTotal > 0 ? "text-marine-deep" : "text-cyan"
-              }`}
-            >
-              <AnimatedCounter
-                value={pendingTotal}
-                decimals={2}
-                prefix="$"
-                duration={1600}
-              />
-            </p>
-            {pendingTotal === 0 && (
-              <p className="mt-3 font-meta text-cyan">AL DÍA · GRACIAS</p>
-            )}
+      {/* Saldo card — con count-up dramático. Oculto si tenant sin can_see_fee. */}
+      {ctx.canSeeFee && (
+        <div className="group rounded-2xl bg-card border border-border p-6 md:p-8 transition-all duration-500 hover:border-marine/25 hover:shadow-[0_18px_50px_-18px_rgb(15,46,90,0.18)]">
+          <div className="flex items-start justify-between gap-5">
+            <div className="min-w-0">
+              <p className="font-meta text-mute">SALDO PENDIENTE · USD</p>
+              <p
+                className={`mt-4 font-display text-[clamp(2.75rem,6vw,4rem)] leading-none tracking-[-0.03em] tabular-nums ${
+                  actionableTotal > 0 ? "text-marine-deep" : "text-cyan"
+                }`}
+              >
+                <AnimatedCounter
+                  value={actionableTotal}
+                  decimals={2}
+                  prefix="$"
+                  duration={1600}
+                />
+              </p>
+              {inReviewTotal > 0 && (
+                <p className="mt-2 font-meta text-amber-700">
+                  ${inReviewTotal.toFixed(2)} EN REVISIÓN
+                </p>
+              )}
+              {actionableTotal === 0 && inReviewTotal === 0 && (
+                <p className="mt-3 font-meta text-cyan">AL DÍA · GRACIAS</p>
+              )}
+            </div>
+            <SmartPayButton
+              actionable={actionableInvoices}
+              inReview={inReviewInvoices}
+              rate={ctx.rate.rate}
+              canSeeFee={ctx.canSeeFee}
+            />
           </div>
-          {pendingTotal > 0 && (
-            <Link href="/pagos">
-              <Button className="h-11 px-5 press-spring">Pagar ahora</Button>
-            </Link>
-          )}
         </div>
-      </div>
+      )}
 
       {/* Decisión pendiente (si aplica) */}
       <PendingDecisionCard polls={ctx.openPollsNotVoted} />

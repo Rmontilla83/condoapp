@@ -275,6 +275,64 @@ export async function getCurrentRate(orgId: string) {
   return data ?? { rate: 0, effective_date: "", source: "bcv" };
 }
 
+// ── Pending invoices (light query for layout-level FAB) ──
+
+/**
+ * Carga ligera de invoices pendientes del residente, separadas en
+ * accionables vs en revisión, + tasa actual. Para el FAB del layout
+ * que aparece en TODA página del dashboard sin re-correr getDashboardContext.
+ */
+export async function getPendingInvoicesForFAB(profileId: string): Promise<{
+  actionable: Invoice[];
+  inReview: Invoice[];
+  rate: number;
+  canSeeFee: boolean;
+} | null> {
+  const profile = await getCurrentProfile();
+  if (!profile?.organization_id || profile.id !== profileId) return null;
+
+  const supabase = await createClient();
+
+  const [membersRes, rateData] = await Promise.all([
+    supabase
+      .from("unit_members")
+      .select("unit_id, role, permissions")
+      .eq("profile_id", profileId)
+      .eq("active", true),
+    getCurrentRate(profile.organization_id),
+  ]);
+
+  const memberships = membersRes.data ?? [];
+  const unitIds = memberships.map((m) => m.unit_id as string);
+
+  const canSeeFee = memberships.some(
+    (m) =>
+      m.role === "owner" ||
+      ((m.permissions as TenantPermissions)?.can_see_fee !== false),
+  );
+
+  if (!unitIds.length || !canSeeFee) {
+    return { actionable: [], inReview: [], rate: Number(rateData.rate) || 0, canSeeFee };
+  }
+
+  const { data: pending } = await supabase
+    .from("invoices")
+    .select("*")
+    .in("unit_id", unitIds)
+    .in("status", ["pending", "overdue"])
+    .order("due_date", { ascending: true });
+
+  const all = (pending ?? []) as Invoice[];
+  const inReviewIds = await getInvoiceIdsWithPendingTransactions(all.map((i) => i.id));
+
+  return {
+    actionable: all.filter((i) => !inReviewIds.has(i.id)),
+    inReview: all.filter((i) => inReviewIds.has(i.id)),
+    rate: Number(rateData.rate) || 0,
+    canSeeFee,
+  };
+}
+
 // ── Dashboard Context ───────────────────────────────────
 
 export interface DashboardMembership {
