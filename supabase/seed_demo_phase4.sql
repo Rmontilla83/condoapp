@@ -506,20 +506,20 @@ INSERT INTO access_passes (organization_id, created_by, visitor_name, visitor_id
 ON CONFLICT DO NOTHING;
 
 -- ---------------------------------------------------------------------
--- 16. Vote_responses dentro de la asamblea pasada (votación con quórum)
+-- 16. Decision question + responses dentro de la asamblea pasada
+-- (preserva ID 70e0a001... como question_id para coherencia con seed)
 -- ---------------------------------------------------------------------
 
-INSERT INTO votes (id, assembly_id, question, options, results, is_open) VALUES
+INSERT INTO decision_questions (id, decision_id, question, options, position) VALUES
   ('70e0a001-0000-0000-0000-000000000001'::uuid,
     'a55e3b11-0000-0000-0000-000000000002'::uuid,
     'Aprobar contrato con Segurvip por 12 meses?',
     '["A favor", "En contra", "Abstencion"]'::jsonb,
-    '{}'::jsonb,
-    false)
+    0)
 ON CONFLICT (id) DO NOTHING;
 
-INSERT INTO vote_responses (vote_id, voter_id, selected_option)
-SELECT '70e0a001-0000-0000-0000-000000000001'::uuid, p.id, 'A favor'
+INSERT INTO decision_responses (question_id, voter_id, selected_option, weight)
+SELECT '70e0a001-0000-0000-0000-000000000001'::uuid, p.id, 'A favor', 1.0
 FROM profiles p
 WHERE p.email IN (
   'ana.torres@costa.atryum.test','carlos.perez@costa.atryum.test',
@@ -529,21 +529,19 @@ WHERE p.email IN (
 )
 ON CONFLICT DO NOTHING;
 
-INSERT INTO vote_responses (vote_id, voter_id, selected_option)
-SELECT '70e0a001-0000-0000-0000-000000000001'::uuid, p.id, 'En contra'
+INSERT INTO decision_responses (question_id, voter_id, selected_option, weight)
+SELECT '70e0a001-0000-0000-0000-000000000001'::uuid, p.id, 'En contra', 1.0
 FROM profiles p
 WHERE p.email IN ('luis.gomez@costa.atryum.test','diego.silva@costa.atryum.test')
 ON CONFLICT DO NOTHING;
 
-INSERT INTO vote_responses (vote_id, voter_id, selected_option)
-SELECT '70e0a001-0000-0000-0000-000000000001'::uuid, p.id, 'Abstencion'
+INSERT INTO decision_responses (question_id, voter_id, selected_option, weight)
+SELECT '70e0a001-0000-0000-0000-000000000001'::uuid, p.id, 'Abstencion', 1.0
 FROM profiles p
 WHERE p.email IN ('jose.parra@costa.atryum.test','valentina.rios@costa.atryum.test')
 ON CONFLICT DO NOTHING;
 
--- Resultado consolidado en JSONB
-UPDATE votes SET results = '{"A favor": 8, "En contra": 2, "Abstencion": 2}'::jsonb
-WHERE id = '70e0a001-0000-0000-0000-000000000001'::uuid;
+-- Nota: results se computa on-demand desde decision_responses (no JSONB cacheado).
 
 -- ---------------------------------------------------------------------
 -- 17. auth_events históricos (poblar log de seguridad)

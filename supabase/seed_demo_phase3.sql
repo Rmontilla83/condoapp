@@ -316,78 +316,107 @@ VALUES
 ON CONFLICT DO NOTHING;
 
 -- -------------------------------------------------------------------
--- POLLS (1 open + 1 closed por org)
+-- DECISIONS (1 open + 1 closed por org) — quick_polls
 -- -------------------------------------------------------------------
 
-INSERT INTO polls (id, organization_id, created_by, question, options, is_open, ends_at)
+INSERT INTO decisions (id, organization_id, created_by, kind, title, status, closes_at)
 VALUES
   ('ba0a0001-0000-0000-0000-000000000001'::uuid,
     'b3b1107d-c614-4c02-80a1-14f1da4079bc'::uuid,
     '03232926-a120-453e-b97f-a7ab31dee839'::uuid,
+    'quick_poll',
     'Proyecto 2026: que priorizar?',
-    '["Renovar piscina", "Modernizar gimnasio", "Instalar paneles solares", "Remodelar lobby"]'::jsonb,
-    true, '2026-05-10 23:59:00'::timestamptz),
+    'open',
+    '2026-05-10 23:59:00'::timestamptz),
   ('ba0a0001-0000-0000-0000-000000000002'::uuid,
     'b3b1107d-c614-4c02-80a1-14f1da4079bc'::uuid,
     '03232926-a120-453e-b97f-a7ab31dee839'::uuid,
+    'quick_poll',
     'Nuevo horario piscina aprobado?',
-    '["Si, horario extendido", "No, mantener actual"]'::jsonb,
-    false, '2026-04-15 23:59:00'::timestamptz),
+    'closed',
+    '2026-04-15 23:59:00'::timestamptz),
   ('ba0b0001-0000-0000-0000-000000000001'::uuid,
     'c05ade01-0000-0000-0000-000000000001'::uuid,
     (SELECT id FROM profiles WHERE email='admin.olivos@atryum.test'),
+    'quick_poll',
     'Dia del vecino: que actividad principal?',
-    '["Parrillada con DJ", "Torneo deportivo", "Cine al aire libre", "Feria gastronomica"]'::jsonb,
-    true, '2026-04-28 23:59:00'::timestamptz),
+    'open',
+    '2026-04-28 23:59:00'::timestamptz),
   ('ba0b0001-0000-0000-0000-000000000002'::uuid,
     'c05ade01-0000-0000-0000-000000000001'::uuid,
     (SELECT id FROM profiles WHERE email='admin.olivos@atryum.test'),
+    'quick_poll',
     'Aumentar fondo de reserva?',
-    '["Si, subir a $25", "No, mantener $20"]'::jsonb,
-    false, '2026-03-31 23:59:00'::timestamptz)
+    'closed',
+    '2026-03-31 23:59:00'::timestamptz)
 ON CONFLICT (id) DO NOTHING;
 
--- poll_votes (voto del poll cerrado Costa)
-INSERT INTO poll_votes (poll_id, voter_id, selected_option)
-SELECT 'ba0a0001-0000-0000-0000-000000000002'::uuid, p.id, 'Si, horario extendido'
+-- 1 question per quick_poll (mismo ID que la decision)
+INSERT INTO decision_questions (id, decision_id, question, options, position)
+VALUES
+  ('ba0a0001-0000-0000-0000-000000000001'::uuid,
+    'ba0a0001-0000-0000-0000-000000000001'::uuid,
+    'Proyecto 2026: que priorizar?',
+    '["Renovar piscina", "Modernizar gimnasio", "Instalar paneles solares", "Remodelar lobby"]'::jsonb,
+    0),
+  ('ba0a0001-0000-0000-0000-000000000002'::uuid,
+    'ba0a0001-0000-0000-0000-000000000002'::uuid,
+    'Nuevo horario piscina aprobado?',
+    '["Si, horario extendido", "No, mantener actual"]'::jsonb,
+    0),
+  ('ba0b0001-0000-0000-0000-000000000001'::uuid,
+    'ba0b0001-0000-0000-0000-000000000001'::uuid,
+    'Dia del vecino: que actividad principal?',
+    '["Parrillada con DJ", "Torneo deportivo", "Cine al aire libre", "Feria gastronomica"]'::jsonb,
+    0),
+  ('ba0b0001-0000-0000-0000-000000000002'::uuid,
+    'ba0b0001-0000-0000-0000-000000000002'::uuid,
+    'Aumentar fondo de reserva?',
+    '["Si, subir a $25", "No, mantener $20"]'::jsonb,
+    0)
+ON CONFLICT (id) DO NOTHING;
+
+-- decision_responses (votos del quick_poll cerrado Costa)
+INSERT INTO decision_responses (question_id, voter_id, selected_option, weight)
+SELECT 'ba0a0001-0000-0000-0000-000000000002'::uuid, p.id, 'Si, horario extendido', 1.0
 FROM profiles p
 WHERE p.email IN ('ana.torres@costa.atryum.test','carlos.perez@costa.atryum.test','elena.morales@costa.atryum.test','diego.silva@costa.atryum.test','sofia.linares@costa.atryum.test','roberto.paz@costa.atryum.test')
 ON CONFLICT DO NOTHING;
 
-INSERT INTO poll_votes (poll_id, voter_id, selected_option)
-SELECT 'ba0a0001-0000-0000-0000-000000000002'::uuid, p.id, 'No, mantener actual'
+INSERT INTO decision_responses (question_id, voter_id, selected_option, weight)
+SELECT 'ba0a0001-0000-0000-0000-000000000002'::uuid, p.id, 'No, mantener actual', 1.0
 FROM profiles p
 WHERE p.email IN ('luis.gomez@costa.atryum.test','maria.rodriguez@costa.atryum.test')
 ON CONFLICT DO NOTHING;
 
--- poll votes Olivos cerrado
-INSERT INTO poll_votes (poll_id, voter_id, selected_option)
-SELECT 'ba0b0001-0000-0000-0000-000000000002'::uuid, p.id, 'Si, subir a $25'
+-- votos Olivos quick_poll cerrado
+INSERT INTO decision_responses (question_id, voter_id, selected_option, weight)
+SELECT 'ba0b0001-0000-0000-0000-000000000002'::uuid, p.id, 'Si, subir a $25', 1.0
 FROM profiles p
 WHERE p.email IN ('juan.acosta@olivos.atryum.test','lucia.bravo@olivos.atryum.test','miguel.campo@olivos.atryum.test','paula.duran@olivos.atryum.test','jorge.estevez@olivos.atryum.test','ines.fernandez@olivos.atryum.test','tomas.guzman@olivos.atryum.test','valentina.h@olivos.atryum.test')
 ON CONFLICT DO NOTHING;
 
-INSERT INTO poll_votes (poll_id, voter_id, selected_option)
-SELECT 'ba0b0001-0000-0000-0000-000000000002'::uuid, p.id, 'No, mantener $20'
+INSERT INTO decision_responses (question_id, voter_id, selected_option, weight)
+SELECT 'ba0b0001-0000-0000-0000-000000000002'::uuid, p.id, 'No, mantener $20', 1.0
 FROM profiles p
 WHERE p.email IN ('andres.iriarte@olivos.atryum.test','camila.juarez@olivos.atryum.test','rafael.kuntz@olivos.atryum.test')
 ON CONFLICT DO NOTHING;
 
--- Algunos votos ya en el poll abierto Costa (para mostrar progreso)
-INSERT INTO poll_votes (poll_id, voter_id, selected_option)
-SELECT 'ba0a0001-0000-0000-0000-000000000001'::uuid, p.id, 'Renovar piscina'
+-- Algunos votos ya en el quick_poll abierto Costa (para mostrar progreso)
+INSERT INTO decision_responses (question_id, voter_id, selected_option, weight)
+SELECT 'ba0a0001-0000-0000-0000-000000000001'::uuid, p.id, 'Renovar piscina', 1.0
 FROM profiles p
 WHERE p.email IN ('ana.torres@costa.atryum.test','carlos.perez@costa.atryum.test')
 ON CONFLICT DO NOTHING;
 
-INSERT INTO poll_votes (poll_id, voter_id, selected_option)
-SELECT 'ba0a0001-0000-0000-0000-000000000001'::uuid, p.id, 'Instalar paneles solares'
+INSERT INTO decision_responses (question_id, voter_id, selected_option, weight)
+SELECT 'ba0a0001-0000-0000-0000-000000000001'::uuid, p.id, 'Instalar paneles solares', 1.0
 FROM profiles p
 WHERE p.email IN ('elena.morales@costa.atryum.test','diego.silva@costa.atryum.test','sofia.linares@costa.atryum.test')
 ON CONFLICT DO NOTHING;
 
-INSERT INTO poll_votes (poll_id, voter_id, selected_option)
-SELECT 'ba0a0001-0000-0000-0000-000000000001'::uuid, p.id, 'Modernizar gimnasio'
+INSERT INTO decision_responses (question_id, voter_id, selected_option, weight)
+SELECT 'ba0a0001-0000-0000-0000-000000000001'::uuid, p.id, 'Modernizar gimnasio', 1.0
 FROM profiles p
 WHERE p.email IN ('roberto.paz@costa.atryum.test','maria.rodriguez@costa.atryum.test')
 ON CONFLICT DO NOTHING;
@@ -442,26 +471,35 @@ VALUES
 ON CONFLICT DO NOTHING;
 
 -- -------------------------------------------------------------------
--- ASSEMBLIES (programada + una pasada)
+-- DECISIONS formal_assembly (programada + una pasada)
 -- -------------------------------------------------------------------
 
-INSERT INTO assemblies (id, organization_id, title, description, scheduled_at, status, quorum_required)
+INSERT INTO decisions (id, organization_id, created_by, kind, title, description, status, scheduled_at, quorum_pct, weighted_by_aliquot)
 VALUES
   ('a55e3b11-0000-0000-0000-000000000001'::uuid,
     'b3b1107d-c614-4c02-80a1-14f1da4079bc'::uuid,
+    '03232926-a120-453e-b97f-a7ab31dee839'::uuid,
+    'formal_assembly',
     'Asamblea ordinaria 2026',
     'Aprobacion de balance, eleccion de junta de vecinos, proyectos prioritarios 2026.',
-    '2026-05-15 19:00:00'::timestamptz, 'scheduled', 50),
+    'open',
+    '2026-05-15 19:00:00'::timestamptz, 50, false),
   ('a55e3b11-0000-0000-0000-000000000002'::uuid,
     'b3b1107d-c614-4c02-80a1-14f1da4079bc'::uuid,
+    '03232926-a120-453e-b97f-a7ab31dee839'::uuid,
+    'formal_assembly',
     'Asamblea extraordinaria abril',
     'Decision sobre cambio de empresa de vigilancia.',
-    '2026-04-05 18:30:00'::timestamptz, 'completed', 50),
+    'closed',
+    '2026-04-05 18:30:00'::timestamptz, 50, false),
   ('a55e3b11-0000-0000-0000-000000000003'::uuid,
     'c05ade01-0000-0000-0000-000000000001'::uuid,
+    (SELECT id FROM profiles WHERE email='admin.olivos@atryum.test'),
+    'formal_assembly',
     'Asamblea anual Los Olivos',
     'Revision de gestion 2025-2026 y propuestas de inversion.',
-    '2026-05-20 19:00:00'::timestamptz, 'scheduled', 60)
+    'open',
+    '2026-05-20 19:00:00'::timestamptz, 60, false)
 ON CONFLICT (id) DO NOTHING;
 
 COMMIT;
