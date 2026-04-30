@@ -247,6 +247,20 @@ export async function getOrgUnitTypes(orgId: string): Promise<string[]> {
   return [...types].sort();
 }
 
+// ── Common Areas ────────────────────────────────────────
+
+export async function getCommonAreas(orgId: string) {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("common_areas")
+    .select("*")
+    .eq("organization_id", orgId)
+    .eq("is_active", true)
+    .order("name", { ascending: true });
+
+  return data ?? [];
+}
+
 // ── Organization ────────────────────────────────────────
 
 export async function getOrganization(orgId: string) {

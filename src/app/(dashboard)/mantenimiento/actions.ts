@@ -28,8 +28,16 @@ export async function createMaintenanceRequest(
       return { error: "Completa todos los campos requeridos." };
     }
 
-    const unitIds = await getUserUnitIds(profile.id);
-    const unitId = unitIds[0] ?? null;
+    // Ubicación: el dialog manda unit_id O common_area_id (mutuamente excluyentes).
+    // Fallback legacy: si no manda nada, usar la primera unit del residente.
+    const explicitUnitId = (formData.get("unit_id") as string | null)?.trim() || null;
+    const commonAreaId = (formData.get("common_area_id") as string | null)?.trim() || null;
+
+    let unitId: string | null = explicitUnitId;
+    if (!unitId && !commonAreaId) {
+      const unitIds = await getUserUnitIds(profile.id);
+      unitId = unitIds[0] ?? null;
+    }
 
     const supabase = await createClient();
 
@@ -38,7 +46,8 @@ export async function createMaintenanceRequest(
       .from("maintenance_requests")
       .insert({
         organization_id: profile.organization_id,
-        unit_id: unitId,
+        unit_id: commonAreaId ? null : unitId,
+        common_area_id: commonAreaId,
         reported_by: profile.id,
         title,
         category,

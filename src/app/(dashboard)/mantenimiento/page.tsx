@@ -1,6 +1,8 @@
-import { getCurrentProfile, getMaintenanceForUser } from "@/lib/queries";
+import { getCurrentProfile, getMaintenanceForUser, getCommonAreas } from "@/lib/queries";
+import { createClient } from "@/lib/supabase/server";
 import { NewRequestDialog } from "./new-request-dialog";
-import type { MaintenanceStatus } from "@/types/database";
+import type { CommonArea, MaintenanceStatus } from "@/types/database";
+import type { UnitOption } from "./location-step";
 
 const statusConfig: Record<string, { label: string; tag: string; step: number }> = {
   new: { label: "NUEVO", tag: "bg-cyan/10 text-cyan", step: 1 },
@@ -16,13 +18,53 @@ const priorityConfig = {
   urgent: { label: "URGENTE", className: "text-destructive" },
 };
 
+const UNIT_TYPE_LABELS: Record<string, string> = {
+  apartment: "APTO",
+  house: "CASA",
+  penthouse: "PH",
+  local: "LOCAL",
+  office: "OFICINA",
+};
+
 const steps: MaintenanceStatus[] = ["new", "in_review", "in_progress", "resolved"];
 
 export default async function MantenimientoPage() {
   const profile = await getCurrentProfile();
   if (!profile?.organization_id) return null;
 
-  const requests = await getMaintenanceForUser(profile.id);
+  const supabase = await createClient();
+
+  const [requests, commonAreas, membersRes] = await Promise.all([
+    getMaintenanceForUser(profile.id),
+    getCommonAreas(profile.organization_id),
+    supabase
+      .from("unit_members")
+      .select("unit_id, units(unit_number, block, type)")
+      .eq("profile_id", profile.id)
+      .eq("active", true)
+      .order("joined_at", { ascending: false }),
+  ]);
+
+  const units: UnitOption[] = (membersRes.data ?? [])
+    .map((m) => {
+      const u = Array.isArray(m.units) ? m.units[0] : m.units;
+      if (!u) return null;
+      const typeLabel = UNIT_TYPE_LABELS[u.type as string] ?? "UNIDAD";
+      const block = u.block ? ` · ${u.block}` : "";
+      return {
+        id: m.unit_id as string,
+        label: `${typeLabel} ${u.unit_number}${block}`,
+      };
+    })
+    .filter((u): u is UnitOption => u !== null);
+
+  // Mapa para mostrar ubicación en cada request
+  const commonAreaById = new Map(
+    (commonAreas as CommonArea[]).map((c) => [c.id, c.name]),
+  );
+  const unitById = new Map(
+    units.map((u) => [u.id, u.label]),
+  );
 
   return (
     <div className="space-y-8">
@@ -33,7 +75,7 @@ export default async function MantenimientoPage() {
             Reporta y da <em className="font-editorial text-cyan">seguimiento</em>
           </h1>
         </div>
-        <NewRequestDialog />
+        <NewRequestDialog units={units} commonAreas={commonAreas as CommonArea[]} />
       </div>
 
       {requests.length === 0 ? (
@@ -47,6 +89,15 @@ export default async function MantenimientoPage() {
             const priority =
               priorityConfig[request.priority as keyof typeof priorityConfig] ??
               priorityConfig.medium;
+
+            // Resolver ubicación a mostrar
+            let locationLabel: string | null = null;
+            if (request.common_area_id && commonAreaById.has(request.common_area_id)) {
+              locationLabel = `${commonAreaById.get(request.common_area_id)} · ÁREA COMÚN`;
+            } else if (request.unit_id && unitById.has(request.unit_id)) {
+              locationLabel = unitById.get(request.unit_id) ?? null;
+            }
+
             return (
               <article
                 key={request.id}
@@ -62,6 +113,9 @@ export default async function MantenimientoPage() {
                         {status.label}
                       </span>
                     </div>
+                    {locationLabel && (
+                      <p className="font-meta text-mute mb-2">{locationLabel}</p>
+                    )}
                     <p className="text-[14.5px] text-marine-deep/80 leading-relaxed mb-4">
                       {request.description}
                     </p>
