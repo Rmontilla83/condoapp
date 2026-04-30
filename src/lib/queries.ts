@@ -274,6 +274,37 @@ export async function getActiveVendors(orgId: string) {
   return data ?? [];
 }
 
+export async function getCurrentBudget(orgId: string, year: number) {
+  const supabase = await createClient();
+  const { data: budget } = await supabase
+    .from("org_budgets")
+    .select("*")
+    .eq("organization_id", orgId)
+    .eq("year", year)
+    .maybeSingle();
+
+  if (!budget) return null;
+
+  const { data: items } = await supabase
+    .from("org_budget_items")
+    .select("*")
+    .eq("budget_id", budget.id);
+
+  return { budget, items: items ?? [] };
+}
+
+export async function getExpensesForYear(orgId: string, year: number) {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("expense_records")
+    .select("id, category_id, amount, expense_date, voided_at")
+    .eq("organization_id", orgId)
+    .gte("expense_date", `${year}-01-01`)
+    .lte("expense_date", `${year}-12-31`);
+
+  return data ?? [];
+}
+
 // ── Common Areas ────────────────────────────────────────
 
 export async function getCommonAreas(orgId: string) {

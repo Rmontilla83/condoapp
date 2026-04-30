@@ -1,8 +1,14 @@
-import { getCurrentProfile, getEffectiveRole, getExpenseCategories } from "@/lib/queries";
+import {
+  getCurrentProfile,
+  getEffectiveRole,
+  getExpenseCategories,
+  getCurrentBudget,
+} from "@/lib/queries";
 import { createClient } from "@/lib/supabase/server";
 import { NewExpenseDialog } from "./new-expense-dialog";
 import { VoidExpenseDialog } from "./void-expense-dialog";
-import type { ExpenseCategory } from "@/types/database";
+import { BudgetProgressCard } from "@/components/budget/budget-progress-card";
+import type { ExpenseCategory, OrgBudget, OrgBudgetItem } from "@/types/database";
 
 interface ExpenseRow {
   id: string;
@@ -28,7 +34,9 @@ export default async function FinanzasPage() {
 
   const supabase = await createClient();
 
-  const [invoicesRes, expensesRes, transactionsRes, categoriesData] = await Promise.all([
+  const currentYear = new Date().getFullYear();
+
+  const [invoicesRes, expensesRes, transactionsRes, categoriesData, currentBudgetData] = await Promise.all([
     supabase
       .from("invoices")
       .select("amount, status")
@@ -47,6 +55,7 @@ export default async function FinanzasPage() {
       .eq("status", "approved")
       .order("paid_at", { ascending: false }),
     getExpenseCategories(profile.organization_id),
+    getCurrentBudget(profile.organization_id, currentYear),
   ]);
 
   const expensesAll = (expensesRes.data ?? []) as unknown as ExpenseRow[];
@@ -68,6 +77,11 @@ export default async function FinanzasPage() {
   for (const e of expenses) {
     byCategoryId[e.category_id] = (byCategoryId[e.category_id] ?? 0) + Number(e.amount);
   }
+
+  // Budget approved: solo mostrar tarjeta si está approved
+  const currentBudget = currentBudgetData?.budget as OrgBudget | undefined;
+  const currentBudgetItems = (currentBudgetData?.items as OrgBudgetItem[] | undefined) ?? [];
+  const showBudgetCard = currentBudget?.status === "approved" && currentBudgetItems.length > 0;
   const categoryEntries = Object.entries(byCategoryId)
     .map(([id, amount]) => {
       const cat = categories.find((c) => c.id === id);
@@ -126,6 +140,16 @@ export default async function FinanzasPage() {
           </p>
         </div>
       </div>
+
+      {/* Presupuesto vigente del año (si approved) */}
+      {showBudgetCard && currentBudget && (
+        <BudgetProgressCard
+          budget={currentBudget}
+          items={currentBudgetItems}
+          executedByCategoryId={byCategoryId}
+          categories={categories}
+        />
+      )}
 
       {/* Gastos por categoría */}
       <div className="rounded-2xl bg-card border border-border p-6">
