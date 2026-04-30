@@ -62,7 +62,7 @@ export function PollCard({
   }
 
   return (
-    <div className="rounded-xl border bg-card p-5">
+    <div id={`poll-${poll.id}`} className="rounded-xl border bg-card p-5 scroll-mt-24">
       <div className="flex items-start justify-between gap-3 mb-4">
         <div>
           <h3 className="font-semibold text-[15px]">{poll.question}</h3>

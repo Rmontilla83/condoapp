@@ -1,12 +1,12 @@
-import {
-  getCurrentProfile,
-  getDashboardContext,
-  getAnnouncements,
-} from "@/lib/queries";
+import { getCurrentProfile, getDashboardContext } from "@/lib/queries";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { AnimatedCounter } from "@/components/ui/animated-counter";
 import { IdentityStrip } from "@/components/dashboard/identity-strip";
+import { UrgentBanner } from "@/components/dashboard/urgent-banner";
+import { UpcomingReservationCard } from "@/components/dashboard/upcoming-reservation-card";
+import { PendingDecisionCard } from "@/components/dashboard/pending-decision-card";
+import { RecentAnnouncementsLink } from "@/components/dashboard/recent-announcements-link";
 
 const statusLabels: Record<string, string> = {
   new: "NUEVO",
@@ -31,17 +31,15 @@ export default async function DashboardPage() {
   const ctx = await getDashboardContext(profile);
   if (!ctx) return null;
 
-  // Comunicados completos sólo para la sección "Hoy en la comunidad" (3 últimos sin filtrar prioridad).
-  // En PR #2 esta sección se borra y se reemplaza por banner urgent + counter.
-  const announcements = await getAnnouncements(profile.organization_id);
-  const recentAnnouncements = announcements.slice(0, 3);
-
   const pendingTotal = ctx.pendingTotalUsd;
   const recentRequests = ctx.recentRequests;
 
   return (
-    <div className="space-y-10">
+    <div className="space-y-8 md:space-y-10">
       <IdentityStrip ctx={ctx} />
+
+      {/* Banner urgent — única excepción a la jerarquía: si hay urgent, sale antes del saldo */}
+      <UrgentBanner announcements={ctx.urgentAnnouncements} />
 
       {/* Saldo card — con count-up dramático */}
       <div className="group rounded-2xl bg-card border border-border p-6 md:p-8 transition-all duration-500 hover:border-marine/25 hover:shadow-[0_18px_50px_-18px_rgb(15,46,90,0.18)]">
@@ -71,6 +69,17 @@ export default async function DashboardPage() {
           )}
         </div>
       </div>
+
+      {/* Decisión pendiente (si aplica) */}
+      <PendingDecisionCard polls={ctx.openPollsNotVoted} />
+
+      {/* Próxima reserva (si aplica) */}
+      <UpcomingReservationCard reservation={ctx.upcomingReservation} />
+
+      {/* Counter de comunicados — descubrimiento sin imponer */}
+      {ctx.totalRecentAnnouncements > 0 && (
+        <RecentAnnouncementsLink count={ctx.totalRecentAnnouncements} />
+      )}
 
       {/* Acciones rápidas */}
       <div>
@@ -115,95 +124,51 @@ export default async function DashboardPage() {
         </div>
       </div>
 
-      {/* Comunicados + Solicitudes */}
-      <div className="grid md:grid-cols-2 gap-6">
-        {/* Comunicados */}
-        <div className="rounded-2xl bg-card border border-border p-6">
-          <div className="flex items-center justify-between mb-5">
-            <div>
-              <p className="font-meta text-mute">COMUNICADOS</p>
-              <p className="mt-2 text-[15px] font-medium text-marine-deep">Hoy en la comunidad</p>
-            </div>
-            <Link href="/comunicados" className="font-meta text-cyan hover:text-marine-deep transition-colors">
-              VER TODOS
-            </Link>
+      {/* MIS REPORTES — full-width al final */}
+      <div className="rounded-2xl bg-card border border-border p-6">
+        <div className="flex items-center justify-between mb-5">
+          <div>
+            <p className="font-meta text-mute">MIS REPORTES</p>
+            <p className="mt-2 text-[15px] font-medium text-marine-deep">Seguimiento</p>
           </div>
-
-          {recentAnnouncements.length === 0 ? (
-            <p className="py-8 text-center text-[13px] text-mute">
-              No hay comunicados todavía.
-            </p>
-          ) : (
-            <ul className="space-y-0 -mx-2" role="list">
-              {recentAnnouncements.map((a) => {
-                const accent =
-                  a.priority === "urgent"
-                    ? "bg-destructive"
-                    : a.priority === "important"
-                      ? "bg-ember"
-                      : "bg-cyan";
-                return (
-                  <li key={a.id} className="px-2 py-3 border-b border-border last:border-0">
-                    <div className="flex items-start gap-3">
-                      <span className={`mt-1.5 block h-1.5 w-1.5 rounded-full shrink-0 ${accent}`} />
-                      <div className="min-w-0 flex-1">
-                        <p className="text-[14px] font-medium text-marine-deep truncate">{a.title}</p>
-                        <p className="mt-0.5 text-[12.5px] text-mute line-clamp-1">{a.content}</p>
-                      </div>
-                    </div>
-                  </li>
-                );
-              })}
-            </ul>
-          )}
+          <Link href="/mantenimiento" className="font-meta text-cyan hover:text-marine-deep transition-colors">
+            VER TODOS
+          </Link>
         </div>
 
-        {/* Solicitudes */}
-        <div className="rounded-2xl bg-card border border-border p-6">
-          <div className="flex items-center justify-between mb-5">
-            <div>
-              <p className="font-meta text-mute">MIS REPORTES</p>
-              <p className="mt-2 text-[15px] font-medium text-marine-deep">Seguimiento</p>
-            </div>
-            <Link href="/mantenimiento" className="font-meta text-cyan hover:text-marine-deep transition-colors">
-              VER TODOS
+        {recentRequests.length === 0 ? (
+          <div className="py-6 text-center">
+            <p className="text-[13px] text-mute mb-4">No tienes reportes activos.</p>
+            <Link href="/mantenimiento">
+              <Button variant="outline" size="sm">Crear un reporte</Button>
             </Link>
           </div>
-
-          {recentRequests.length === 0 ? (
-            <div className="py-6 text-center">
-              <p className="text-[13px] text-mute mb-4">No tienes reportes activos.</p>
-              <Link href="/mantenimiento">
-                <Button variant="outline" size="sm">Crear un reporte</Button>
-              </Link>
-            </div>
-          ) : (
-            <ul className="space-y-0 -mx-2" role="list">
-              {recentRequests.map((r) => (
-                <li key={r.id} className="px-2 py-3 border-b border-border last:border-0">
-                  <div className="flex items-center justify-between gap-3">
-                    <div className="min-w-0 flex-1">
-                      <p className="text-[14px] font-medium text-marine-deep truncate">{r.title}</p>
-                      <p className="mt-0.5 font-meta text-mute">
-                        {new Date(r.created_at).toLocaleDateString("es", {
-                          day: "numeric",
-                          month: "short",
-                        }).toUpperCase()}
-                      </p>
-                    </div>
-                    <span
-                      className={`shrink-0 font-meta px-2.5 py-1 rounded-md ${
-                        statusTone[r.status] ?? "bg-mute/10 text-mute"
-                      }`}
-                    >
-                      {statusLabels[r.status] ?? r.status.toUpperCase()}
-                    </span>
+        ) : (
+          <ul className="space-y-0 -mx-2" role="list">
+            {recentRequests.map((r) => (
+              <li key={r.id} className="px-2 py-3 border-b border-border last:border-0">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[14px] font-medium text-marine-deep truncate">{r.title}</p>
+                    <p className="mt-0.5 font-meta text-mute">
+                      {new Date(r.created_at).toLocaleDateString("es", {
+                        day: "numeric",
+                        month: "short",
+                      }).toUpperCase()}
+                    </p>
                   </div>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
+                  <span
+                    className={`shrink-0 font-meta px-2.5 py-1 rounded-md ${
+                      statusTone[r.status] ?? "bg-mute/10 text-mute"
+                    }`}
+                  >
+                    {statusLabels[r.status] ?? r.status.toUpperCase()}
+                  </span>
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
       </div>
     </div>
   );
