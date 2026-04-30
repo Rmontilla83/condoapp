@@ -63,6 +63,7 @@ export async function votePoll(pollId: string, option: string) {
   }
 
   revalidatePath("/votaciones");
+  revalidatePath("/dashboard");
   return { success: true };
 }
 

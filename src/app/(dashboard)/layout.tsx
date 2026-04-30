@@ -1,11 +1,17 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { getCurrentProfile, getEffectiveRole, getCurrentRate } from "@/lib/queries";
+import {
+  getCurrentProfile,
+  getEffectiveRole,
+  getCurrentRate,
+  getPendingInvoicesForFAB,
+} from "@/lib/queries";
 import { Sidebar } from "@/components/dashboard/sidebar";
 import { BottomNav } from "@/components/dashboard/bottom-nav";
 import { Header } from "@/components/dashboard/header";
 import { LiveStatusBar } from "@/components/dashboard/live-status-bar";
 import { Onboarding } from "@/components/onboarding";
+import { PendingPayFab } from "@/components/dashboard/pending-pay-fab";
 
 export default async function DashboardLayout({
   children,
@@ -37,6 +43,10 @@ export default async function DashboardLayout({
   const initialRate = Number(rateData.rate) || null;
   const initialDate = rateData.effective_date || null;
 
+  // FAB de pago pendiente: solo aplica si el effectiveRole es residente.
+  // Admins ven el panel admin, no necesitan FAB.
+  const fabData = !isAdmin ? await getPendingInvoicesForFAB(profile.id) : null;
+
   return (
     <div className="flex h-screen bg-background">
       <Sidebar isAdmin={isAdmin} />
@@ -65,12 +75,20 @@ export default async function DashboardLayout({
             </a>
           </div>
         )}
-        <main className="flex-1 overflow-y-auto pb-24 md:pb-0">
+        <main className="flex-1 overflow-y-auto pb-32 md:pb-0">
           <div className="mx-auto max-w-6xl px-5 py-6 md:px-10 md:py-10">
             {children}
           </div>
         </main>
       </div>
+      {fabData && (
+        <PendingPayFab
+          actionable={fabData.actionable}
+          inReview={fabData.inReview}
+          rate={fabData.rate}
+          canSeeFee={fabData.canSeeFee}
+        />
+      )}
       <BottomNav isAdmin={isAdmin} />
     </div>
   );

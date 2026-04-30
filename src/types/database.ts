@@ -200,7 +200,8 @@ export interface Transaction {
 export interface MaintenanceRequest {
   id: string;
   organization_id: string;
-  unit_id: string;
+  unit_id: string | null;
+  common_area_id: string | null;
   reported_by: string;
   title: string;
   description: string;
@@ -210,6 +211,17 @@ export interface MaintenanceRequest {
   photo_urls: string[];
   assigned_to: string | null;
   resolved_at: string | null;
+  created_at: string;
+}
+
+export interface CommonArea {
+  id: string;
+  organization_id: string;
+  name: string;
+  description: string | null;
+  capacity: number | null;
+  rules: string | null;
+  is_active: boolean;
   created_at: string;
 }
 

@@ -1,0 +1,69 @@
+import Link from "next/link";
+
+interface Poll {
+  id: string;
+  question: string;
+  ends_at: string | null;
+  total_votes: number;
+}
+
+function formatEndsAt(endsAt: string | null): string {
+  if (!endsAt) return "SIN FECHA LÍMITE";
+  const end = new Date(endsAt);
+  const now = new Date();
+  const diffMs = end.getTime() - now.getTime();
+  const diffDays = Math.round(diffMs / (1000 * 60 * 60 * 24));
+  if (diffDays < 0) return `VENCIÓ HACE ${Math.abs(diffDays)} DÍA${Math.abs(diffDays) === 1 ? "" : "S"}`;
+  if (diffDays === 0) return "VENCE HOY";
+  if (diffDays === 1) return "VENCE MAÑANA";
+  return `VENCE EN ${diffDays} DÍAS`;
+}
+
+export function PendingDecisionCard({ polls }: { polls: Poll[] }) {
+  if (!polls || polls.length === 0) return null;
+  const main = polls[0];
+  const extra = polls.length - 1;
+  const endsLabel = formatEndsAt(main.ends_at);
+  const isOverdue = main.ends_at && new Date(main.ends_at) < new Date();
+
+  return (
+    <div className="rounded-2xl border border-cyan/30 bg-cyan/5 p-5">
+      <div className="flex items-start gap-3">
+        <div className="shrink-0 flex h-12 w-12 items-center justify-center rounded-xl bg-cyan/15 text-cyan">
+          <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12c0 4.97-4.03 9-9 9s-9-4.03-9-9 4.03-9 9-9 9 4.03 9 9z" />
+          </svg>
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="font-meta text-cyan">DECISIÓN PENDIENTE</p>
+          <p className="mt-1.5 text-[15px] font-semibold text-marine-deep line-clamp-2">
+            {main.question}
+          </p>
+          <p
+            className={`mt-1 font-meta ${
+              isOverdue ? "text-destructive" : "text-mute"
+            }`}
+          >
+            {endsLabel}
+          </p>
+          <div className="mt-3 flex flex-wrap items-center gap-3">
+            <Link
+              href={`/votaciones#poll-${main.id}`}
+              className="inline-flex items-center font-meta text-cyan hover:text-marine-deep transition-colors"
+            >
+              VOTAR AHORA →
+            </Link>
+            {extra > 0 && (
+              <Link
+                href="/votaciones"
+                className="font-meta text-mute hover:text-marine-deep transition-colors"
+              >
+                + {extra} DECISI{extra > 1 ? "ONES" : "ÓN"} MÁS
+              </Link>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
