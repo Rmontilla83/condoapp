@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { QRModal } from "./qr-modal";
 import { computeDisplayStatus } from "./pass-list-helpers";
+import { VISITOR_KIND_BY_ID } from "./visitor-kinds";
 import type { AccessPass, PassStatus } from "@/types/database";
 
 const statusConfig: Record<PassStatus, { label: string; tag: string }> = {
@@ -50,23 +51,30 @@ export function PassList({ passes, orgName, showUnit = false, hideShareButton = 
               : "ÁREA COMÚN"
             : null;
 
+          const kindMeta = VISITOR_KIND_BY_ID[pass.visitor_kind] ?? VISITOR_KIND_BY_ID.guest;
+
           return (
             <div
               key={pass.id}
               className="rounded-2xl bg-card border border-border p-5 flex items-center justify-between gap-4"
             >
               <div className="flex items-center gap-4 min-w-0">
-                <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-marine-deep text-frost shrink-0">
-                  <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
-                  </svg>
+                <span
+                  className="flex h-10 w-10 items-center justify-center rounded-lg bg-marine-deep/5 border border-marine-deep/10 shrink-0 text-[18px]"
+                  title={kindMeta.label}
+                >
+                  {kindMeta.icon}
                 </span>
                 <div className="min-w-0">
                   <p className="text-[14px] font-medium text-marine-deep truncate">
                     {pass.visitor_name}
+                    {pass.vehicle_plate && (
+                      <span className="ml-2 font-meta text-cyan">🚗 {pass.vehicle_plate}</span>
+                    )}
                   </p>
                   <p className="mt-0.5 font-meta text-mute truncate">
-                    {pass.visitor_id_number}
+                    {kindMeta.label.toUpperCase()}
+                    {pass.visitor_id_number ? ` · ${pass.visitor_id_number}` : ""}
                     {unitLabel ? ` · ${unitLabel}` : ""}
                   </p>
                 </div>

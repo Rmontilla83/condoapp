@@ -16,6 +16,7 @@ import {
   buildWhatsAppUrl,
   computeDisplayStatus,
 } from "./pass-list-helpers";
+import { VISITOR_KIND_BY_ID } from "./visitor-kinds";
 import type { AccessPass } from "@/types/database";
 
 interface Props {
@@ -50,6 +51,7 @@ export function QRModal({ pass, orgName, open, onClose }: Props) {
   const isCopiable = displayStatus === "active";
   const message = buildWhatsAppMessage(orgName, pass, verifyUrl);
   const whatsappUrl = buildWhatsAppUrl(message);
+  const kindMeta = VISITOR_KIND_BY_ID[pass.visitor_kind] ?? VISITOR_KIND_BY_ID.guest;
 
   async function handleCopy() {
     try {
@@ -86,8 +88,10 @@ export function QRModal({ pass, orgName, open, onClose }: Props) {
             </span>
           </DialogTitle>
           <DialogDescription>
-            {pass.visitor_id_number ? `${pass.visitor_id_number} · ` : ""}
-            Válido hasta{" "}
+            {kindMeta.icon} {kindMeta.label}
+            {pass.vehicle_plate ? ` · 🚗 ${pass.vehicle_plate}` : ""}
+            {pass.visitor_id_number ? ` · ${pass.visitor_id_number}` : ""}
+            {" — Válido hasta "}
             {validUntil.toLocaleDateString("es", {
               weekday: "short",
               day: "numeric",
