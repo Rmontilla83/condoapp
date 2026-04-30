@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -15,13 +14,13 @@ import {
 } from "@/components/ui/dialog";
 import { createAccessPass } from "./actions";
 import { QRDisplay } from "./qr-display";
+import { buildVerifyUrl, buildWhatsAppMessage, buildWhatsAppUrl } from "./pass-list-helpers";
 
-export function NewPassDialog() {
-  const router = useRouter();
+export function NewPassDialog({ orgName }: { orgName: string }) {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [result, setResult] = useState<{ qrCode: string; passId: string } | null>(null);
+  const [result, setResult] = useState<{ qrCode: string; passId: string; visitorName: string } | null>(null);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -29,33 +28,39 @@ export function NewPassDialog() {
     setError("");
 
     const formData = new FormData(e.currentTarget);
+    const visitorName = (formData.get("visitor_name") as string)?.trim() ?? "";
     const res = await createAccessPass(formData);
 
-    if (res.error) {
+    if ("error" in res && res.error) {
       setError(res.error);
       setLoading(false);
       return;
     }
 
-    setResult({ qrCode: res.qrCode!, passId: res.passId! });
+    if ("success" in res && res.qrCode && res.passId) {
+      setResult({ qrCode: res.qrCode, passId: res.passId, visitorName });
+    }
     setLoading(false);
-    window.location.reload();
   }
 
   function handleClose() {
+    if (result) {
+      // Cerrar después de generar exitosamente → recargar para mostrar el pase nuevo en lista
+      window.location.reload();
+      return;
+    }
     setOpen(false);
     setResult(null);
     setError("");
   }
 
-  const qrUrl = result
-    ? `${typeof window !== "undefined" ? window.location.origin : ""}/verificar/${result.qrCode}`
-    : "";
+  const qrUrl =
+    result && typeof window !== "undefined"
+      ? buildVerifyUrl(result.qrCode, window.location.origin)
+      : "";
 
   const whatsappUrl = result
-    ? `https://wa.me/?text=${encodeURIComponent(
-        `Tu pase de visitante para Residencias Los Robles esta listo. Muestra este QR en la puerta: ${qrUrl}`
-      )}`
+    ? buildWhatsAppUrl(buildWhatsAppMessage(orgName, { visitor_name: result.visitorName }, qrUrl))
     : "";
 
   return (
@@ -125,7 +130,7 @@ export function NewPassDialog() {
                 <QRDisplay value={qrUrl} size={180} />
               </div>
               <p className="text-sm text-muted-foreground text-center">
-                El vigilante escaneara este codigo para verificar los datos del visitante.
+                El vigilante revisará este QR en pantalla del visitante para permitir el acceso.
               </p>
               <div className="flex gap-3 w-full">
                 <a

@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { GrantAccessButton } from "./grant-access-button";
 import { AtryumLogo } from "@/components/brand/atryum-logo";
+import { computeDisplayStatus } from "@/app/(dashboard)/visitantes/pass-list-helpers";
 
 type PassStatus = "valid" | "used" | "cancelled" | "expired" | "not_found";
 
@@ -30,20 +31,16 @@ export default async function VerificarPage({
     return <VerificarShell status="not_found" />;
   }
 
-  const now = new Date();
   const validUntil = new Date(pass.valid_until);
-  const isExpired = validUntil < now;
-  const isUsed = pass.status === "used";
-  const isCancelled = pass.status === "cancelled";
-  const isValid = pass.status === "active" && !isExpired;
-
-  const status: PassStatus = isValid
-    ? "valid"
-    : isUsed
-    ? "used"
-    : isCancelled
-    ? "cancelled"
-    : "expired";
+  const displayStatus = computeDisplayStatus(pass);
+  const status: PassStatus =
+    displayStatus === "active"
+      ? "valid"
+      : displayStatus === "used"
+      ? "used"
+      : displayStatus === "cancelled"
+      ? "cancelled"
+      : "expired";
 
   const ownerName = pass.profiles?.full_name ?? "Propietario";
 

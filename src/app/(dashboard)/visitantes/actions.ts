@@ -16,23 +16,10 @@ export async function createAccessPass(formData: FormData) {
   if (!visitorName) return { error: "Nombre del visitante es requerido" };
   if (!visitorId) return { error: "Cedula del visitante es requerida" };
 
-  // Get unit number for display
   const supabase = await createClient();
-  let unitNumber = "";
-  if (unitIds.length > 0) {
-    const { data: unit } = await supabase
-      .from("units")
-      .select("unit_number")
-      .eq("id", unitIds[0])
-      .single();
-    unitNumber = unit?.unit_number ?? "";
-  }
-
-  // Generate unique QR code
   const qrCode = crypto.randomUUID();
-
   const validFrom = new Date();
-  const validUntil = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+  const validUntil = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24h default. PR #3 lo dinamiza por kind.
 
   const { data, error } = await supabase
     .from("access_passes")
@@ -42,7 +29,7 @@ export async function createAccessPass(formData: FormData) {
       visitor_name: visitorName,
       visitor_id_number: visitorId,
       qr_code: qrCode,
-      unit_number: unitNumber,
+      unit_id: unitIds[0] ?? null,
       status: "active",
       valid_from: validFrom.toISOString(),
       valid_until: validUntil.toISOString(),
