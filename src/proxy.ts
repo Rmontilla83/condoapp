@@ -10,11 +10,19 @@ export async function proxy(request: NextRequest) {
   const { pathname, search } = request.nextUrl;
 
   // Preview deployments (*.vercel.app): comportarse como portal — landing en /
-  // sin auth, resto pasa por updateSession. Sin esto el proxy fallthrough
-  // intentaba updateSession en TODA la request y rompía el deploy preview
-  // entero (atryum.net / portal.atryum.net no existen en preview).
+  // sin auth, login/auth/verificar también pasan directo (Supabase auth no
+  // funciona consistentemente en preview env). Resto pasa por updateSession
+  // por si alguien testea con sesión válida.
   if (hostname.endsWith(".vercel.app")) {
-    if (pathname === "/") return NextResponse.next();
+    if (
+      pathname === "/" ||
+      pathname.startsWith("/login") ||
+      pathname.startsWith("/auth") ||
+      pathname.startsWith("/verificar") ||
+      pathname.startsWith("/join")
+    ) {
+      return NextResponse.next();
+    }
     return await updateSession(request);
   }
 
