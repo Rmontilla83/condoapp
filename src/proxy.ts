@@ -9,6 +9,23 @@ export async function proxy(request: NextRequest) {
   const hostname = (request.headers.get("host") ?? "").toLowerCase();
   const { pathname, search } = request.nextUrl;
 
+  // Preview deployments (*.vercel.app): comportarse como portal — landing en /
+  // sin auth, login/auth/verificar también pasan directo (Supabase auth no
+  // funciona consistentemente en preview env). Resto pasa por updateSession
+  // por si alguien testea con sesión válida.
+  if (hostname.endsWith(".vercel.app")) {
+    if (
+      pathname === "/" ||
+      pathname.startsWith("/login") ||
+      pathname.startsWith("/auth") ||
+      pathname.startsWith("/verificar") ||
+      pathname.startsWith("/join")
+    ) {
+      return NextResponse.next();
+    }
+    return await updateSession(request);
+  }
+
   if (hostname === LANDING_WWW) {
     const url = request.nextUrl.clone();
     url.host = LANDING_APEX;
