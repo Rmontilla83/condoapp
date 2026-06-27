@@ -39,7 +39,12 @@ export function QRModal({ pass, orgName, open, onClose }: Props) {
 
   useEffect(() => {
     if (pass && typeof window !== "undefined") {
-      setVerifyUrl(buildVerifyUrl(pass.qr_code, window.location.origin));
+      setVerifyUrl(
+        buildVerifyUrl(
+          pass.qr_code,
+          process.env.NEXT_PUBLIC_PORTAL_URL ?? window.location.origin,
+        ),
+      );
     }
   }, [pass]);
 

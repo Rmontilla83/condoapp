@@ -1,17 +1,19 @@
 import type { FeeMode } from "@/types/database";
 
-export const FEE_MODES: FeeMode[] = ["flat", "by_aliquot", "by_type", "manual"];
+export const FEE_MODES: FeeMode[] = ["flat", "divide_total", "by_aliquot", "by_type", "manual"];
 
 export const FEE_MODE_LABELS: Record<FeeMode, string> = {
   flat: "Plano (mismo monto para todas)",
-  by_aliquot: "Por alícuota (% del total)",
+  divide_total: "Repartir total en partes iguales",
+  by_aliquot: "Por alícuota (proporcional)",
   by_type: "Por tipo de unidad",
   manual: "Manual (monto por unidad)",
 };
 
 export const FEE_MODE_DESCRIPTIONS: Record<FeeMode, string> = {
   flat: "El admin ingresa un monto único y todas las unidades pagan lo mismo.",
-  by_aliquot: "El admin ingresa el total mensual del condo. Cada unidad paga base × alícuota/100.",
+  divide_total: "El admin ingresa el costo total y el sistema lo divide en partes iguales entre todas las unidades. Ideal para derramas (ej: $10.000 entre 100 unidades = $100 c/u).",
+  by_aliquot: "El admin ingresa el total a cobrar. Se reparte entre las unidades proporcional a su alícuota; el total cobrado siempre es exacto.",
   by_type: "Configura un monto por tipo de unidad (apartamento, PH, local, etc.).",
   manual: "Cada vez que generas cuotas decides el monto unidad por unidad.",
 };

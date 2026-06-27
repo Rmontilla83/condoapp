@@ -10,8 +10,10 @@ import {
 import { OrgPoliciesForm } from "./org-policies-form";
 import { BankAccountsForm } from "./bank-accounts-form";
 import { FeeConfigForm } from "./fee-config-form";
+import { AmenityPoliciesForm } from "./amenity-policies-form";
 import type {
   BankAccount,
+  CommonArea,
   FeeBreakdownItem,
   FeeMode,
   FeeTypeAmount,
@@ -35,12 +37,19 @@ export default async function AdminSettingsPage() {
 
   if (!org) return null;
 
-  const [feeTypeAmounts, breakdownAll, unitTypes] = await Promise.all([
+  const [feeTypeAmounts, breakdownAll, unitTypes, amenitiesRes] = await Promise.all([
     getFeeTypeAmounts(org.id),
     getFeeBreakdownAll(org.id),
     getOrgUnitTypes(org.id),
+    supabase
+      .from("common_areas")
+      .select("*")
+      .eq("organization_id", org.id)
+      .eq("is_active", true)
+      .order("name"),
   ]);
 
+  const amenities = (amenitiesRes.data ?? []) as CommonArea[];
   const bankAccounts: BankAccount[] = Array.isArray(org.bank_accounts) ? org.bank_accounts : [];
 
   return (
@@ -90,6 +99,16 @@ export default async function AdminSettingsPage() {
             tenant_can_reserve: org.tenant_can_reserve,
           }}
         />
+      </div>
+
+      <div className="rounded-2xl bg-card border border-border p-6 md:p-7">
+        <p className="font-meta text-mute mb-2">POLÍTICAS DE USO POR AMENIDAD</p>
+        <p className="text-[14px] text-marine-deep/80 leading-relaxed mb-6">
+          Define las reglas de reserva de cada amenidad: cuántas veces por semana puede reservar un
+          mismo residente, duración máxima y con cuánta anticipación. Se aplican automáticamente
+          cuando alguien intenta reservar.
+        </p>
+        <AmenityPoliciesForm areas={amenities} />
       </div>
     </div>
   );

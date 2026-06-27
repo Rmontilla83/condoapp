@@ -7,7 +7,7 @@ import { AtryumLogo } from "@/components/brand/atryum-logo";
 const navItems = [
   { href: "/dashboard", label: "Inicio", icon: "home" },
   { href: "/pagos", label: "Pagos", icon: "payments" },
-  { href: "/mantenimiento", label: "Reportes", icon: "maintenance" },
+  { href: "/mantenimiento", label: "Mantenimiento", icon: "maintenance" },
   { href: "/comunicados", label: "Comunicados", icon: "announcements" },
   { href: "/visitantes", label: "Visitantes", icon: "qr" },
   { href: "/finanzas", label: "Finanzas", icon: "finanzas" },

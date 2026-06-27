@@ -498,9 +498,9 @@
           <span class="who">👤 Como administrador</span>
         </div>
         <ol class="steps">
-          <li>Ir a <a class="url-button" href="https://portal.atryum.net/admin/billing" target="_blank">/admin/billing</a></li>
-          <li>Tocar <strong>Generar facturas mensuales</strong>.</li>
-          <li>Elegir período (ej: marzo 2026). Confirmar.</li>
+          <li>Ir a <a class="url-button" href="https://portal.atryum.net/admin" target="_blank">/admin</a> (Panel admin)</li>
+          <li>En la sección <strong>COBRANZA</strong>, tocar el botón <strong>Generar cuotas</strong>.</li>
+          <li>Elegir <strong>Cuota mensual</strong>, el período (ej: marzo 2026) y el modo de cobranza. Confirmar.</li>
         </ol>
         <div class="expected">
           <div>
@@ -544,7 +544,7 @@
           <span class="who">👤 Como administrador</span>
         </div>
         <ol class="steps">
-          <li>Ir a <a class="url-button" href="https://portal.atryum.net/admin/billing" target="_blank">/admin/billing</a> tab <strong>Comprobantes pendientes</strong>.</li>
+          <li>Ir a <a class="url-button" href="https://portal.atryum.net/admin" target="_blank">/admin</a> (Panel admin), sección <strong>Comprobantes por revisar</strong>.</li>
           <li>Ver el comprobante subido en el test anterior. Tocar para abrir.</li>
           <li>Aprobar. Las facturas vinculadas pasan a <strong>PAGADO</strong>.</li>
         </ol>
@@ -563,9 +563,10 @@
           <span class="who">👤 Como administrador</span>
         </div>
         <ol class="steps">
-          <li>En <a class="url-button" href="https://portal.atryum.net/admin/billing" target="_blank">/admin/billing</a> tocar <strong>Generar facturas</strong>.</li>
-          <li>En el wizard, elegir tab <strong>Derrama extraordinaria</strong>.</li>
-          <li>Poner descripción: "Reparación portón principal". Fecha vencimiento. Monto total a derramar.</li>
+          <li>En <a class="url-button" href="https://portal.atryum.net/admin" target="_blank">/admin</a> (Panel admin) tocar <strong>Generar cuotas</strong>.</li>
+          <li>En el wizard, elegir <strong>Derrama extraordinaria</strong>.</li>
+          <li>Poner descripción: "Reparación portón principal" y fecha de vencimiento.</li>
+          <li>En el modo de cobranza, elegir <strong>Repartir total en partes iguales</strong> y poner el costo total (ej: 10000). El sistema lo divide entre todas las unidades.</li>
           <li>Confirmar.</li>
         </ol>
         <div class="expected">
@@ -612,18 +613,18 @@
       <div class="test">
         <div class="test-title">
           <span class="test-badge">TEST 4.2</span>
-          <h3>Banner de anuncios urgentes</h3>
+          <h3>Banner de comunicados urgentes</h3>
           <span class="who">🏠 Como residente</span>
         </div>
         <ol class="steps">
-          <li>Como admin, ir a <a class="url-button" href="https://portal.atryum.net/anuncios" target="_blank">/anuncios</a> y crear uno con prioridad <strong>Urgente</strong>.</li>
+          <li>Como admin, ir a <a class="url-button" href="https://portal.atryum.net/comunicados" target="_blank">/comunicados</a> y crear uno con prioridad <strong>Urgente</strong>.</li>
           <li>Cambiar a vista de residente (cerrar sesión y entrar con la otra cuenta del mismo condo, o usar view_as).</li>
           <li>Volver al dashboard.</li>
         </ol>
         <div class="expected">
           <div>
             <strong>Resultado esperado</strong>
-            Banner rojo arriba del dashboard con el anuncio urgente. Click → va a /anuncios.
+            Banner rojo arriba del dashboard con el comunicado urgente. Click → va a /comunicados.
           </div>
         </div>
       </div>
@@ -631,13 +632,13 @@
       <div class="test">
         <div class="test-title">
           <span class="test-badge">TEST 4.3</span>
-          <h3>FAB de pago si tiene saldo</h3>
+          <h3>Botón flotante de pago si tiene saldo</h3>
           <span class="who">🏠 Como residente</span>
         </div>
         <ol class="steps">
-          <li>Si hay facturas pendientes, en el dashboard debe aparecer un botón flotante (FAB) abajo a la derecha "Pagar saldo $X".</li>
+          <li>Si hay facturas pendientes, en el dashboard debe aparecer un botón flotante abajo a la derecha "Pagar saldo $X".</li>
           <li>Tocar → debe llevar a /pagos.</li>
-          <li>Si no hay facturas pendientes: el FAB no debe aparecer.</li>
+          <li>Si no hay facturas pendientes: el botón flotante no debe aparecer.</li>
         </ol>
       </div>
 
@@ -648,9 +649,9 @@
           <span class="who">🏠 Como residente</span>
         </div>
         <ol class="steps">
-          <li>Ir a <a class="url-button" href="https://portal.atryum.net/mantenimiento" target="_blank">/mantenimiento</a></li>
-          <li>Tocar <strong>Reportar problema</strong>.</li>
-          <li>Primero pide ubicación: cards "MI UNIDAD: 1-A" o "ÁREA COMÚN" con cada zona del condominio.</li>
+          <li>Ir a <a class="url-button" href="https://portal.atryum.net/mantenimiento" target="_blank">/mantenimiento</a> (en el menú aparece como <strong>Mantenimiento</strong>).</li>
+          <li>Tocar <strong>Reportar un problema</strong>.</li>
+          <li>En el formulario, en el menú <strong>¿Dónde está el problema?</strong> elegir tu unidad o un área común.</li>
           <li>Probar reportar uno en su unidad y otro en piscina/gimnasio.</li>
         </ol>
         <div class="expected">
@@ -1009,7 +1010,7 @@
         <span class="issue-icon">🎯</span>
         <div class="issue-text">
           <strong>Banner urgente sin filtro por audiencia</strong>
-          Si un anuncio dice "solo para Bloque B", el banner igual lo muestra a todos. Filtro pendiente.
+          Si un comunicado dice "solo para Bloque B", el banner igual lo muestra a todos. Filtro pendiente.
         </div>
       </div>
       <div class="issue-row">

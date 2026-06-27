@@ -8,6 +8,7 @@ import {
 } from "@/lib/queries";
 import { executedByCategory } from "@/lib/budget";
 import { BudgetEditor } from "./budget-editor";
+import { CategoryManager } from "./category-manager";
 import type { ExpenseCategory, OrgBudget, OrgBudgetItem } from "@/types/database";
 
 export default async function BudgetPage({
@@ -48,15 +49,18 @@ export default async function BudgetPage({
 
   return (
     <div className="space-y-8">
-      <div>
-        <span className="font-meta-loose text-cyan">PRESUPUESTO ANUAL</span>
-        <h1 className="mt-4 font-display text-[clamp(1.75rem,3.5vw,2.5rem)] leading-[1.1] tracking-[-0.03em] text-marine-deep">
-          Presupuesto <em className="font-editorial text-cyan">{year}</em>
-        </h1>
-        <p className="mt-3 text-[15px] text-mute">
-          Define el monto mensual por categoría. La columna ANUAL suma los 12 meses.
-          Cuando el presupuesto está aprobado, los residentes lo ven en /finanzas.
-        </p>
+      <div className="flex items-start justify-between gap-4 flex-wrap">
+        <div>
+          <span className="font-meta-loose text-cyan">PRESUPUESTO ANUAL</span>
+          <h1 className="mt-4 font-display text-[clamp(1.75rem,3.5vw,2.5rem)] leading-[1.1] tracking-[-0.03em] text-marine-deep">
+            Presupuesto <em className="font-editorial text-cyan">{year}</em>
+          </h1>
+          <p className="mt-3 text-[15px] text-mute">
+            Define el monto mensual por categoría. La columna ANUAL suma los 12 meses.
+            Cuando el presupuesto está aprobado, los residentes lo ven en /finanzas.
+          </p>
+        </div>
+        <CategoryManager categories={cats} />
       </div>
 
       <BudgetEditor

@@ -12,6 +12,20 @@ interface Area {
   id: string;
   name: string;
   capacity: number | null;
+  max_reservations_per_week: number | null;
+  max_duration_hours: number | null;
+  min_advance_hours: number;
+  max_advance_days: number | null;
+}
+
+function policyHints(a: Area): string[] {
+  const hints: string[] = [];
+  if (a.max_reservations_per_week != null)
+    hints.push(`Máx ${a.max_reservations_per_week} reserva(s) por semana`);
+  if (a.max_duration_hours != null) hints.push(`Hasta ${a.max_duration_hours} h por reserva`);
+  if (a.min_advance_hours > 0) hints.push(`Anticipación mínima ${a.min_advance_hours} h`);
+  if (a.max_advance_days != null) hints.push(`Hasta ${a.max_advance_days} días de anticipación`);
+  return hints;
 }
 
 export function ReserveDialog({ areas }: { areas: Area[] }) {
@@ -20,8 +34,11 @@ export function ReserveDialog({ areas }: { areas: Area[] }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
+  const [selectedAreaId, setSelectedAreaId] = useState("");
 
   const tomorrow = new Date(Date.now() + 86400000).toISOString().split("T")[0];
+  const selectedArea = areas.find((a) => a.id === selectedAreaId);
+  const hints = selectedArea ? policyHints(selectedArea) : [];
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -81,7 +98,14 @@ export function ReserveDialog({ areas }: { areas: Area[] }) {
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="area_id">Espacio</Label>
-                <select id="area_id" name="area_id" className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" required>
+                <select
+                  id="area_id"
+                  name="area_id"
+                  value={selectedAreaId}
+                  onChange={(e) => setSelectedAreaId(e.target.value)}
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                  required
+                >
                   <option value="">Selecciona</option>
                   {areas.map((a) => (
                     <option key={a.id} value={a.id}>
@@ -89,6 +113,13 @@ export function ReserveDialog({ areas }: { areas: Area[] }) {
                     </option>
                   ))}
                 </select>
+                {hints.length > 0 && (
+                  <ul className="mt-1 space-y-0.5 text-[12px] text-mute">
+                    {hints.map((h, i) => (
+                      <li key={i}>· {h}</li>
+                    ))}
+                  </ul>
+                )}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="date">Fecha</Label>

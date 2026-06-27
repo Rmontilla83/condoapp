@@ -102,6 +102,111 @@ export async function createDecision(formData: FormData) {
   return { success: true, decisionId: decision.id };
 }
 
+/**
+ * Edita una decisión existente (corregir errores). Reglas:
+ * - Solo admin de la misma org.
+ * - Solo si status ∈ {draft, open}. Cerradas/canceladas no se editan.
+ * - Título y descripción: siempre editables.
+ * - Preguntas y opciones: solo si NO hay votos todavía (para no corromper
+ *   resultados). Si ya hay votos, se ignoran los cambios de preguntas y se
+ *   informa al usuario.
+ */
+export async function updateDecision(formData: FormData) {
+  const profile = await getCurrentProfile();
+  if (!profile?.organization_id) return { error: "Sin organización" };
+  if (!isAdminRole(profile)) return { error: "Solo administradores" };
+
+  const decisionId = (formData.get("decision_id") as string)?.trim();
+  if (!decisionId) return { error: "Falta el id de la decisión" };
+
+  const title = (formData.get("title") as string)?.trim();
+  const description = (formData.get("description") as string)?.trim() || null;
+  if (!title) return { error: "Título requerido" };
+
+  const supabase = createAdminClient();
+
+  // Cargar la decisión (validar org + estado)
+  const { data: decision } = await supabase
+    .from("decisions")
+    .select("id, kind, status, organization_id")
+    .eq("id", decisionId)
+    .eq("organization_id", profile.organization_id)
+    .single<{ id: string; kind: DecisionKind; status: string; organization_id: string }>();
+
+  if (!decision) return { error: "Decisión no encontrada" };
+  if (decision.status !== "draft" && decision.status !== "open") {
+    return { error: "Solo se pueden editar decisiones abiertas o en borrador" };
+  }
+
+  // ¿Hay votos? (si los hay, no tocamos preguntas/opciones)
+  const { data: existingQuestions } = await supabase
+    .from("decision_questions")
+    .select("id")
+    .eq("decision_id", decisionId);
+  const questionIds = (existingQuestions ?? []).map((q) => q.id as string);
+
+  let hasVotes = false;
+  if (questionIds.length > 0) {
+    const { count } = await supabase
+      .from("decision_responses")
+      .select("id", { count: "exact", head: true })
+      .in("question_id", questionIds);
+    hasVotes = (count ?? 0) > 0;
+  }
+
+  // Actualizar título/descripción siempre
+  const { error: upErr } = await supabase
+    .from("decisions")
+    .update({ title, description })
+    .eq("id", decisionId)
+    .eq("organization_id", profile.organization_id);
+  if (upErr) return { error: upErr.message };
+
+  // Preguntas: solo si vinieron en el form Y no hay votos
+  const questionsRaw = formData.get("questions") as string | null;
+  if (questionsRaw && !hasVotes) {
+    let questions: Array<{ question: string; options: string[] }>;
+    try {
+      questions = JSON.parse(questionsRaw);
+    } catch {
+      return { error: "Preguntas inválidas (JSON)" };
+    }
+    if (!Array.isArray(questions) || questions.length === 0) {
+      return { error: "Al menos 1 pregunta requerida" };
+    }
+    if (decision.kind === "quick_poll" && questions.length !== 1) {
+      return { error: "Una encuesta rápida tiene exactamente 1 pregunta" };
+    }
+    for (let i = 0; i < questions.length; i++) {
+      const q = questions[i];
+      if (!q.question?.trim()) return { error: `Pregunta ${i + 1}: texto requerido` };
+      const opts = (q.options ?? []).map((o) => o.trim()).filter(Boolean);
+      if (opts.length < 2) return { error: `Pregunta ${i + 1}: necesita al menos 2 opciones` };
+    }
+
+    // Sin votos: reemplazamos limpio el set de preguntas.
+    if (questionIds.length > 0) {
+      await supabase.from("decision_questions").delete().eq("decision_id", decisionId);
+    }
+    const questionRows = questions.map((q, i) => ({
+      decision_id: decisionId,
+      question: q.question.trim(),
+      options: q.options.map((o) => o.trim()).filter(Boolean),
+      position: i,
+    }));
+    const { error: qErr } = await supabase.from("decision_questions").insert(questionRows);
+    if (qErr) return { error: `Error guardando preguntas: ${qErr.message}` };
+  }
+
+  revalidatePath("/decisiones");
+  revalidatePath(`/decisiones/${decisionId}`);
+  revalidatePath("/dashboard");
+  return {
+    success: true as const,
+    questionsLocked: !!questionsRaw && hasVotes,
+  };
+}
+
 export async function voteDecision(questionId: string, option: string, decisionId: string) {
   const profile = await getCurrentProfile();
   if (!profile?.organization_id) return { error: "No autenticado" };

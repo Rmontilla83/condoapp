@@ -35,6 +35,76 @@ export async function createReservation(formData: FormData) {
 
   const supabase = await createClient();
 
+  // Cargar la amenidad con sus políticas de uso
+  const { data: area } = await supabase
+    .from("common_areas")
+    .select(
+      "id, max_reservations_per_week, max_duration_hours, min_advance_hours, max_advance_days",
+    )
+    .eq("id", areaId)
+    .eq("organization_id", profile.organization_id)
+    .single();
+
+  if (!area) return { error: "Amenidad no encontrada." };
+
+  const startDt = new Date(startTime);
+  const endDt = new Date(endTime);
+  const now = new Date();
+
+  // Anticipación mínima
+  if (area.min_advance_hours && area.min_advance_hours > 0) {
+    if (startDt.getTime() - now.getTime() < area.min_advance_hours * 3_600_000) {
+      return {
+        error: `Esta amenidad requiere reservar con al menos ${area.min_advance_hours} h de anticipación.`,
+      };
+    }
+  }
+
+  // Anticipación máxima
+  if (area.max_advance_days != null) {
+    if (startDt.getTime() - now.getTime() > area.max_advance_days * 86_400_000) {
+      return {
+        error: `No puedes reservar con más de ${area.max_advance_days} días de anticipación.`,
+      };
+    }
+  }
+
+  // Duración máxima
+  if (area.max_duration_hours != null) {
+    const durationHours = (endDt.getTime() - startDt.getTime()) / 3_600_000;
+    if (durationHours > Number(area.max_duration_hours) + 1e-6) {
+      return {
+        error: `La duración máxima para esta amenidad es ${area.max_duration_hours} h.`,
+      };
+    }
+  }
+
+  // Máximo de reservas por semana (lun-dom) del mismo residente
+  if (area.max_reservations_per_week != null) {
+    const d = new Date(`${date}T00:00:00`);
+    const sinceMonday = (d.getDay() + 6) % 7; // 0=lunes
+    const monday = new Date(d);
+    monday.setDate(d.getDate() - sinceMonday);
+    monday.setHours(0, 0, 0, 0);
+    const nextMonday = new Date(monday);
+    nextMonday.setDate(monday.getDate() + 7);
+
+    const { count } = await supabase
+      .from("reservations")
+      .select("id", { count: "exact", head: true })
+      .eq("common_area_id", areaId)
+      .eq("reserved_by", profile.id)
+      .eq("status", "confirmed")
+      .gte("start_time", monday.toISOString())
+      .lt("start_time", nextMonday.toISOString());
+
+    if ((count ?? 0) >= area.max_reservations_per_week) {
+      return {
+        error: `Ya alcanzaste el máximo de ${area.max_reservations_per_week} reserva(s) por semana para esta amenidad.`,
+      };
+    }
+  }
+
   // Check for conflicts
   const { data: conflicts } = await supabase
     .from("reservations")

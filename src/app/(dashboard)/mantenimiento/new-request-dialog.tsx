@@ -13,7 +13,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { createMaintenanceRequest } from "./actions";
-import { LocationStep, type LocationSelection, type UnitOption } from "./location-step";
+import type { UnitOption } from "./location-step";
 import type { CommonArea } from "@/types/database";
 
 const MAX_PHOTO_BYTES = 5 * 1024 * 1024;
@@ -26,8 +26,10 @@ interface Props {
 
 export function NewRequestDialog({ units, commonAreas }: Props) {
   const [open, setOpen] = useState(false);
-  const [step, setStep] = useState<"location" | "form">("location");
-  const [location, setLocation] = useState<LocationSelection | null>(null);
+  // Una sola pantalla: la ubicación es un dropdown dentro del formulario.
+  // Si el residente tiene una sola unidad, ya viene preseleccionada.
+  const initialLocation = units.length === 1 ? `unit:${units[0].id}` : "";
+  const [locationValue, setLocationValue] = useState(initialLocation);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [previews, setPreviews] = useState<string[]>([]);
@@ -59,8 +61,7 @@ export function NewRequestDialog({ units, commonAreas }: Props) {
   }
 
   function resetAll() {
-    setStep("location");
-    setLocation(null);
+    setLocationValue(initialLocation);
     setPreviews([]);
     setRejectedFiles([]);
     setError("");
@@ -69,16 +70,10 @@ export function NewRequestDialog({ units, commonAreas }: Props) {
     formRef.current?.reset();
   }
 
-  function handleLocationSelect(loc: LocationSelection) {
-    setLocation(loc);
-    setStep("form");
-    setError("");
-  }
-
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    if (!location) {
-      setError("Selecciona la ubicación primero");
+    if (!locationValue) {
+      setError("Selecciona dónde está el problema");
       return;
     }
     setLoading(true);
@@ -98,10 +93,13 @@ export function NewRequestDialog({ units, commonAreas }: Props) {
     }
 
     const formData = new FormData(form);
-    if (location.kind === "unit" && location.unitId) {
-      formData.set("unit_id", location.unitId);
-    } else if (location.kind === "common" && location.commonAreaId) {
-      formData.set("common_area_id", location.commonAreaId);
+    const sep = locationValue.indexOf(":");
+    const locKind = locationValue.slice(0, sep);
+    const locId = locationValue.slice(sep + 1);
+    if (locKind === "unit") {
+      formData.set("unit_id", locId);
+    } else if (locKind === "common") {
+      formData.set("common_area_id", locId);
     }
 
     try {
@@ -128,13 +126,6 @@ export function NewRequestDialog({ units, commonAreas }: Props) {
     }
   }
 
-  const breadcrumb =
-    location?.kind === "unit"
-      ? `MI UNIDAD · ${location.unitLabel}`
-      : location?.kind === "common"
-        ? `ÁREA COMÚN · ${location.commonAreaName}`
-        : "";
-
   return (
     <Dialog
       open={open}
@@ -153,172 +144,178 @@ export function NewRequestDialog({ units, commonAreas }: Props) {
         >
           <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
         </svg>
-        Nuevo reporte
+        Reportar un problema
       </DialogTrigger>
       <DialogContent className="sm:max-w-lg max-h-[85vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Nuevo reporte de mantenimiento</DialogTitle>
+          <DialogTitle>Reportar un problema</DialogTitle>
           <DialogDescription>
-            {step === "location"
-              ? "Primero indica dónde está el problema."
-              : "Describe el problema y adjunta fotos para que se resuelva más rápido."}
+            Dinos qué pasa y dónde. Adjuntar fotos ayuda a resolverlo más rápido.
           </DialogDescription>
         </DialogHeader>
 
-        {step === "location" && (
-          <LocationStep
-            units={units}
-            commonAreas={commonAreas}
-            onSelect={handleLocationSelect}
-          />
-        )}
-
-        {step === "form" && location && (
-          <>
-            <div className="rounded-lg bg-cloud/40 border border-border px-3 py-2 flex items-center justify-between gap-2">
-              <span className="font-meta text-marine-deep truncate">{breadcrumb}</span>
-              <button
-                type="button"
-                onClick={() => setStep("location")}
-                disabled={loading}
-                className="font-meta text-cyan hover:text-marine-deep transition-colors shrink-0"
-              >
-                CAMBIAR
-              </button>
-            </div>
-
-            <form ref={formRef} className="space-y-4" onSubmit={handleSubmit}>
-              <div className="space-y-2">
-                <Label htmlFor="title">Título del problema</Label>
-                <Input
-                  id="title"
-                  name="title"
-                  placeholder="Ej: Fuga de agua en el baño"
-                  required
-                  disabled={loading}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="category">Categoría</Label>
-                <select
-                  id="category"
-                  name="category"
-                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                  required
-                  disabled={loading}
-                >
-                  <option value="">Selecciona una categoría</option>
-                  <option value="plumbing">Plomería</option>
-                  <option value="electrical">Electricidad</option>
-                  <option value="structural">Estructura</option>
-                  <option value="elevator">Ascensor</option>
-                  <option value="security">Seguridad</option>
-                  <option value="cleaning">Limpieza</option>
-                  <option value="access">Acceso</option>
-                  <option value="other">Otro</option>
-                </select>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="description">Descripción</Label>
-                <textarea
-                  id="description"
-                  name="description"
-                  rows={3}
-                  className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                  placeholder="Describe el problema con detalle..."
-                  required
-                  disabled={loading}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="priority">Prioridad</Label>
-                <select
-                  id="priority"
-                  name="priority"
-                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                  defaultValue="medium"
-                  disabled={loading}
-                >
-                  <option value="low">Baja</option>
-                  <option value="medium">Media</option>
-                  <option value="high">Alta</option>
-                  <option value="urgent">Urgente</option>
-                </select>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="photos">Fotos del problema (máx 3, 5 MB c/u)</Label>
-                <Input
-                  ref={fileRef}
-                  id="photos"
-                  name="photos"
-                  type="file"
-                  accept="image/jpeg,image/png,image/webp"
-                  multiple
-                  onChange={handleFiles}
-                  disabled={loading}
-                  className="text-sm"
-                />
-                {rejectedFiles.length > 0 && (
-                  <p className="text-[12px] text-destructive">
-                    Demasiado grande y no se enviará: {rejectedFiles.join(", ")}
-                  </p>
-                )}
-                {previews.length > 0 && (
-                  <div className="flex gap-2 mt-2">
-                    {previews.map((url, idx) => (
-                      <div
-                        key={idx}
-                        className="relative h-16 w-16 rounded-lg overflow-hidden border border-border"
-                      >
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img
-                          src={url}
-                          alt={`Preview ${idx + 1}`}
-                          className="h-full w-full object-cover"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => removePhoto(idx)}
-                          className="absolute top-0 right-0 bg-marine-deep/60 text-frost rounded-bl-lg p-0.5"
-                          disabled={loading}
-                        >
-                          <svg
-                            className="h-3 w-3"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            strokeWidth={3}
-                            stroke="currentColor"
-                          >
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                          </svg>
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-              {error && (
-                <p className="rounded-md bg-destructive/10 border border-destructive/30 p-3 text-[13px] text-destructive">
-                  {error}
-                </p>
+        <form ref={formRef} className="space-y-4" onSubmit={handleSubmit}>
+          <div className="space-y-2">
+            <Label htmlFor="location">¿Dónde está el problema?</Label>
+            <select
+              id="location"
+              value={locationValue}
+              onChange={(e) => setLocationValue(e.target.value)}
+              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              required
+              disabled={loading}
+            >
+              <option value="">Selecciona dónde…</option>
+              {units.length > 0 && (
+                <optgroup label="Mi unidad">
+                  {units.map((u) => (
+                    <option key={u.id} value={`unit:${u.id}`}>
+                      {u.label}
+                    </option>
+                  ))}
+                </optgroup>
               )}
-              <div className="flex gap-3 pt-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="flex-1"
-                  onClick={() => setOpen(false)}
-                  disabled={loading}
-                >
-                  Cancelar
-                </Button>
-                <Button type="submit" className="flex-1" disabled={loading}>
-                  {loading ? "Enviando..." : "Enviar reporte"}
-                </Button>
+              {commonAreas.length > 0 && (
+                <optgroup label="Área común">
+                  {commonAreas.map((c) => (
+                    <option key={c.id} value={`common:${c.id}`}>
+                      {c.name}
+                    </option>
+                  ))}
+                </optgroup>
+              )}
+            </select>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="title">¿Qué pasó?</Label>
+            <Input
+              id="title"
+              name="title"
+              placeholder="Ej: Fuga de agua en el baño"
+              required
+              disabled={loading}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="category">Categoría</Label>
+            <select
+              id="category"
+              name="category"
+              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              required
+              disabled={loading}
+            >
+              <option value="">Selecciona una categoría</option>
+              <option value="plumbing">Plomería</option>
+              <option value="electrical">Electricidad</option>
+              <option value="structural">Estructura</option>
+              <option value="elevator">Ascensor</option>
+              <option value="security">Seguridad</option>
+              <option value="cleaning">Limpieza</option>
+              <option value="access">Acceso</option>
+              <option value="other">Otro</option>
+            </select>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="description">Descripción</Label>
+            <textarea
+              id="description"
+              name="description"
+              rows={3}
+              className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              placeholder="Describe el problema con detalle..."
+              required
+              disabled={loading}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="priority">Prioridad</Label>
+            <select
+              id="priority"
+              name="priority"
+              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              defaultValue="medium"
+              disabled={loading}
+            >
+              <option value="low">Baja</option>
+              <option value="medium">Media</option>
+              <option value="high">Alta</option>
+              <option value="urgent">Urgente</option>
+            </select>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="photos">Fotos del problema (máx 3, 5 MB c/u)</Label>
+            <Input
+              ref={fileRef}
+              id="photos"
+              name="photos"
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              multiple
+              onChange={handleFiles}
+              disabled={loading}
+              className="text-sm"
+            />
+            {rejectedFiles.length > 0 && (
+              <p className="text-[12px] text-destructive">
+                Demasiado grande y no se enviará: {rejectedFiles.join(", ")}
+              </p>
+            )}
+            {previews.length > 0 && (
+              <div className="flex gap-2 mt-2">
+                {previews.map((url, idx) => (
+                  <div
+                    key={idx}
+                    className="relative h-16 w-16 rounded-lg overflow-hidden border border-border"
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={url}
+                      alt={`Preview ${idx + 1}`}
+                      className="h-full w-full object-cover"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => removePhoto(idx)}
+                      className="absolute top-0 right-0 bg-marine-deep/60 text-frost rounded-bl-lg p-0.5"
+                      disabled={loading}
+                    >
+                      <svg
+                        className="h-3 w-3"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        strokeWidth={3}
+                        stroke="currentColor"
+                      >
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  </div>
+                ))}
               </div>
-            </form>
-          </>
-        )}
+            )}
+          </div>
+          {error && (
+            <p className="rounded-md bg-destructive/10 border border-destructive/30 p-3 text-[13px] text-destructive">
+              {error}
+            </p>
+          )}
+          <div className="flex gap-3 pt-2">
+            <Button
+              type="button"
+              variant="outline"
+              className="flex-1"
+              onClick={() => setOpen(false)}
+              disabled={loading}
+            >
+              Cancelar
+            </Button>
+            <Button type="submit" className="flex-1" disabled={loading}>
+              {loading ? "Enviando..." : "Enviar reporte"}
+            </Button>
+          </div>
+        </form>
       </DialogContent>
     </Dialog>
   );

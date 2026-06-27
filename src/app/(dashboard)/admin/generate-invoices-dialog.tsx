@@ -46,6 +46,7 @@ interface FormState {
   // mode
   mode: FeeMode;
   flat_amount: string;
+  total_amount: string; // divide_total
   base_amount: string;
   manual_amounts: Record<string, string>; // unit_id -> string
 }
@@ -82,6 +83,7 @@ export function GenerateInvoicesDialog({ org, units, feeTypeAmounts, exchangeRat
     description: "",
     mode: (org.fee_mode ?? "flat") as FeeMode,
     flat_amount: "",
+    total_amount: "",
     base_amount: org.fee_base_amount ? String(org.fee_base_amount) : "",
     manual_amounts: Object.fromEntries(units.map((u) => [u.id, ""])),
   }));
@@ -119,6 +121,7 @@ export function GenerateInvoicesDialog({ org, units, feeTypeAmounts, exchangeRat
       units,
       exchange_rate: exchangeRate,
       flat_amount: form.flat_amount ? parseFloat(form.flat_amount) : undefined,
+      divide_total_amount: form.total_amount ? parseFloat(form.total_amount) : undefined,
       base_amount: form.base_amount ? parseFloat(form.base_amount) : undefined,
       type_amounts: form.mode === "by_type" ? typeAmountsMap : undefined,
       manual_amounts:
@@ -145,6 +148,7 @@ export function GenerateInvoicesDialog({ org, units, feeTypeAmounts, exchangeRat
       description: "",
       mode: (org.fee_mode ?? "flat") as FeeMode,
       flat_amount: "",
+      total_amount: "",
       base_amount: org.fee_base_amount ? String(org.fee_base_amount) : "",
       manual_amounts: Object.fromEntries(units.map((u) => [u.id, ""])),
     });
@@ -167,6 +171,10 @@ export function GenerateInvoicesDialog({ org, units, feeTypeAmounts, exchangeRat
     if (step === "mode") {
       if (form.mode === "flat" && (!form.flat_amount || parseFloat(form.flat_amount) <= 0)) {
         setError("Indica un monto > 0");
+        return;
+      }
+      if (form.mode === "divide_total" && (!form.total_amount || parseFloat(form.total_amount) <= 0)) {
+        setError("Indica el costo total a repartir (> 0)");
         return;
       }
       if (form.mode === "by_aliquot" && (!form.base_amount || parseFloat(form.base_amount) <= 0)) {
@@ -220,6 +228,7 @@ export function GenerateInvoicesDialog({ org, units, feeTypeAmounts, exchangeRat
       fd.set("due_day", form.due_day);
     }
     if (form.mode === "flat") fd.set("flat_amount", form.flat_amount);
+    if (form.mode === "divide_total") fd.set("total_amount", form.total_amount);
     if (form.mode === "by_aliquot") fd.set("base_amount", form.base_amount);
     if (form.mode === "manual") {
       const cleaned = Object.fromEntries(
@@ -282,7 +291,7 @@ export function GenerateInvoicesDialog({ org, units, feeTypeAmounts, exchangeRat
           <DialogDescription>
             {step === "done"
               ? "Listo"
-              : `Paso ${stepIndex(step)} de ${totalSteps(form.mode)} · ${stepLabel(step)}`}
+              : `Paso ${stepIndex(step, form.mode)} de ${totalSteps(form.mode)} · ${stepLabel(step)}`}
           </DialogDescription>
         </DialogHeader>
 
@@ -399,13 +408,27 @@ export function GenerateInvoicesDialog({ org, units, feeTypeAmounts, exchangeRat
 
 // ── Helpers ──────────────────────────────────────────────
 
-function stepIndex(s: StepperStep): number {
-  const order: StepperStep[] = ["kind", "period", "mode", "manual", "preview", "done"];
-  return order.indexOf(s) + 1;
+function stepOrder(mode: FeeMode): StepperStep[] {
+  // El paso "manual" (montos unidad por unidad) solo aplica en modo manual.
+  // "done" es la pantalla de confirmación, no cuenta como paso del wizard.
+  return mode === "manual"
+    ? ["kind", "period", "mode", "manual", "preview"]
+    : ["kind", "period", "mode", "preview"];
+}
+
+function stepIndex(s: StepperStep, mode: FeeMode): number {
+  const i = stepOrder(mode).indexOf(s);
+  return i === -1 ? stepOrder(mode).length : i + 1;
 }
 
 function totalSteps(mode: FeeMode): number {
-  return mode === "manual" ? 5 : 4;
+  return stepOrder(mode).length;
+}
+
+/** Convierte ISO "yyyy-mm-dd" a "dd/mm/yyyy" sin riesgo de off-by-one por zona horaria. */
+function formatDueDate(iso: string): string {
+  const m = iso.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  return m ? `${m[3]}/${m[2]}/${m[1]}` : iso;
 }
 
 function stepLabel(s: StepperStep): string {
@@ -618,9 +641,27 @@ function ModeStep({
         </div>
       )}
 
+      {form.mode === "divide_total" && (
+        <div className="space-y-2 rounded-lg bg-cyan/5 border border-cyan/20 p-3">
+          <Label htmlFor="total-amount">Costo total a repartir</Label>
+          <Input
+            id="total-amount"
+            type="number"
+            step="0.01"
+            min="0"
+            value={form.total_amount}
+            placeholder="10000.00"
+            onChange={(e) => onChange((p) => ({ ...p, total_amount: e.target.value }))}
+          />
+          <p className="text-[12px] text-mute">
+            El sistema lo divide en partes iguales entre todas las unidades. Lo verás dividido en la vista previa.
+          </p>
+        </div>
+      )}
+
       {form.mode === "by_aliquot" && (
         <div className="space-y-2 rounded-lg bg-cyan/5 border border-cyan/20 p-3">
-          <Label htmlFor="base-amount">Total mensual del condo</Label>
+          <Label htmlFor="base-amount">Total a cobrar</Label>
           <Input
             id="base-amount"
             type="number"
@@ -631,7 +672,7 @@ function ModeStep({
             onChange={(e) => onChange((p) => ({ ...p, base_amount: e.target.value }))}
           />
           <p className="text-[12px] text-mute">
-            Cada unidad pagará base × alícuota / 100.
+            Se reparte proporcional a la alícuota de cada unidad. El total cobrado siempre es exacto.
           </p>
         </div>
       )}
@@ -783,7 +824,7 @@ function PreviewStep({
         </div>
         <div className="flex justify-between">
           <span className="text-mute">Vencimiento</span>
-          <span className="font-medium">{dueDate}</span>
+          <span className="font-medium">{formatDueDate(dueDate)}</span>
         </div>
         <div className="flex justify-between border-t border-border pt-1 mt-1">
           <span className="text-mute">Total ({currency})</span>

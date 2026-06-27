@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { voteDecision, closeDecision } from "./actions";
+import { EditDecisionDialog } from "./edit-decision-dialog";
 import type { Decision, DecisionStatus } from "@/types/database";
 
 interface QuestionWithResponses {
@@ -45,6 +46,13 @@ export function DecisionCard({ decision, questions, userId, isAdmin, quorumStats
   const status = statusBadge[decision.status];
   const isFormal = decision.kind === "formal_assembly";
   const isOpen = decision.status === "open";
+  const isEditable = isAdmin && (decision.status === "open" || decision.status === "draft");
+  const hasVotes = questions.some((q) => q.decision_responses.length > 0);
+  const editQuestions = questions.map((q) => ({
+    id: q.id,
+    question: q.question,
+    options: q.options,
+  }));
   const totalQuestions = questions.length;
   const myVotedQuestions = new Set(
     questions
@@ -102,6 +110,15 @@ export function DecisionCard({ decision, questions, userId, isAdmin, quorumStats
           </Badge>
         </div>
 
+        {decision.description && (
+          <p className="-mt-2 mb-3 text-[13px] text-mute leading-relaxed">
+            {decision.description}
+          </p>
+        )}
+        {q.question && q.question.trim() !== decision.title.trim() && (
+          <p className="mb-3 text-[14px] font-medium text-marine-deep">{q.question}</p>
+        )}
+
         <div className="space-y-2">
           {q.options.map((option) => {
             const count = counts[option] ?? 0;
@@ -134,11 +151,22 @@ export function DecisionCard({ decision, questions, userId, isAdmin, quorumStats
 
         {error && <p className="text-sm text-destructive mt-2">{error}</p>}
 
-        {isAdmin && isOpen && (
-          <div className="mt-4 pt-3 border-t">
-            <Button size="sm" variant="outline" onClick={handleClose} disabled={loading} className="text-xs">
-              Cerrar votación
-            </Button>
+        {(isEditable || (isAdmin && isOpen)) && (
+          <div className="mt-4 pt-3 border-t flex gap-2">
+            {isEditable && (
+              <EditDecisionDialog
+                decisionId={decision.id}
+                title={decision.title}
+                description={decision.description}
+                questions={editQuestions}
+                hasVotes={hasVotes}
+              />
+            )}
+            {isAdmin && isOpen && (
+              <Button size="sm" variant="outline" onClick={handleClose} disabled={loading} className="text-xs">
+                Cerrar votación
+              </Button>
+            )}
           </div>
         )}
       </div>
@@ -233,11 +261,22 @@ export function DecisionCard({ decision, questions, userId, isAdmin, quorumStats
 
       {error && <p className="text-sm text-destructive mt-2">{error}</p>}
 
-      {isAdmin && isOpen && (
-        <div className="mt-3 pt-3 border-t">
-          <Button size="sm" variant="outline" onClick={handleClose} disabled={loading} className="text-xs">
-            Cerrar asamblea
-          </Button>
+      {(isEditable || (isAdmin && isOpen)) && (
+        <div className="mt-3 pt-3 border-t flex gap-2">
+          {isEditable && (
+            <EditDecisionDialog
+              decisionId={decision.id}
+              title={decision.title}
+              description={decision.description}
+              questions={editQuestions}
+              hasVotes={hasVotes}
+            />
+          )}
+          {isAdmin && isOpen && (
+            <Button size="sm" variant="outline" onClick={handleClose} disabled={loading} className="text-xs">
+              Cerrar asamblea
+            </Button>
+          )}
         </div>
       )}
     </div>

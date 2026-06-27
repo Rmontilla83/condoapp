@@ -46,7 +46,9 @@ export default async function ReservasPage() {
   const [areasRes, reservationsRes] = await Promise.all([
     supabase
       .from("common_areas")
-      .select("id, name, description, capacity")
+      .select(
+        "id, name, description, capacity, max_reservations_per_week, max_duration_hours, min_advance_hours, max_advance_days",
+      )
       .eq("organization_id", profile.organization_id)
       .eq("is_active", true)
       .order("name"),

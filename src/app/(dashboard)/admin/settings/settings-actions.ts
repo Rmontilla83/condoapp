@@ -124,6 +124,77 @@ export async function updateFeeConfig(formData: FormData): Promise<ActionResult>
   return { success: true };
 }
 
+/** Convierte un valor de formulario a entero >= 0 o null (vacío). */
+function toNullableInt(v: unknown): number | null | undefined {
+  if (v === null || v === undefined || v === "") return null;
+  const n = typeof v === "string" ? parseInt(v, 10) : Number(v);
+  if (Number.isNaN(n) || n < 0) return undefined; // undefined => inválido
+  return Math.floor(n);
+}
+
+function toNullableNumber(v: unknown): number | null | undefined {
+  if (v === null || v === undefined || v === "") return null;
+  const n = typeof v === "string" ? parseFloat(v) : Number(v);
+  if (Number.isNaN(n) || n < 0) return undefined;
+  return Math.round(n * 10) / 10;
+}
+
+/**
+ * Actualiza las políticas de uso de cada amenidad (common_areas). Recibe un
+ * JSON array de { id, max_reservations_per_week, max_duration_hours,
+ * min_advance_hours, max_advance_days }. NULL = sin límite.
+ */
+export async function updateAmenityPolicies(formData: FormData): Promise<ActionResult> {
+  const profile = await getCurrentProfile();
+  const guard = requireAdmin(profile);
+  if (guard) return guard;
+
+  const raw = formData.get("policies");
+  if (typeof raw !== "string") return { error: "Faltan las políticas" };
+
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    return { error: "Formato de políticas inválido (JSON)" };
+  }
+  if (!Array.isArray(parsed)) return { error: "Formato de políticas inválido" };
+
+  const supabase = createAdminClient();
+
+  for (const row of parsed as Array<Record<string, unknown>>) {
+    const id = typeof row.id === "string" ? row.id : "";
+    if (!id) return { error: "Amenidad sin id" };
+
+    const maxPerWeek = toNullableInt(row.max_reservations_per_week);
+    const maxDuration = toNullableNumber(row.max_duration_hours);
+    const minAdvance = toNullableInt(row.min_advance_hours);
+    const maxAdvance = toNullableInt(row.max_advance_days);
+
+    if (maxPerWeek === undefined) return { error: "Máx reservas/semana inválido" };
+    if (maxDuration === undefined) return { error: "Duración máxima inválida" };
+    if (minAdvance === undefined) return { error: "Anticipación mínima inválida" };
+    if (maxAdvance === undefined) return { error: "Anticipación máxima inválida" };
+
+    const { error } = await supabase
+      .from("common_areas")
+      .update({
+        max_reservations_per_week: maxPerWeek,
+        max_duration_hours: maxDuration,
+        min_advance_hours: minAdvance ?? 0,
+        max_advance_days: maxAdvance,
+      })
+      .eq("id", id)
+      .eq("organization_id", profile!.organization_id!);
+
+    if (error) return { error: error.message };
+  }
+
+  revalidatePath("/admin/settings");
+  revalidatePath("/reservas");
+  return { success: true };
+}
+
 export async function upsertFeeBreakdownItems(formData: FormData): Promise<ActionResult> {
   const profile = await getCurrentProfile();
   const guard = requireAdmin(profile);

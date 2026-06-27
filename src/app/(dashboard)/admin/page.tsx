@@ -82,6 +82,15 @@ export default async function AdminPage() {
   }
   const morosos = Object.values(morosMap).sort((a, b) => b.total - a.total);
 
+  // Desglose de mantenimiento abierto (para que el KPI sea claro)
+  const openMaintenance = maintenance.filter(
+    (m) => m.status !== "resolved" && m.status !== "cancelled",
+  );
+  const newMaintenanceCount = openMaintenance.filter((m) => m.status === "new").length;
+  const inProgressMaintenanceCount = openMaintenance.filter(
+    (m) => m.status === "in_review" || m.status === "in_progress",
+  ).length;
+
   return (
     <div className="space-y-10">
       <div>
@@ -90,7 +99,7 @@ export default async function AdminPage() {
           Vista <em className="font-editorial text-cyan">general</em>
         </h1>
         <p className="mt-3 text-[15px] text-mute">
-          {stats.totalUnits} unidades · {stats.paymentRate}% de cobranza · {stats.openRequests} solicitudes abiertas
+          {stats.totalUnits} unidades · {stats.paymentRate}% de cobranza · {stats.openRequests} solicitudes de mantenimiento abiertas
         </p>
       </div>
 
@@ -116,9 +125,12 @@ export default async function AdminPage() {
           </p>
         </div>
         <div className="group rounded-2xl bg-card border border-border p-5 transition-all duration-500 hover:border-ember/40 hover:-translate-y-0.5 hover:shadow-[0_18px_50px_-18px_rgb(15,46,90,0.18)]">
-          <p className="font-meta text-mute">SOLICITUDES</p>
+          <p className="font-meta text-mute">MANTENIMIENTO PENDIENTE</p>
           <p className="mt-3 font-display text-[32px] leading-none tracking-[-0.02em] text-ember tabular-nums">
             <AnimatedCounter value={stats.openRequests} duration={1100} />
+          </p>
+          <p className="mt-2 font-meta text-mute">
+            {newMaintenanceCount} NUEVA{newMaintenanceCount !== 1 ? "S" : ""} · {inProgressMaintenanceCount} EN PROCESO
           </p>
         </div>
       </div>

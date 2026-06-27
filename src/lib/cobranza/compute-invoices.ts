@@ -34,6 +34,7 @@ export interface ComputeInput {
   exchange_rate: number | null;
   // Inputs según modo:
   flat_amount?: number;
+  divide_total_amount?: number; // divide_total: costo total a repartir en partes iguales
   base_amount?: number; // by_aliquot
   type_amounts?: Record<string, number>; // by_type
   manual_amounts?: Record<string, number>; // unit_id -> amount
@@ -50,11 +51,45 @@ function round2(n: number): number {
 }
 
 /**
+ * Reparte `total` entre las unidades según sus `weights`, garantizando que la
+ * suma de los montos sea EXACTAMENTE `total` (compensa el residuo de redondeo
+ * en la unidad con mayor peso). Si Σweights ≤ 0, todas reciben 0.
+ */
+function distributeExact(
+  total: number,
+  weights: Array<{ id: string; w: number }>,
+): Map<string, number> {
+  const map = new Map<string, number>();
+  const sumW = weights.reduce((s, x) => s + x.w, 0);
+  if (sumW <= 0) {
+    for (const x of weights) map.set(x.id, 0);
+    return map;
+  }
+  let allocated = 0;
+  for (const x of weights) {
+    const amt = x.w > 0 ? round2((total * x.w) / sumW) : 0;
+    map.set(x.id, amt);
+    allocated = round2(allocated + amt);
+  }
+  const residual = round2(total - allocated);
+  if (residual !== 0) {
+    const target = weights
+      .filter((x) => x.w > 0)
+      .sort((a, b) => b.w - a.w)[0];
+    if (target) map.set(target.id, round2((map.get(target.id) ?? 0) + residual));
+  }
+  return map;
+}
+
+/**
  * Calcula los amounts por unidad según el modo de cobranza.
  *
  * - **flat**: cada unit recibe `flat_amount`.
- * - **by_aliquot**: `base_amount * aliquot / 100`. Warning si Σ aliquot ≠ 100.
- *   Warning si alguna unit tiene aliquot=0 (recibe $0). NO compensa centavos.
+ * - **divide_total**: reparte `divide_total_amount` en partes iguales entre todas
+ *   las units. Σ montos = total exacto (compensa centavos en la unidad mayor).
+ * - **by_aliquot**: reparte `base_amount` proporcional a la alícuota de cada unit
+ *   (`base * aliquot / Σaliquot`). Σ montos = base exacto. Warning si Σ aliquot ≠ 100
+ *   o si alguna unit tiene aliquot=0 (recibe $0). Error si TODAS tienen aliquot=0.
  * - **by_type**: lookup por `unit.type` en `type_amounts`. Error si falta type.
  * - **manual**: lookup por `unit.id` en `manual_amounts`. Error si falta.
  *
@@ -62,9 +97,10 @@ function round2(n: number): number {
  * generes invoices — el caller debe presentarlos al usuario.
  *
  * Casos cubiertos por verification:
- * - Σ aliquot = 100 → suma exacta del base.
- * - Σ aliquot = 99.7 → warning con monto exacto del derrame total.
- * - aliquot = 0 → invoice $0 + warning.
+ * - by_aliquot con Σ aliquot ≠ 100 → reparto proporcional, total = base exacto.
+ * - by_aliquot con alguna aliquot = 0 → invoice $0 + warning.
+ * - by_aliquot con TODAS aliquot = 0 → error explícito.
+ * - divide_total → partes iguales, total exacto.
  * - by_type sin precio para algún type → error.
  * - manual sin amount para algún unit_id → error.
  * - 0 units → error explícito.
@@ -102,6 +138,20 @@ export function computeInvoiceAmounts(input: ComputeInput): ComputeResult {
       break;
     }
 
+    case "divide_total": {
+      const total = input.divide_total_amount;
+      if (total === undefined || Number.isNaN(total) || total <= 0) {
+        errors.push("Modo dividir total requiere un costo total > 0.");
+        return { invoices: [], warnings, errors };
+      }
+      // Reparto en partes iguales (peso 1 por unidad), exacto al centavo.
+      perUnit = distributeExact(
+        total,
+        input.units.map((u) => ({ id: u.id, w: 1 })),
+      );
+      break;
+    }
+
     case "by_aliquot": {
       const base = input.base_amount;
       if (base === undefined || Number.isNaN(base) || base <= 0) {
@@ -109,11 +159,11 @@ export function computeInvoiceAmounts(input: ComputeInput): ComputeResult {
         return { invoices: [], warnings, errors };
       }
       const sumAliquot = input.units.reduce((s, u) => s + u.aliquot, 0);
-      if (Math.abs(sumAliquot - 100) >= 0.01) {
-        const totalDerramado = round2((base * sumAliquot) / 100);
-        warnings.push(
-          `Las alícuotas suman ${sumAliquot.toFixed(2)}% (no 100%). Total derramado será $${totalDerramado.toFixed(2)} en lugar de $${base.toFixed(2)}.`,
+      if (sumAliquot <= 0) {
+        errors.push(
+          "Todas las unidades tienen alícuota 0. Configura las alícuotas antes de cobrar por alícuota.",
         );
+        return { invoices: [], warnings, errors };
       }
       const zeroAliquotUnits = input.units.filter((u) => u.aliquot <= 0);
       if (zeroAliquotUnits.length > 0) {
@@ -121,8 +171,15 @@ export function computeInvoiceAmounts(input: ComputeInput): ComputeResult {
           `${zeroAliquotUnits.length} unidad(es) tienen alícuota 0 y recibirán cuota de $0. Verifica antes de continuar.`,
         );
       }
-      perUnit = new Map(
-        input.units.map((u) => [u.id, round2((base * u.aliquot) / 100)]),
+      if (Math.abs(sumAliquot - 100) >= 0.01) {
+        warnings.push(
+          `Las alícuotas suman ${sumAliquot.toFixed(2)}% (no 100%). Se reparte el total de $${base.toFixed(2)} de forma proporcional para que el cobro sea exacto.`,
+        );
+      }
+      // Reparto proporcional a la alícuota: Σ montos = base exacto.
+      perUnit = distributeExact(
+        base,
+        input.units.map((u) => ({ id: u.id, w: u.aliquot })),
       );
       break;
     }

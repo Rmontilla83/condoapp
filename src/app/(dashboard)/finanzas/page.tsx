@@ -82,9 +82,20 @@ export default async function FinanzasPage() {
   const currentBudget = currentBudgetData?.budget as OrgBudget | undefined;
   const currentBudgetItems = (currentBudgetData?.items as OrgBudgetItem[] | undefined) ?? [];
   const showBudgetCard = currentBudget?.status === "approved" && currentBudgetItems.length > 0;
+  // Fallback de labels desde el join, por si una categoría fue desactivada
+  // (no aparece en `categories`, que solo trae las activas) pero tiene gastos históricos.
+  const joinedCatById: Record<string, { label: string; icon: string | null }> = {};
+  for (const e of expensesAll) {
+    if (e.expense_categories) {
+      joinedCatById[e.expense_categories.id] = {
+        label: e.expense_categories.label,
+        icon: e.expense_categories.icon,
+      };
+    }
+  }
   const categoryEntries = Object.entries(byCategoryId)
     .map(([id, amount]) => {
-      const cat = categories.find((c) => c.id === id);
+      const cat = categories.find((c) => c.id === id) ?? joinedCatById[id];
       return {
         id,
         label: cat?.label ?? "Sin categoría",
@@ -237,6 +248,11 @@ export default async function FinanzasPage() {
                           month: "short",
                         }).toUpperCase()}
                       </p>
+                      {voided && expense.voided_reason && (
+                        <p className="mt-1 text-[12px] text-destructive/80 italic whitespace-normal">
+                          Motivo de anulación: {expense.voided_reason}
+                        </p>
+                      )}
                     </div>
                   </div>
                   <div className="flex items-center gap-3 shrink-0">

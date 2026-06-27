@@ -12,7 +12,7 @@ export type MaintenanceStatus =
 export type PaymentStatus = "pending" | "paid" | "overdue" | "cancelled";
 export type TransactionStatus = "pending" | "approved" | "rejected";
 
-export type FeeMode = "flat" | "by_aliquot" | "by_type" | "manual";
+export type FeeMode = "flat" | "divide_total" | "by_aliquot" | "by_type" | "manual";
 export type InvoiceKind = "monthly" | "extraordinary";
 export type BankAccountKind =
   | "transfer"
@@ -223,6 +223,11 @@ export interface CommonArea {
   rules: string | null;
   is_active: boolean;
   created_at: string;
+  // Políticas de uso (migration 026). NULL = sin límite.
+  max_reservations_per_week: number | null;
+  max_duration_hours: number | null;
+  min_advance_hours: number;
+  max_advance_days: number | null;
 }
 
 export type PassStatus = "active" | "used" | "expired" | "cancelled";

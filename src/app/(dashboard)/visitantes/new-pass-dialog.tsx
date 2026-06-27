@@ -78,7 +78,10 @@ export function NewPassDialog({ orgName }: { orgName: string }) {
 
   const qrUrl =
     result && typeof window !== "undefined"
-      ? buildVerifyUrl(result.qrCode, window.location.origin)
+      ? buildVerifyUrl(
+          result.qrCode,
+          process.env.NEXT_PUBLIC_PORTAL_URL ?? window.location.origin,
+        )
       : "";
 
   const whatsappUrl = result

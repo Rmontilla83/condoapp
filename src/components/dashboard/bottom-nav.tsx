@@ -34,7 +34,7 @@ const mainItems = [
   },
   {
     href: "/mantenimiento",
-    label: "Reportes",
+    label: "Mantenimiento",
     icon: (
       <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
         <path strokeLinecap="round" strokeLinejoin="round" d="M11.42 15.17l-5.384 3.174A1 1 0 014.5 17.447V6.553a1 1 0 011.536-.897l5.384 3.174m0 0l5.384-3.174A1 1 0 0118.34 6.553v10.894a1 1 0 01-1.536.897l-5.384-3.174" />
@@ -100,7 +100,7 @@ export function BottomNav({ isAdmin = false }: { isAdmin?: boolean }) {
               <Link
                 key={item.href}
                 href={item.href}
-                className={`flex flex-col items-center gap-1 px-3 py-1.5 text-[10px] font-medium transition-colors ${
+                className={`flex flex-col items-center gap-1 px-2 py-1.5 text-[10px] font-medium whitespace-nowrap transition-colors ${
                   isActive ? "text-ember" : "text-sidebar-foreground/60"
                 }`}
               >

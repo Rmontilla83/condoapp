@@ -14,8 +14,28 @@ const ROLE_LABELS: Record<string, string> = {
   tenant: "INQUILINO",
 };
 
-function getGreeting(): string {
-  const hour = new Date().getHours();
+function getGreeting(timezone?: string | null): string {
+  // Server Component: new Date().getHours() usaría la hora del servidor (UTC).
+  // Calculamos la hora en la zona del condominio (default Venezuela).
+  const tz = timezone || "America/Caracas";
+  let hour: number;
+  try {
+    hour = Number(
+      new Intl.DateTimeFormat("en-US", {
+        hour: "2-digit",
+        hourCycle: "h23",
+        timeZone: tz,
+      }).format(new Date()),
+    );
+  } catch {
+    hour = Number(
+      new Intl.DateTimeFormat("en-US", {
+        hour: "2-digit",
+        hourCycle: "h23",
+        timeZone: "America/Caracas",
+      }).format(new Date()),
+    );
+  }
   if (hour < 12) return "BUENOS DÍAS";
   if (hour < 19) return "BUENAS TARDES";
   return "BUENAS NOCHES";
@@ -58,7 +78,7 @@ export function IdentityStrip({ ctx }: { ctx: DashboardContext }) {
       )}
 
       <div>
-        <span className="font-meta-loose text-cyan">{getGreeting()}</span>
+        <span className="font-meta-loose text-cyan">{getGreeting(ctx.org?.timezone)}</span>
         <h1 className="mt-3 font-display text-[clamp(2rem,4.5vw,3.25rem)] leading-[1.02] tracking-[-0.035em] text-marine-deep">
           <em className="font-editorial">{firstName}</em>
         </h1>

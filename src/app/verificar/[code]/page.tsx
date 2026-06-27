@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { GrantAccessButton } from "./grant-access-button";
 import { AtryumLogo } from "@/components/brand/atryum-logo";
 import { computeDisplayStatus } from "@/app/(dashboard)/visitantes/pass-list-helpers";
@@ -21,7 +21,10 @@ export default async function VerificarPage({
   params: Promise<{ code: string }>;
 }) {
   const { code } = await params;
-  const supabase = await createClient();
+  // Verificación pública: el vigilante/visitante abre este link SIN sesión.
+  // Usamos el admin client (server-only) para leer el único pase que matchea
+  // el qr_code (UUID secreto e inadivinable). RLS bloquearía al usuario anónimo.
+  const supabase = createAdminClient();
 
   const { data: pass } = await supabase
     .from("access_passes")

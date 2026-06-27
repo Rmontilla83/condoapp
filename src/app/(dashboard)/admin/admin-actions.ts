@@ -33,9 +33,10 @@ export async function updateExchangeRate(rate: number) {
 
 /**
  * Genera cuotas (mensuales o derramas extraordinarias) según el modo de
- * cobranza configurado en la organización. Soporta 4 modos:
+ * cobranza configurado en la organización. Soporta 5 modos:
  * - flat: monto plano por unidad (formData: flat_amount o amount legacy)
- * - by_aliquot: base * aliquot/100 (formData: base_amount)
+ * - divide_total: reparte un costo total en partes iguales (formData: total_amount)
+ * - by_aliquot: reparte el total proporcional a la alícuota (formData: base_amount)
  * - by_type: lookup en fee_type_amounts según unit.type
  * - manual: amounts por unit_id (formData: manual_amounts JSON)
  *
@@ -96,6 +97,7 @@ export async function generateMonthlyInvoices(formData: FormData) {
 
   // Resolver inputs según modo
   let flat_amount: number | undefined;
+  let divide_total_amount: number | undefined;
   let base_amount: number | undefined;
   let manual_amounts: Record<string, number> | undefined;
   let type_amounts: Record<string, number> | undefined;
@@ -105,6 +107,12 @@ export async function generateMonthlyInvoices(formData: FormData) {
       (formData.get("flat_amount") as string) ?? (formData.get("amount") as string);
     flat_amount = parseFloat(raw ?? "");
     if (Number.isNaN(flat_amount)) return { error: "Monto plano requerido" };
+  } else if (mode === "divide_total") {
+    const raw = formData.get("total_amount") as string;
+    divide_total_amount = parseFloat(raw ?? "");
+    if (Number.isNaN(divide_total_amount) || divide_total_amount <= 0) {
+      return { error: "Costo total a repartir requerido (> 0)" };
+    }
   } else if (mode === "by_aliquot") {
     const raw = (formData.get("base_amount") as string) ?? String(org.fee_base_amount ?? "");
     base_amount = parseFloat(raw);
@@ -161,6 +169,7 @@ export async function generateMonthlyInvoices(formData: FormData) {
     units,
     exchange_rate,
     flat_amount,
+    divide_total_amount,
     base_amount,
     type_amounts,
     manual_amounts,

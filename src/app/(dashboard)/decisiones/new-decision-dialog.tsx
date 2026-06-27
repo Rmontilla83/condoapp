@@ -78,9 +78,21 @@ export function NewDecisionDialog() {
           setError(`Pregunta ${i + 1}: texto requerido`);
           return;
         }
-        const valid = q.options.map((o) => o.trim()).filter(Boolean);
-        if (valid.length < 2) {
+        const trimmed = q.options.map((o) => o.trim());
+        const emptyIdx = trimmed.findIndex((o) => !o);
+        if (emptyIdx !== -1) {
+          setError(
+            `Pregunta ${i + 1}: la opción ${emptyIdx + 1} está vacía. Complétala o quítala antes de continuar.`,
+          );
+          return;
+        }
+        if (trimmed.length < 2) {
           setError(`Pregunta ${i + 1}: necesita al menos 2 opciones`);
+          return;
+        }
+        const hasDupe = trimmed.some((o, idx) => trimmed.indexOf(o) !== idx);
+        if (hasDupe) {
+          setError(`Pregunta ${i + 1}: hay opciones repetidas.`);
           return;
         }
       }
