@@ -12,6 +12,9 @@ interface Area {
   id: string;
   name: string;
   capacity: number | null;
+  /** Las reglas que escribe el admin. Se guardaban y no se mostraban en ningún
+   *  lado: el formulario de Ajustes prometía algo que no ocurría. */
+  rules?: string | null;
   max_reservations_per_week: number | null;
   max_duration_hours: number | null;
   min_advance_hours: number;
@@ -119,6 +122,14 @@ export function ReserveDialog({ areas }: { areas: Area[] }) {
                       <li key={i}>· {h}</li>
                     ))}
                   </ul>
+                )}
+                {selectedArea?.rules && (
+                  <div className="mt-2 rounded-md border border-border bg-cloud/40 p-2.5">
+                    <p className="font-meta text-mute">REGLAS DE USO</p>
+                    <p className="mt-1 text-[12px] text-marine-deep whitespace-pre-line">
+                      {selectedArea.rules}
+                    </p>
+                  </div>
                 )}
               </div>
               <div className="space-y-2">

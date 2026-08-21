@@ -50,7 +50,7 @@ export default async function PerfilPage() {
         />
       </div>
 
-      <PasswordForm />
+      <PasswordForm email={profile.email} />
     </div>
   );
 }

@@ -47,14 +47,14 @@ export default async function ReservasPage() {
     supabase
       .from("common_areas")
       .select(
-        "id, name, description, capacity, max_reservations_per_week, max_duration_hours, min_advance_hours, max_advance_days",
+        "id, name, description, capacity, rules, max_reservations_per_week, max_duration_hours, min_advance_hours, max_advance_days",
       )
       .eq("organization_id", profile.organization_id)
       .eq("is_active", true)
       .order("name"),
     supabase
       .from("reservations")
-      .select("*, common_areas(name), profiles:reserved_by(full_name)")
+      .select("*, common_areas(name, is_active), profiles:reserved_by(full_name)")
       .eq("status", "confirmed")
       .gte("end_time", new Date().toISOString())
       .order("start_time", { ascending: true }),
@@ -138,9 +138,12 @@ export default async function ReservasPage() {
         ) : (
           <ul className="space-y-0" role="list">
             {myReservations.map((r) => {
-              const areaName = Array.isArray(r.common_areas)
-                ? r.common_areas[0]?.name
-                : r.common_areas?.name;
+              const areaRow = Array.isArray(r.common_areas) ? r.common_areas[0] : r.common_areas;
+              const areaName = areaRow?.name;
+              // El admin puede retirar un área con reservas futuras en pie. Sin
+              // esto el residente se presentaba a un salón que ya no se reserva
+              // y nadie se lo había dicho.
+              const areaRetirada = areaRow ? areaRow.is_active === false : false;
               return (
                 <li
                   key={r.id}
@@ -155,6 +158,11 @@ export default async function ReservasPage() {
                       <p className="mt-0.5 font-meta text-mute">
                         {formatDate(r.start_time)} · {formatTime(r.start_time)} – {formatTime(r.end_time)}
                       </p>
+                      {areaRetirada && (
+                        <p className="mt-1 font-meta text-ember-ink">
+                          ÁREA NO DISPONIBLE · CONSULTA CON LA ADMINISTRACIÓN
+                        </p>
+                      )}
                       {r.notes && (
                         <p className="mt-0.5 text-[12.5px] text-mute truncate">{r.notes}</p>
                       )}

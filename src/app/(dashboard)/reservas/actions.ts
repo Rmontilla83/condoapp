@@ -43,9 +43,14 @@ export async function createReservation(formData: FormData) {
     )
     .eq("id", areaId)
     .eq("organization_id", profile.organization_id)
-    .single();
+    // Un área retirada desaparece del desplegable, pero sin este filtro la
+    // acción seguía aceptándola: bastaba una pestaña vieja abierta.
+    .eq("is_active", true)
+    .maybeSingle();
 
-  if (!area) return { error: "Amenidad no encontrada." };
+  if (!area) {
+    return { error: "Esa área ya no está disponible para reservar." };
+  }
 
   const startDt = new Date(startTime);
   const endDt = new Date(endTime);

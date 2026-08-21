@@ -302,27 +302,28 @@ export async function createCommonArea(formData: FormData): Promise<ActionResult
 
   const supabase = createAdminClient();
 
-  // Cota defensiva: ningún condominio tiene 40 amenidades, y sin límite un
-  // script podría llenar la tabla.
-  const { count } = await supabase
-    .from("common_areas")
-    .select("id", { count: "exact", head: true })
-    .eq("organization_id", profile!.organization_id!);
-
-  if ((count ?? 0) >= MAX_COMMON_AREAS) {
-    return { error: `No puedes tener más de ${MAX_COMMON_AREAS} áreas comunes.` };
-  }
-
   // Sin UNIQUE en la tabla: dos "Salón de fiestas" en el mismo condominio son
   // indistinguibles para el residente al reservar.
-  const { data: existente } = await supabase
+  //
+  // La comparación se hace en memoria y NO con .ilike(): en LIKE, `%` y `_` son
+  // comodines, así que un área llamada "Piscina 100%" habría matcheado contra
+  // cualquier nombre. Y .maybeSingle() revienta si ya existen dos duplicadas de
+  // antes, que es justo el estado que esto viene a evitar.
+  const { data: existentes } = await supabase
     .from("common_areas")
-    .select("id")
-    .eq("organization_id", profile!.organization_id!)
-    .ilike("name", name)
-    .maybeSingle();
+    .select("id, name")
+    .eq("organization_id", profile!.organization_id!);
 
-  if (existente) return { error: `Ya existe un área que se llama "${name}".` };
+  const normalizar = (t: string) => t.trim().toLocaleLowerCase("es");
+  if ((existentes ?? []).some((a) => normalizar(a.name as string) === normalizar(name))) {
+    return { error: `Ya existe un área que se llama "${name}".` };
+  }
+
+  // Cota defensiva: ningún condominio tiene 40 amenidades, y sin límite un
+  // script podría llenar la tabla.
+  if ((existentes ?? []).length >= MAX_COMMON_AREAS) {
+    return { error: `No puedes tener más de ${MAX_COMMON_AREAS} áreas comunes.` };
+  }
 
   const { error } = await supabase.from("common_areas").insert({
     organization_id: profile!.organization_id!,
@@ -353,8 +354,20 @@ export async function updateCommonArea(formData: FormData): Promise<ActionResult
 
   const capacity = toNullableInt(formData.get("capacity"));
   if (capacity === undefined) return { error: "Capacidad inválida." };
+  if (capacity !== null && capacity < 0) return { error: "La capacidad no puede ser negativa." };
 
   const supabase = createAdminClient();
+
+  // La guarda de nombre único también al renombrar: si no, se evadía editando.
+  const { data: hermanas } = await supabase
+    .from("common_areas")
+    .select("id, name")
+    .eq("organization_id", profile!.organization_id!);
+
+  const norm = (t: string) => t.trim().toLocaleLowerCase("es");
+  if ((hermanas ?? []).some((a) => a.id !== id && norm(a.name as string) === norm(name))) {
+    return { error: `Ya existe otra área que se llama "${name}".` };
+  }
 
   const { data, error } = await supabase
     .from("common_areas")
@@ -386,12 +399,42 @@ export async function updateCommonArea(formData: FormData): Promise<ActionResult
 export async function setCommonAreaActive(
   areaId: string,
   active: boolean,
-): Promise<ActionResult> {
+  confirmado = false,
+): Promise<ActionResult | { needsConfirm: true; futureReservations: number }> {
   const profile = await getCurrentProfile();
   const guard = requireAdmin(profile);
   if (guard) return guard;
 
   const supabase = createAdminClient();
+
+  // Retirar un área con reservas futuras ya confirmadas deja a esos vecinos con
+  // una reserva de un espacio que dejó de existir para el resto. No se bloquea
+  // —el admin puede tener un buen motivo, como una reforma— pero tiene que
+  // saberlo antes y avisarles.
+  if (!active && !confirmado) {
+    // Resolver el área DENTRO de la organización antes de contar: con el admin
+    // client, contar por areaId a secas revelaría cuántas reservas futuras
+    // tiene un área de otro condominio.
+    const { data: propia } = await supabase
+      .from("common_areas")
+      .select("id")
+      .eq("id", areaId)
+      .eq("organization_id", profile!.organization_id!)
+      .maybeSingle();
+
+    if (!propia) return { error: "Área no encontrada en este condominio." };
+
+    const { count } = await supabase
+      .from("reservations")
+      .select("id", { count: "exact", head: true })
+      .eq("common_area_id", areaId)
+      .eq("status", "confirmed")
+      .gte("end_time", new Date().toISOString());
+
+    if ((count ?? 0) > 0) {
+      return { needsConfirm: true, futureReservations: count ?? 0 };
+    }
+  }
 
   const { data, error } = await supabase
     .from("common_areas")

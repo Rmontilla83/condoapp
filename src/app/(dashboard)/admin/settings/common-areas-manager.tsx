@@ -55,7 +55,29 @@ export function CommonAreasManager({ areas }: { areas: CommonArea[] }) {
     }
     setLoading(true);
     setError("");
-    const res = await setCommonAreaActive(id, activar);
+
+    let res = await setCommonAreaActive(id, activar);
+
+    // El servidor avisa si hay reservas futuras ya confirmadas: esos vecinos
+    // se quedarían con una reserva de un espacio que dejó de existir.
+    if ("needsConfirm" in res) {
+      const n = res.futureReservations;
+      const seguir = window.confirm(
+        [
+          `"${nombre}" tiene ${n} reserva${n !== 1 ? "s" : ""} futura${n !== 1 ? "s" : ""} ya confirmada${n !== 1 ? "s" : ""}.`,
+          "",
+          "Si la retiras, esas reservas quedan en pie pero nadie más puede reservar el espacio. Avísale a esos vecinos.",
+          "",
+          "¿Retirarla igual?",
+        ].join(String.fromCharCode(10)),
+      );
+      if (!seguir) {
+        setLoading(false);
+        return;
+      }
+      res = await setCommonAreaActive(id, activar, true);
+    }
+
     setLoading(false);
     if ("error" in res) {
       setError(res.error);
