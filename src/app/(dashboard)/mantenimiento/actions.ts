@@ -5,6 +5,10 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { getCurrentProfile, getUserUnitIds } from "@/lib/queries";
 import { isAdminRole } from "@/lib/permissions";
 import { revalidatePath } from "next/cache";
+import { enviarEmail } from "@/lib/email/send";
+import { mantenimientoActualizado } from "@/lib/email/templates";
+import { emailDePerfil, nombreDeOrg } from "@/lib/email/recipients";
+import { MAINTENANCE_STATUS_LABELS } from "@/lib/labels";
 
 export type CreateMaintenanceResult =
   | { success: true; requestId: string; photosUploaded: number; photosFailed: number }
@@ -139,19 +143,47 @@ export async function updateRequestStatus(
     if (assignedTo !== undefined) updates.assigned_to = assignedTo || null;
     if (status === "resolved") updates.resolved_at = new Date().toISOString();
 
-    const { error } = await supabase
+    // .select() para saber a quién avisarle: sin esto el residente reportaba
+    // una fuga y no volvía a saber nada nunca más.
+    const { data: actualizado, error } = await supabase
       .from("maintenance_requests")
       .update(updates)
       .eq("id", requestId)
-      .eq("organization_id", profile.organization_id);
+      .eq("organization_id", profile.organization_id)
+      .select("id, title, reported_by")
+      .maybeSingle();
 
     if (error) return { error: error.message };
+    if (!actualizado) return { error: "Reporte no encontrado" };
 
     await supabase.from("maintenance_status_log").insert({
       request_id: requestId,
       new_status: status,
       changed_by: profile.id,
     });
+
+    // No se le avisa a quien hizo el propio cambio.
+    if (actualizado.reported_by && actualizado.reported_by !== profile.id) {
+      try {
+        const [para, condominio] = await Promise.all([
+          emailDePerfil(actualizado.reported_by as string),
+          nombreDeOrg(profile.organization_id),
+        ]);
+        const plantilla = mantenimientoActualizado({
+          condominio,
+          titulo: (actualizado.title as string) ?? "tu reporte",
+          estado: MAINTENANCE_STATUS_LABELS[status] ?? status,
+        });
+        await enviarEmail({
+          para,
+          asunto: plantilla.asunto,
+          html: plantilla.html,
+          evento: "mantenimiento_actualizado",
+        });
+      } catch (e) {
+        console.error("[email] mantenimiento falló:", e instanceof Error ? e.message : e);
+      }
+    }
 
     revalidatePath("/mantenimiento");
     revalidatePath("/admin");

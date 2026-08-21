@@ -32,6 +32,14 @@ export const MAINTENANCE_CATEGORY_LABELS: Record<string, string> = {
   other: "Otro",
 };
 
+export const MAINTENANCE_STATUS_LABELS: Record<string, string> = {
+  new: "Nuevo",
+  in_review: "En revisión",
+  in_progress: "En curso",
+  resolved: "Resuelto",
+  cancelled: "Cancelado",
+};
+
 export const PAYMENT_METHOD_LABELS: Record<string, string> = {
   transfer: "Transferencia",
   mobile_payment: "Pago móvil",

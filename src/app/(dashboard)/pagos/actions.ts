@@ -9,6 +9,9 @@ import {
   MIN_REASON_LENGTH,
   normalizeRejectionReason,
 } from "@/lib/rejection-reasons";
+import { enviarEmail } from "@/lib/email/send";
+import { pagoAprobado, pagoRechazado } from "@/lib/email/templates";
+import { emailsDeUnidad, nombreDeOrg } from "@/lib/email/recipients";
 
 /**
  * Sube 1 comprobante que cubre N invoices (n>=1). Crea N transactions
@@ -142,7 +145,9 @@ export async function approvePayment(transactionId: string) {
   // Get transaction — verify it belongs to this org via invoice
   const { data: tx } = await supabase
     .from("transactions")
-    .select("invoice_id, status, invoices!inner(organization_id)")
+    .select(
+      "invoice_id, status, amount, currency, invoices!inner(organization_id, unit_id, description)",
+    )
     .eq("id", transactionId)
     .eq("invoices.organization_id", profile.organization_id)
     .single();
@@ -177,10 +182,62 @@ export async function approvePayment(transactionId: string) {
 
   if (invError) return { error: invError.message };
 
+  // El propietario subía el comprobante y no se enteraba nunca de nada. El
+  // correo va después de escribir: si falla, el pago igual quedó aprobado.
+  await notificarPago(tx, profile.organization_id, "aprobado");
+
   revalidatePath("/pagos");
   revalidatePath("/admin");
   revalidatePath("/dashboard");
   return { success: true };
+}
+
+type TxParaEmail = {
+  amount?: unknown;
+  currency?: unknown;
+  invoices?: unknown;
+};
+
+/**
+ * Avisa al residente. Nunca lanza: un fallo de correo no puede deshacer una
+ * aprobación ni un rechazo que ya se escribieron en la base.
+ */
+async function notificarPago(
+  tx: TxParaEmail,
+  orgId: string,
+  tipo: "aprobado" | "rechazado",
+  motivo?: string,
+) {
+  try {
+    const inv = (Array.isArray(tx.invoices) ? tx.invoices[0] : tx.invoices) as
+      | { unit_id?: string; description?: string }
+      | null
+      | undefined;
+    if (!inv?.unit_id) return;
+
+    const [para, condominio] = await Promise.all([
+      emailsDeUnidad(inv.unit_id),
+      nombreDeOrg(orgId),
+    ]);
+    if (para.length === 0) return;
+
+    const monto = `${(tx.currency as string) ?? "USD"} ${Number(tx.amount ?? 0).toFixed(2)}`;
+    const concepto = inv.description ?? "tu cuota";
+
+    const plantilla =
+      tipo === "aprobado"
+        ? pagoAprobado({ condominio, concepto, monto, unidad: "tu unidad" })
+        : pagoRechazado({ condominio, concepto, monto, motivo: motivo ?? "Sin motivo" });
+
+    await enviarEmail({
+      para,
+      asunto: plantilla.asunto,
+      html: plantilla.html,
+      evento: `pago_${tipo}`,
+    });
+  } catch (e) {
+    console.error("[email] notificarPago falló:", e instanceof Error ? e.message : e);
+  }
 }
 
 export async function rejectPayment(transactionId: string, reason: string) {
@@ -201,7 +258,9 @@ export async function rejectPayment(transactionId: string, reason: string) {
 
   const { data: check } = await supabase
     .from("transactions")
-    .select("id, status, invoices!inner(organization_id)")
+    .select(
+      "id, status, amount, currency, invoices!inner(organization_id, unit_id, description)",
+    )
     .eq("id", transactionId)
     .eq("invoices.organization_id", profile.organization_id)
     .single();
@@ -222,6 +281,8 @@ export async function rejectPayment(transactionId: string, reason: string) {
     .eq("id", transactionId);
 
   if (error) return { error: error.message };
+
+  await notificarPago(check, profile.organization_id, "rechazado", motivo);
 
   revalidatePath("/pagos");
   revalidatePath("/admin");

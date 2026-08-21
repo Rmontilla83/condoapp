@@ -4,6 +4,9 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { getCurrentProfile } from "@/lib/queries";
 import { isAdminRole } from "@/lib/permissions";
 import { revalidatePath } from "next/cache";
+import { enviarEmail } from "@/lib/email/send";
+import { comunicadoUrgente } from "@/lib/email/templates";
+import { emailsDeOrg, nombreDeOrg } from "@/lib/email/recipients";
 
 export async function createAnnouncement(formData: FormData) {
   const profile = await getCurrentProfile();
@@ -31,6 +34,26 @@ export async function createAnnouncement(formData: FormData) {
   });
 
   if (error) return { error: error.message };
+
+  // Solo los urgentes salen por correo. Si mandáramos todos, la gente filtra a
+  // spam los correos de Atryum y se pierde también el que sí importaba.
+  if (priority === "urgent") {
+    try {
+      const [para, condominio] = await Promise.all([
+        emailsDeOrg(profile.organization_id),
+        nombreDeOrg(profile.organization_id),
+      ]);
+      const plantilla = comunicadoUrgente({ condominio, titulo: title, contenido: content });
+      await enviarEmail({
+        para,
+        asunto: plantilla.asunto,
+        html: plantilla.html,
+        evento: "comunicado_urgente",
+      });
+    } catch (e) {
+      console.error("[email] comunicado urgente falló:", e instanceof Error ? e.message : e);
+    }
+  }
 
   revalidatePath("/comunicados");
   revalidatePath("/dashboard");

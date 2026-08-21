@@ -4,6 +4,9 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { getCurrentProfile, getCurrentRate } from "@/lib/queries";
 import { isAdminRole, requireAdmin } from "@/lib/permissions";
 import { revalidatePath } from "next/cache";
+import { enviarEmail } from "@/lib/email/send";
+import { cuotaEmitida } from "@/lib/email/templates";
+import { emailsDeUnidad, nombreDeOrg } from "@/lib/email/recipients";
 import { computeInvoiceAmounts } from "@/lib/cobranza/compute-invoices";
 import type { ComputeUnit } from "@/lib/cobranza/compute-invoices";
 import type { FeeMode, InvoiceKind, Organization } from "@/types/database";
@@ -203,6 +206,42 @@ export async function generateMonthlyInvoices(formData: FormData) {
       };
     }
     return { error: error.message };
+  }
+
+  // Aviso de cuota nueva. Es el evento de MÁS volumen (una por unidad), así que
+  // va con cuidado:
+  //  - las cuotas en $0 no generan correo: no hay nada que pagar y avisarlo
+  //    solo entrena a la gente a ignorar los correos de Atryum
+  //  - un correo por unidad, no por persona repetida
+  //  - si el envío falla, las cuotas ya están emitidas igual
+  try {
+    const condominio = await nombreDeOrg(profile!.organization_id!);
+    const conMonto = result.invoices.filter((inv) => Number(inv.amount) > 0);
+
+    const vencimiento = new Date(`${dueDate}T12:00:00Z`).toLocaleDateString("es", {
+      day: "numeric",
+      month: "long",
+      timeZone: "UTC",
+    });
+
+    for (const inv of conMonto) {
+      const para = await emailsDeUnidad(inv.unit_id);
+      if (para.length === 0) continue;
+      const plantilla = cuotaEmitida({
+        condominio,
+        concepto: inv.description,
+        monto: `${inv.currency} ${Number(inv.amount).toFixed(2)}`,
+        vencimiento,
+      });
+      await enviarEmail({
+        para,
+        asunto: plantilla.asunto,
+        html: plantilla.html,
+        evento: "cuota_emitida",
+      });
+    }
+  } catch (e) {
+    console.error("[email] cuotas emitidas falló:", e instanceof Error ? e.message : e);
   }
 
   revalidatePath("/pagos");
