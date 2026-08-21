@@ -282,6 +282,7 @@ export default async function PagosPage() {
                           reference: pago.reference,
                           receipt_url: urlFirmadaPorTx.get(pago.transaction_id) ?? null,
                           amount_bs: pago.amount_bs,
+                          exchange_rate: pago.exchange_rate,
                         }
                       : undefined
                   }

@@ -11,7 +11,7 @@ import {
 } from "@/lib/rejection-reasons";
 import { enviarEmail } from "@/lib/email/send";
 import { pagoAprobado, pagoRechazado } from "@/lib/email/templates";
-import { emailsDeUnidad, nombreDeOrg } from "@/lib/email/recipients";
+import { emailsDeUnidad, emailDePerfil, nombreDeOrg } from "@/lib/email/recipients";
 
 /**
  * Sube 1 comprobante que cubre N invoices (n>=1). Crea N transactions
@@ -105,7 +105,6 @@ export async function submitPaymentForMultipleInvoices(formData: FormData) {
   // meses después nadie puede reconstruir cuánto se transfirió realmente.
   const rateData = await getCurrentRate(profile.organization_id as string);
   const tasa = Number(rateData?.rate) || 0;
-  const pagadoEnBs = method === "transfer" || method === "mobile_payment";
 
   const txInserts = invoices.map((inv) => ({
     invoice_id: inv.id as string,
@@ -117,8 +116,12 @@ export async function submitPaymentForMultipleInvoices(formData: FormData) {
     paid_by: profile.id,
     status: "pending" as const,
     payment_group_id: groupId,
+    // `amount_bs` y `exchange_rate` son la EQUIVALENCIA del día, no una
+    // afirmación de en qué moneda pagó: el diálogo no lo pregunta y adivinarlo
+    // por el método (transferencia = bolívares) sería falso en un condominio de
+    // Colombia o México. `currency_paid` queda en la moneda de la cuota.
     amount_bs: tasa > 0 ? Math.round(Number(inv.amount) * tasa * 100) / 100 : null,
-    currency_paid: pagadoEnBs && tasa > 0 ? "VES" : (inv.currency as string),
+    currency_paid: inv.currency as string,
     exchange_rate: tasa > 0 ? tasa : null,
   }));
 
@@ -146,7 +149,7 @@ export async function approvePayment(transactionId: string) {
   const { data: tx } = await supabase
     .from("transactions")
     .select(
-      "invoice_id, status, amount, currency, invoices!inner(organization_id, unit_id, description)",
+      "invoice_id, status, amount, currency, paid_by, invoices!inner(organization_id, unit_id, description)",
     )
     .eq("id", transactionId)
     .eq("invoices.organization_id", profile.organization_id)
@@ -185,6 +188,10 @@ export async function approvePayment(transactionId: string) {
   // El propietario subía el comprobante y no se enteraba nunca de nada. El
   // correo va después de escribir: si falla, el pago igual quedó aprobado.
   await notificarPago(tx, profile.organization_id, "aprobado");
+  // NOTA: si el comprobante cubría varias cuotas (payment_group_id), el admin
+  // las aprueba una por una y cada aprobación es un correo. Agrupar la revisión
+  // por grupo es el siguiente paso; mientras tanto el asunto lleva el concepto
+  // de cada cuota, así que al menos no son idénticos.
 
   revalidatePath("/pagos");
   revalidatePath("/admin");
@@ -195,6 +202,7 @@ export async function approvePayment(transactionId: string) {
 type TxParaEmail = {
   amount?: unknown;
   currency?: unknown;
+  paid_by?: unknown;
   invoices?: unknown;
 };
 
@@ -215,10 +223,17 @@ async function notificarPago(
       | undefined;
     if (!inv?.unit_id) return;
 
-    const [para, condominio] = await Promise.all([
+    // Le escribimos a QUIEN subió el comprobante, no a toda la unidad. Un
+    // rechazo con su motivo es una conversación entre la administración y esa
+    // persona; mandárselo también al propietario cuando lo subió el inquilino
+    // (o al revés) convierte una corrección en una denuncia ante el otro.
+    // Si por alguna razón no sabemos quién pagó, cae a los miembros activos.
+    const [porPagador, deLaUnidad, condominio] = await Promise.all([
+      emailDePerfil(tx.paid_by as string | null),
       emailsDeUnidad(inv.unit_id),
       nombreDeOrg(orgId),
     ]);
+    const para = porPagador.length > 0 ? porPagador : deLaUnidad;
     if (para.length === 0) return;
 
     const monto = `${(tx.currency as string) ?? "USD"} ${Number(tx.amount ?? 0).toFixed(2)}`;
@@ -259,7 +274,7 @@ export async function rejectPayment(transactionId: string, reason: string) {
   const { data: check } = await supabase
     .from("transactions")
     .select(
-      "id, status, amount, currency, invoices!inner(organization_id, unit_id, description)",
+      "id, status, amount, currency, paid_by, invoices!inner(organization_id, unit_id, description)",
     )
     .eq("id", transactionId)
     .eq("invoices.organization_id", profile.organization_id)

@@ -52,7 +52,7 @@ export function NewAnnouncementDialog() {
             <select id="priority" name="priority" className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" defaultValue="normal">
               <option value="normal">Normal</option>
               <option value="important">Importante</option>
-              <option value="urgent">Urgente</option>
+              <option value="urgent">Urgente · se envía por correo a todos los residentes</option>
             </select>
           </div>
           {error && <p className="text-sm text-destructive">{error}</p>}

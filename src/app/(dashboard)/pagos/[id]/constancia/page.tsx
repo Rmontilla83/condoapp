@@ -1,5 +1,5 @@
 import { notFound, redirect } from "next/navigation";
-import { getCurrentProfile, getUserUnitIds, getCurrentRate } from "@/lib/queries";
+import { getCurrentProfile, getCurrentRate } from "@/lib/queries";
 import { createClient } from "@/lib/supabase/server";
 import { isAdminRole } from "@/lib/permissions";
 import { PAYMENT_METHOD_LABELS } from "@/lib/labels";
@@ -39,13 +39,6 @@ export default async function ConstanciaPage({
 
   if (!invoice) notFound();
 
-  // Solo el propietario/inquilino de la unidad, o un admin del condominio.
-  const misUnidades = await getUserUnitIds(profile.id);
-  const esMia = misUnidades.includes(invoice.unit_id as string);
-  const esAdminDelCondo =
-    isAdminRole(profile) && invoice.organization_id === profile.organization_id;
-  if (!esMia && !esAdminDelCondo) notFound();
-
   if (invoice.status !== "paid") {
     redirect("/pagos");
   }
@@ -54,7 +47,7 @@ export default async function ConstanciaPage({
     supabase
       .from("transactions")
       .select(
-        "id, amount, amount_bs, currency_paid, exchange_rate, payment_method, reference, paid_at, reviewed_at",
+        "id, amount, amount_bs, currency_paid, exchange_rate, payment_method, reference, paid_at, reviewed_at, paid_by, profiles:paid_by(full_name)",
       )
       .eq("invoice_id", id)
       .eq("status", "approved")
@@ -71,6 +64,56 @@ export default async function ConstanciaPage({
 
   const pago = pagoRes.data;
   const org = orgRes.data;
+
+  // Autorización.
+  //
+  // Se incluye a QUIEN PAGÓ aunque ya no sea miembro activo de la unidad: el
+  // caso de uso que motivó esta pieza es justamente el propietario que VENDIÓ
+  // el apartamento y necesita demostrar que estaba solvente. Exigir membresía
+  // activa dejaba afuera precisamente a quien más la necesita.
+  // Membresía CON permiso: un inquilino al que el propietario le ocultó las
+  // finanzas (can_see_fee=false) no puede sacar el comprobante de pago del
+  // propietario, igual que no ve las cuotas en /pagos.
+  const { data: miMembresia } = await supabase
+    .from("unit_members")
+    .select("role, permissions")
+    .eq("unit_id", invoice.unit_id as string)
+    .eq("profile_id", profile.id)
+    .eq("active", true)
+    .maybeSingle();
+
+  const esMia =
+    Boolean(miMembresia) &&
+    (miMembresia!.role === "owner" ||
+      (miMembresia!.permissions as { can_see_fee?: boolean } | null)?.can_see_fee !== false);
+
+  const laPagueYo = pago?.paid_by === profile.id;
+  const esAdminDelCondo =
+    isAdminRole(profile) && invoice.organization_id === profile.organization_id;
+  if (!esMia && !laPagueYo && !esAdminDelCondo) notFound();
+
+  // Un documento probatorio no puede degradar en silencio a guiones: si no hay
+  // transacción aprobada, no hay nada que certificar.
+  if (!pago) {
+    return (
+      <div className="mx-auto max-w-2xl">
+        <a href="/pagos" className="font-meta text-cyan-ink hover:text-marine-deep transition-colors">
+          ← PAGOS
+        </a>
+        <div className="mt-6 rounded-2xl border border-ember/40 bg-ember/5 p-8">
+          <p className="font-meta text-ember-ink">SIN REGISTRO DE PAGO VERIFICABLE</p>
+          <p className="mt-3 text-[15px] text-marine-deep">
+            Esta cuota figura como pagada, pero no tiene un comprobante aprobado en el sistema, así
+            que no podemos emitir una constancia.
+          </p>
+          <p className="mt-2 text-[14px] text-mute">
+            Suele pasar con cuotas cargadas manualmente por la administración. Pídeles que registren
+            el comprobante para poder emitirla.
+          </p>
+        </div>
+      </div>
+    );
+  }
   const unidad = Array.isArray(invoice.units) ? invoice.units[0] : invoice.units;
 
   const zona = org?.timezone ?? "America/Caracas";
@@ -84,16 +127,29 @@ export default async function ConstanciaPage({
         })
       : "—";
 
-  // Si el pago no guardó su tasa (pagos anteriores a la migration 036), se
-  // muestra la vigente y se dice explícitamente que es referencial.
-  const tasaDelPago = pago?.exchange_rate ? Number(pago.exchange_rate) : null;
-  const tasaReferencial = tasaDelPago === null ? Number(rateData?.rate) || 0 : 0;
-  const montoBs =
-    pago?.amount_bs != null
-      ? Number(pago.amount_bs)
-      : tasaReferencial > 0
-        ? Number(invoice.amount) * tasaReferencial
-        : 0;
+  // El monto en bolívares y la tasa se derivan del MISMO hecho, o de ninguno.
+  //
+  // Antes el monto se ramificaba por `amount_bs` y la leyenda por
+  // `exchange_rate`, que son columnas independientes: con una presente y la
+  // otra NULL —combinación que existe en los datos sembrados— se imprimía un
+  // monto guardado junto a la tasa de hoy, y los dos números no reconciliaban.
+  const congelado =
+    pago.exchange_rate != null && pago.amount_bs != null
+      ? { tasa: Number(pago.exchange_rate), monto: Number(pago.amount_bs) }
+      : null;
+
+  const tasaHoy = Number(rateData?.rate) || 0;
+  const equivalencia = congelado
+    ? { ...congelado, referencial: false }
+    : tasaHoy > 0
+      ? { tasa: tasaHoy, monto: Number(invoice.amount) * tasaHoy, referencial: true }
+      : null;
+
+  const pagador =
+    (Array.isArray(pago.profiles) ? pago.profiles[0] : pago.profiles) as
+      | { full_name?: string }
+      | null
+      | undefined;
 
   return (
     <div className="mx-auto max-w-2xl">
@@ -117,7 +173,7 @@ export default async function ConstanciaPage({
             N.º
             <br />
             <span className="font-mono text-marine-deep">
-              {(pago?.id ?? invoice.id).slice(0, 8).toUpperCase()}
+              {pago.id.slice(0, 8).toUpperCase()}
             </span>
           </p>
         </div>
@@ -129,14 +185,15 @@ export default async function ConstanciaPage({
           </Fila>
           <Fila label="CONCEPTO">{invoice.description as string}</Fila>
           <Fila label="VENCIMIENTO">{fmtFecha(`${invoice.due_date}T12:00:00Z`)}</Fila>
-          <Fila label="FECHA DEL PAGO">{fmtFecha(pago?.paid_at)}</Fila>
-          {pago?.reviewed_at && <Fila label="APROBADO EL">{fmtFecha(pago.reviewed_at)}</Fila>}
+          <Fila label="FECHA DEL PAGO">{fmtFecha(pago.paid_at)}</Fila>
+          {pago.reviewed_at && <Fila label="APROBADO EL">{fmtFecha(pago.reviewed_at)}</Fila>}
           <Fila label="MÉTODO">
-            {PAYMENT_METHOD_LABELS[pago?.payment_method ?? ""] ?? pago?.payment_method ?? "—"}
+            {PAYMENT_METHOD_LABELS[pago.payment_method] ?? pago.payment_method}
           </Fila>
           <Fila label="REFERENCIA">
-            <span className="font-mono">{pago?.reference || "—"}</span>
+            <span className="font-mono">{pago.reference || "—"}</span>
           </Fila>
+          {pagador?.full_name && <Fila label="PAGADO POR">{pagador.full_name}</Fila>}
         </dl>
 
         <div className="py-6 space-y-2">
@@ -144,12 +201,13 @@ export default async function ConstanciaPage({
           <p className="font-display text-[38px] leading-none tracking-[-0.03em] text-marine-deep tabular-nums">
             {invoice.currency as string} {Number(invoice.amount).toFixed(2)}
           </p>
-          {montoBs > 0 && (
+          {equivalencia && (
             <p className="font-mono text-[14px] text-mute tabular-nums">
-              Bs {montoBs.toFixed(2)}
-              {tasaDelPago
-                ? ` · tasa ${tasaDelPago.toFixed(2)} del día del pago`
-                : ` · tasa ${tasaReferencial.toFixed(2)} de hoy (referencial: este pago se registró antes de que la app guardara la tasa)`}
+              Equivalente a Bs {equivalencia.monto.toFixed(2)} · tasa{" "}
+              {equivalencia.tasa.toFixed(2)}
+              {equivalencia.referencial
+                ? " de hoy (referencial: este pago se registró antes de que la app guardara la tasa)"
+                : " del día del pago"}
             </p>
           )}
         </div>

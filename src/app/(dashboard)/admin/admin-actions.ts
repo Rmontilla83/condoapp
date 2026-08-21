@@ -4,9 +4,9 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { getCurrentProfile, getCurrentRate } from "@/lib/queries";
 import { isAdminRole, requireAdmin } from "@/lib/permissions";
 import { revalidatePath } from "next/cache";
-import { enviarEmail } from "@/lib/email/send";
+import { enviarLote } from "@/lib/email/send";
 import { cuotaEmitida } from "@/lib/email/templates";
-import { emailsDeUnidad, nombreDeOrg } from "@/lib/email/recipients";
+import { emailsPorUnidad, nombreDeOrg } from "@/lib/email/recipients";
 import { computeInvoiceAmounts } from "@/lib/cobranza/compute-invoices";
 import type { ComputeUnit } from "@/lib/cobranza/compute-invoices";
 import type { FeeMode, InvoiceKind, Organization } from "@/types/database";
@@ -224,22 +224,31 @@ export async function generateMonthlyInvoices(formData: FormData) {
       timeZone: "UTC",
     });
 
-    for (const inv of conMonto) {
-      const para = await emailsDeUnidad(inv.unit_id);
-      if (para.length === 0) continue;
+    // Una consulta para todas las unidades y UN lote de envío, en vez de dos
+    // viajes por unidad: con 40 unidades eran 80 awaits secuenciales dentro de
+    // una server action, de sobra para agotar el tiempo de la función.
+    const porUnidad = await emailsPorUnidad(conMonto.map((inv) => inv.unit_id));
+
+    const mensajes = conMonto.flatMap((inv) => {
       const plantilla = cuotaEmitida({
         condominio,
         concepto: inv.description,
         monto: `${inv.currency} ${Number(inv.amount).toFixed(2)}`,
         vencimiento,
+        // La tasa que se congeló al emitir la cuota, no la de hoy.
+        equivalenteBs:
+          inv.amount_bs && Number(inv.amount_bs) > 0
+            ? `Bs ${Number(inv.amount_bs).toFixed(2)}`
+            : null,
       });
-      await enviarEmail({
+      return (porUnidad.get(inv.unit_id) ?? []).map((para) => ({
         para,
         asunto: plantilla.asunto,
         html: plantilla.html,
-        evento: "cuota_emitida",
-      });
-    }
+      }));
+    });
+
+    await enviarLote(mensajes, "cuota_emitida");
   } catch (e) {
     console.error("[email] cuotas emitidas falló:", e instanceof Error ? e.message : e);
   }

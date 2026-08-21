@@ -51,8 +51,10 @@ export default async function DashboardLayout({
     <div className="flex h-screen bg-background">
       <Sidebar isAdmin={isAdmin} />
       <div className="flex flex-1 flex-col overflow-hidden">
-        {/* Cintillo live: hora Venezuela + tasa BCV actualizada */}
-        <div className="bg-marine-deep text-frost border-b border-frost/5">
+        {/* Cintillo live: hora Venezuela + tasa BCV actualizada.
+            data-print-hide: la constancia de pago se imprime, y la tasa de HOY
+            arriba de un comprobante de hace tres meses es engañosa. */}
+        <div data-print-hide className="bg-marine-deep text-frost border-b border-frost/5">
           <div className="px-4 md:px-6 py-1.5 flex items-center justify-between">
             <LiveStatusBar initialRate={initialRate} initialDate={initialDate} />
             <span className="font-meta text-frost/30 hidden sm:inline">ATRYUM</span>
@@ -65,6 +67,7 @@ export default async function DashboardLayout({
         />
         {isSuperAdmin && viewingAs && (
           <div
+            data-print-hide
             className={`px-5 py-2 text-center font-meta ${
               viewingAs === "admin" ? "bg-ember text-marine-deep" : "bg-cyan text-frost"
             }`}

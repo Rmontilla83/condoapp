@@ -155,12 +155,12 @@ export function pagoRechazado(p: {
     html: layout({
       condominio: p.condominio,
       eyebrow: "Comprobante rechazado",
-      titulo: "No pudimos confirmar tu pago",
+      titulo: "Necesitamos que revises algo de tu pago",
       parrafos: [
-        `La administración revisó el comprobante que subiste para ${p.concepto} y no pudo darlo por válido.`,
-        "La cuota vuelve a quedar pendiente. Puedes corregir lo que indica el motivo y volver a registrarla desde la app.",
+        `La administración revisó el comprobante que subiste para ${p.concepto} y no pudo darlo por confirmado todavía.`,
+        "No es nada grave: la cuota vuelve a quedar pendiente y puedes volver a registrarla desde la app corrigiendo lo que aparece abajo.",
       ],
-      destacado: { etiqueta: "Motivo", valor: p.motivo, tono: "alerta" },
+      destacado: { etiqueta: "Qué hay que corregir", valor: p.motivo, tono: "alerta" },
       cta: { texto: "Volver a registrar el pago", href: `${portalUrl()}/pagos` },
       pie: `Monto del comprobante: ${p.monto}. Si crees que hay un error, habla con la administración de ${p.condominio}.`,
     }),
@@ -213,9 +213,13 @@ export function cuotaEmitida(p: {
   concepto: string;
   monto: string;
   vencimiento: string;
+  /** Equivalente en bolívares a la tasa del día, si el condominio la maneja. */
+  equivalenteBs?: string | null;
 }) {
   return {
-    asunto: `Nueva cuota: ${p.concepto}`,
+    // El monto y el vencimiento van en el ASUNTO: mucha gente decide si abre un
+    // correo por el asunto, y esos son los dos datos que importan.
+    asunto: `Nueva cuota: ${p.concepto} · ${p.monto} · vence ${p.vencimiento}`,
     html: layout({
       condominio: p.condominio,
       eyebrow: "Nueva cuota",
@@ -224,7 +228,10 @@ export function cuotaEmitida(p: {
         `${p.condominio} emitió una nueva cuota para tu unidad.`,
         "En la app tienes los datos bancarios y el monto exacto para transferir, y ahí mismo registras el pago.",
       ],
-      destacado: { etiqueta: `Monto · vence el ${p.vencimiento}`, valor: p.monto },
+      destacado: {
+        etiqueta: `Monto · vence el ${p.vencimiento}`,
+        valor: p.equivalenteBs ? `${p.monto}  ·  ${p.equivalenteBs}` : p.monto,
+      },
       cta: { texto: "Ver y pagar", href: `${portalUrl()}/pagos` },
     }),
   };

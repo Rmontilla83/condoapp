@@ -401,6 +401,18 @@
     background: #fff !important;
   }
 
+  /* El dashboard vive en un contenedor de altura fija con scroll interno
+     (flex h-screen + overflow-hidden + main overflow-y-auto). En papel eso
+     corta el documento en la primera pantalla. */
+  html,
+  body,
+  main,
+  main > div {
+    height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+  }
+
   main {
     padding: 0 !important;
     margin: 0 !important;

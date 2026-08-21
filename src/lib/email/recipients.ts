@@ -27,6 +27,39 @@ export async function emailsDeUnidad(unitId: string): Promise<string[]> {
     .filter((e): e is string => Boolean(e));
 }
 
+/**
+ * Correos de los miembros activos de VARIAS unidades, en una sola consulta.
+ *
+ * La versión de a una servía para un pago puntual, pero emitir las cuotas de un
+ * condominio de 40 unidades hacía 40 viajes a la base más 40 envíos: demasiado
+ * para el tiempo de una función serverless.
+ */
+export async function emailsPorUnidad(
+  unitIds: string[],
+): Promise<Map<string, string[]>> {
+  const out = new Map<string, string[]>();
+  if (unitIds.length === 0) return out;
+
+  const admin = createAdminClient();
+  const { data } = await admin
+    .from("unit_members")
+    .select("unit_id, profiles(email)")
+    .in("unit_id", unitIds)
+    .eq("active", true);
+
+  for (const m of data ?? []) {
+    const p = Array.isArray(m.profiles) ? m.profiles[0] : m.profiles;
+    const email = (p as { email?: string } | null)?.email;
+    if (!email) continue;
+    const unitId = m.unit_id as string;
+    const lista = out.get(unitId) ?? [];
+    if (!lista.includes(email)) lista.push(email);
+    out.set(unitId, lista);
+  }
+
+  return out;
+}
+
 /** Correos de quien reportó algo (o de cualquier perfil suelto). */
 export async function emailDePerfil(profileId: string | null | undefined): Promise<string[]> {
   if (!profileId) return [];

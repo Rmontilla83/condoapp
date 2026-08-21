@@ -39,6 +39,7 @@ interface Props {
     reference: string | null;
     receipt_url: string | null;
     amount_bs: number | null;
+    exchange_rate: number | null;
   };
 }
 
@@ -113,7 +114,10 @@ export function InvoiceRow({ invoice, rate = 0, selected, onToggle, onPayClick, 
       <div className="flex items-center gap-3 shrink-0">
         <div className="text-right">
           <p className="text-sm font-bold">${Number(invoice.amount).toFixed(2)}</p>
-          {rate > 0 && (
+          {/* En una cuota YA PAGADA no se muestra la conversión a la tasa de
+              hoy: al lado va el monto en bolívares congelado del pago, y dos
+              cifras distintas en la misma tarjeta solo generan dudas. */}
+          {rate > 0 && !isPaid && (
             <p className="text-[11px] text-muted-foreground">
               Bs {(Number(invoice.amount) * rate).toFixed(2)}
             </p>
@@ -147,7 +151,8 @@ export function InvoiceRow({ invoice, rate = 0, selected, onToggle, onPayClick, 
           )}
           {payment.amount_bs != null && payment.amount_bs > 0 && (
             <span className="font-mono text-[12px] text-mute tabular-nums">
-              Bs {payment.amount_bs.toFixed(2)}
+              ≈ Bs {payment.amount_bs.toFixed(2)}
+              {payment.exchange_rate ? ` (tasa ${payment.exchange_rate.toFixed(2)})` : ""}
             </span>
           )}
           {payment.receipt_url && (
