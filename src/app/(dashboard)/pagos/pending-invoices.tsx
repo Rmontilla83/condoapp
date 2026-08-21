@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { InvoiceRow } from "./invoice-row";
 import { MultiPayDialog } from "./multi-pay-dialog";
-import type { Invoice } from "@/types/database";
+import type { BankAccount, Invoice } from "@/types/database";
 
 interface PaymentTarget {
   invoices: Invoice[];
@@ -14,11 +14,13 @@ export function PendingInvoices({
   invoices,
   rate,
   today,
+  bankAccounts = [],
 }: {
   invoices: Invoice[];
   rate: number;
   /** Hoy en la zona horaria del condominio, calculado en el servidor. */
   today?: string;
+  bankAccounts?: BankAccount[];
 }) {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [target, setTarget] = useState<PaymentTarget | null>(null);
@@ -128,7 +130,8 @@ export function PendingInvoices({
         </div>
       )}
 
-      <MultiPayDialog target={target} rate={rate} onClose={() => setTarget(null)} />
+      <MultiPayDialog
+        bankAccounts={bankAccounts} target={target} rate={rate} onClose={() => setTarget(null)} />
     </>
   );
 }

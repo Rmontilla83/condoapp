@@ -78,6 +78,56 @@ export async function getInvoiceIdsWithPendingTransactions(invoiceIds: string[])
   return new Set((data ?? []).map((r) => r.invoice_id as string));
 }
 
+/**
+ * Último comprobante rechazado por cuota, para las cuotas que siguen impagas.
+ *
+ * Sin esto, rechazar un comprobante devolvía la cuota a "pendiente" sin dejar
+ * rastro: el residente veía reaparecer la deuda sin aviso ni motivo, que es el
+ * escenario "yo ya pagué" que genera la pelea real en un condominio.
+ *
+ * Se toma la transacción MÁS RECIENTE de cada cuota y solo se reporta si esa
+ * última quedó rechazada; si el residente ya volvió a subir algo, el rechazo
+ * viejo deja de mostrarse.
+ */
+export interface RejectedPaymentInfo {
+  transaction_id: string;
+  invoice_id: string;
+  amount: number;
+  reason: string | null;
+  reviewed_at: string | null;
+}
+
+export async function getLatestRejectionsByInvoice(
+  invoiceIds: string[],
+): Promise<Map<string, RejectedPaymentInfo>> {
+  const out = new Map<string, RejectedPaymentInfo>();
+  if (invoiceIds.length === 0) return out;
+
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("transactions")
+    .select("id, invoice_id, amount, status, rejection_reason, reviewed_at, created_at")
+    .in("invoice_id", invoiceIds)
+    .order("created_at", { ascending: false });
+
+  const vistas = new Set<string>();
+  for (const t of data ?? []) {
+    const invoiceId = t.invoice_id as string;
+    if (vistas.has(invoiceId)) continue; // solo la más reciente de cada cuota
+    vistas.add(invoiceId);
+    if (t.status !== "rejected") continue;
+    out.set(invoiceId, {
+      transaction_id: t.id as string,
+      invoice_id: invoiceId,
+      amount: Number(t.amount),
+      reason: (t.rejection_reason as string | null) ?? null,
+      reviewed_at: (t.reviewed_at as string | null) ?? null,
+    });
+  }
+
+  return out;
+}
+
 export async function getOrgInvoices(orgId: string) {
   const supabase = await createClient();
   const { data } = await supabase

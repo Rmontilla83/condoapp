@@ -3,6 +3,7 @@ import {
   getUserUnitIds,
   getInvoicesForUser,
   getInvoiceIdsWithPendingTransactions,
+  getLatestRejectionsByInvoice,
   getFeeBreakdown,
   getCurrentRate,
   getOrganization,
@@ -42,6 +43,10 @@ export default async function PagosPage() {
 
   const inReviewInvoices = pendingInvoices.filter((i) => pendingTxInvoiceIds.has(i.id));
   const actionableInvoices = pendingInvoices.filter((i) => !pendingTxInvoiceIds.has(i.id));
+
+  // Cuotas que volvieron a estar pendientes porque el admin rechazó el
+  // comprobante. Antes reaparecían sin explicación ninguna.
+  const rechazos = await getLatestRejectionsByInvoice(actionableInvoices.map((i) => i.id));
 
   const inReviewTotal = inReviewInvoices.reduce((sum, i) => sum + Number(i.amount), 0);
   const actionableTotal = actionableInvoices.reduce((sum, i) => sum + Number(i.amount), 0);
@@ -164,6 +169,60 @@ export default async function PagosPage() {
         </div>
       )}
 
+      {/* Comprobantes rechazados — lo primero que tiene que ver el residente,
+          porque explica por qué le reapareció una deuda que creía resuelta. */}
+      {rechazos.size > 0 && (
+        <div className="rounded-2xl border border-destructive/40 bg-destructive/5 p-6">
+          <p className="font-meta text-destructive">
+            COMPROBANTE{rechazos.size !== 1 ? "S" : ""} RECHAZADO{rechazos.size !== 1 ? "S" : ""}
+          </p>
+          <p className="mt-2 text-[15px] font-medium text-marine-deep">
+            {rechazos.size === 1
+              ? "El administrador no pudo confirmar uno de tus pagos"
+              : `El administrador no pudo confirmar ${rechazos.size} de tus pagos`}
+          </p>
+          <ul className="mt-4 space-y-3">
+            {actionableInvoices
+              .filter((inv) => rechazos.has(inv.id))
+              .map((inv) => {
+                const r = rechazos.get(inv.id)!;
+                return (
+                  <li
+                    key={inv.id}
+                    className="rounded-xl bg-card border border-destructive/30 p-4"
+                  >
+                    <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
+                      <p className="text-[14px] font-medium text-marine-deep">
+                        {inv.description}
+                      </p>
+                      <p className="font-mono text-[13px] text-mute tabular-nums">
+                        ${Number(r.amount).toFixed(2)}
+                      </p>
+                    </div>
+                    <p className="mt-2 text-[14px] text-destructive">
+                      {r.reason ?? "El administrador no indicó un motivo."}
+                    </p>
+                    {r.reviewed_at && (
+                      <p className="mt-1 font-meta text-mute">
+                        REVISADO EL{" "}
+                        {new Date(r.reviewed_at).toLocaleDateString("es", {
+                          day: "numeric",
+                          month: "short",
+                          year: "numeric",
+                        })}
+                      </p>
+                    )}
+                  </li>
+                );
+              })}
+          </ul>
+          <p className="mt-4 text-[13px] text-mute">
+            La cuota volvió a quedar pendiente. Puedes corregir lo que indica el
+            motivo y volver a registrarla abajo.
+          </p>
+        </div>
+      )}
+
       {/* Pendientes accionables (con selección múltiple) */}
       {actionableInvoices.length > 0 && (
         <div className="rounded-2xl bg-card border border-border p-6">
@@ -173,7 +232,12 @@ export default async function PagosPage() {
               {actionableInvoices.length} pendiente{actionableInvoices.length !== 1 ? "s" : ""} de pago
             </p>
           </div>
-          <PendingInvoices invoices={actionableInvoices} rate={rate} today={hoy} />
+          <PendingInvoices
+            invoices={actionableInvoices}
+            rate={rate}
+            today={hoy}
+            bankAccounts={bankAccounts}
+          />
         </div>
       )}
 

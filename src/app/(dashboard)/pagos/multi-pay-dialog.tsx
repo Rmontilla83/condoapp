@@ -11,8 +11,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { PayToBlock } from "@/components/pagos/pay-to-block";
 import { submitPaymentForMultipleInvoices } from "./actions";
-import type { Invoice } from "@/types/database";
+import type { BankAccount, Invoice } from "@/types/database";
 
 const MAX_RECEIPT_BYTES = 5 * 1024 * 1024;
 
@@ -24,14 +25,17 @@ interface Props {
   target: PaymentTarget | null;
   rate: number;
   onClose: () => void;
+  /** Cuentas del condominio, para no obligar a salir del diálogo a buscarlas. */
+  bankAccounts?: BankAccount[];
 }
 
-export function MultiPayDialog({ target, rate, onClose }: Props) {
+export function MultiPayDialog({ target, rate, onClose, bankAccounts = [] }: Props) {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
   const [receiptName, setReceiptName] = useState("");
+  const [reference, setReference] = useState("");
 
   useEffect(() => {
     if (target) {
@@ -39,6 +43,7 @@ export function MultiPayDialog({ target, rate, onClose }: Props) {
       setError("");
       setSuccess(false);
       setReceiptName("");
+      setReference("");
     }
   }, [target]);
 
@@ -49,6 +54,7 @@ export function MultiPayDialog({ target, rate, onClose }: Props) {
       setSuccess(false);
       setError("");
       setReceiptName("");
+      setReference("");
     }, 200);
     if (success) {
       window.location.reload();
@@ -68,6 +74,17 @@ export function MultiPayDialog({ target, rate, onClose }: Props) {
       setError("No puedes pagar cuotas de distintas monedas con un solo comprobante");
       return;
     }
+    // Sin comprobante ni referencia el admin no tiene con qué confirmar el
+    // pago, y la cuota igual desaparecía del saldo accionable del dashboard: el
+    // propietario creía haberlo resuelto hasta que alguien lo rechazaba en
+    // silencio. Exigimos al menos uno de los dos.
+    if (!receiptName && !reference.trim()) {
+      setError(
+        "Necesitamos la captura o el número de referencia para que el administrador pueda confirmar tu pago.",
+      );
+      return;
+    }
+
     setLoading(true);
     setError("");
 
@@ -150,6 +167,13 @@ export function MultiPayDialog({ target, rate, onClose }: Props) {
               </p>
             )}
 
+            <PayToBlock
+              accounts={bankAccounts}
+              totalUsd={total}
+              totalBs={totalBs}
+              currency={currency}
+            />
+
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="method">Método de pago</Label>
@@ -170,7 +194,16 @@ export function MultiPayDialog({ target, rate, onClose }: Props) {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="reference">Número de referencia</Label>
-                <Input id="reference" name="reference" placeholder="Ej: REF-00123456" />
+                <Input
+                  id="reference"
+                  name="reference"
+                  placeholder="Ej: REF-00123456"
+                  value={reference}
+                  onChange={(e) => {
+                    setReference(e.target.value);
+                    if (error) setError("");
+                  }}
+                />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="receipt">Comprobante (foto/captura)</Label>
@@ -201,6 +234,7 @@ export function MultiPayDialog({ target, rate, onClose }: Props) {
                 )}
                 <p className="text-xs text-muted-foreground">
                   JPG/PNG/WebP, hasta 5MB. Asegúrate de que se vea claro el monto y la referencia.
+                  Con la captura <em>o</em> el número de referencia alcanza.
                 </p>
               </div>
               {error && (
@@ -212,8 +246,12 @@ export function MultiPayDialog({ target, rate, onClose }: Props) {
                 <Button type="button" variant="outline" className="flex-1" onClick={handleClose} disabled={loading}>
                   Cancelar
                 </Button>
-                <Button type="submit" className="flex-1" disabled={loading || mixedCurrency}>
-                  {loading ? "Enviando…" : "Subir comprobante"}
+                <Button
+                  type="submit"
+                  className="flex-1"
+                  disabled={loading || mixedCurrency || (!receiptName && !reference.trim())}
+                >
+                  {loading ? "Enviando…" : "Registrar pago"}
                 </Button>
               </div>
             </form>

@@ -123,7 +123,12 @@ export async function approvePayment(transactionId: string) {
 
   const { error: txError } = await supabase
     .from("transactions")
-    .update({ status: "approved" })
+    .update({
+      status: "approved",
+      reviewed_at: new Date().toISOString(),
+      reviewed_by: profile.id,
+      rejection_reason: null,
+    })
     .eq("id", transactionId);
 
   if (txError) return { error: txError.message };
@@ -141,10 +146,33 @@ export async function approvePayment(transactionId: string) {
   return { success: true };
 }
 
-export async function rejectPayment(transactionId: string) {
+/**
+ * Motivos predefinidos. Que el admin elija de una lista en vez de escribir
+ * libremente hace que el residente reciba siempre un texto accionable, y que
+ * rechazar cueste un toque en vez de una redacción.
+ */
+export const REJECTION_REASONS = [
+  "No se ve el monto en la captura",
+  "La referencia no coincide con el pago",
+  "El dinero no llegó a la cuenta",
+  "El monto no corresponde a la cuota",
+  "El comprobante está repetido",
+] as const;
+
+const MIN_REASON_LENGTH = 4;
+
+export async function rejectPayment(transactionId: string, reason: string) {
   const profile = await getCurrentProfile();
   if (!profile?.organization_id || !isAdminRole(profile)) {
     return { error: "No autorizado" };
+  }
+
+  const motivo = (reason ?? "").trim();
+  if (motivo.length < MIN_REASON_LENGTH) {
+    return {
+      error:
+        "Escribe el motivo del rechazo. El residente lo va a ver y necesita saber qué corregir.",
+    };
   }
 
   const supabase = createAdminClient();
@@ -160,12 +188,18 @@ export async function rejectPayment(transactionId: string) {
 
   const { error } = await supabase
     .from("transactions")
-    .update({ status: "rejected" })
+    .update({
+      status: "rejected",
+      rejection_reason: motivo,
+      reviewed_at: new Date().toISOString(),
+      reviewed_by: profile.id,
+    })
     .eq("id", transactionId);
 
   if (error) return { error: error.message };
 
   revalidatePath("/pagos");
   revalidatePath("/admin");
+  revalidatePath("/dashboard");
   return { success: true };
 }

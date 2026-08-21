@@ -8,6 +8,7 @@ import { UpcomingReservationCard } from "@/components/dashboard/upcoming-reserva
 import { PendingDecisionCard } from "@/components/dashboard/pending-decision-card";
 import { RecentAnnouncementsLink } from "@/components/dashboard/recent-announcements-link";
 import { SmartPayButton } from "./smart-pay-button";
+import type { BankAccount } from "@/types/database";
 
 const statusLabels: Record<string, string> = {
   new: "NUEVO",
@@ -36,6 +37,12 @@ export default async function DashboardPage() {
   const actionableInvoices = ctx.pendingInvoices.filter((i) => !ctx.inReviewInvoiceIds.has(i.id));
   const inReviewInvoices = ctx.pendingInvoices.filter((i) => ctx.inReviewInvoiceIds.has(i.id));
   const actionableTotal = actionableInvoices.reduce((s, i) => s + Number(i.amount), 0);
+  // Los datos bancarios viajan hasta el diálogo de pago: tocar "Pagar ahora" no
+  // puede terminar en un formulario que pide el comprobante de una transferencia
+  // que el propietario todavía no sabe a dónde hacer.
+  const bankAccounts: BankAccount[] = Array.isArray(ctx.org?.bank_accounts)
+    ? (ctx.org.bank_accounts as BankAccount[])
+    : [];
   const inReviewTotal = inReviewInvoices.reduce((s, i) => s + Number(i.amount), 0);
 
   return (
@@ -77,6 +84,7 @@ export default async function DashboardPage() {
               inReview={inReviewInvoices}
               rate={ctx.rate.rate}
               canSeeFee={ctx.canSeeFee}
+              bankAccounts={bankAccounts}
             />
           </div>
         </div>

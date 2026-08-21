@@ -4,16 +4,18 @@ import { useState } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { MultiPayDialog } from "@/app/(dashboard)/pagos/multi-pay-dialog";
-import type { Invoice } from "@/types/database";
+import type { BankAccount, Invoice } from "@/types/database";
 
 interface Props {
   actionable: Invoice[];
   inReview: Invoice[];
   rate: number;
   canSeeFee: boolean;
+  /** Para que el diálogo muestre a dónde transferir sin salir del dashboard. */
+  bankAccounts?: BankAccount[];
 }
 
-export function SmartPayButton({ actionable, inReview, rate, canSeeFee }: Props) {
+export function SmartPayButton({ actionable, inReview, rate, canSeeFee, bankAccounts = [] }: Props) {
   const [target, setTarget] = useState<{ invoices: Invoice[] } | null>(null);
 
   if (!canSeeFee) return null;
@@ -43,7 +45,12 @@ export function SmartPayButton({ actionable, inReview, rate, canSeeFee }: Props)
         >
           Pagar ahora
         </Button>
-        <MultiPayDialog target={target} rate={rate} onClose={() => setTarget(null)} />
+        <MultiPayDialog
+          target={target}
+          rate={rate}
+          bankAccounts={bankAccounts}
+          onClose={() => setTarget(null)}
+        />
       </>
     );
   }
