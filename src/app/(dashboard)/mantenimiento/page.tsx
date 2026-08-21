@@ -4,6 +4,7 @@ import { signStorageRefRows } from "@/lib/storage";
 import { NewRequestDialog } from "./new-request-dialog";
 import type { CommonArea, MaintenanceStatus } from "@/types/database";
 import type { UnitOption } from "./location-step";
+import { UNIT_TYPE_LABELS, MAINTENANCE_CATEGORY_LABELS } from "@/lib/labels";
 
 const statusConfig: Record<string, { label: string; tag: string; step: number }> = {
   new: { label: "NUEVO", tag: "bg-cyan/10 text-cyan", step: 1 },
@@ -19,13 +20,6 @@ const priorityConfig = {
   urgent: { label: "URGENTE", className: "text-destructive" },
 };
 
-const UNIT_TYPE_LABELS: Record<string, string> = {
-  apartment: "APTO",
-  house: "CASA",
-  penthouse: "PH",
-  local: "LOCAL",
-  office: "OFICINA",
-};
 
 const steps: MaintenanceStatus[] = ["new", "in_review", "in_progress", "resolved"];
 
@@ -147,7 +141,7 @@ export default async function MantenimientoPage() {
                     )}
 
                     <div className="flex flex-wrap gap-4 font-meta text-mute">
-                      <span>{request.category.toUpperCase()}</span>
+                      <span>{(MAINTENANCE_CATEGORY_LABELS[request.category] ?? request.category).toUpperCase()}</span>
                       <span className={priority.className}>· {priority.label}</span>
                       <span>
                         ·{" "}

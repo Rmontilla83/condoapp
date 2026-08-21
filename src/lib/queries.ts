@@ -128,6 +128,42 @@ export async function getLatestRejectionsByInvoice(
   return out;
 }
 
+/**
+ * Cuánto gastó el condominio en el mes en curso, y en cuántos conceptos.
+ *
+ * Alimenta la línea "¿En qué se fue tu cuota?" del dashboard. La transparencia
+ * de gastos es el reclamo número uno de los propietarios en la vida real, y
+ * /finanzas ya la resolvía bien — pero no tenía un solo enlace desde el inicio,
+ * así que el propietario nunca descubría que existía y la app le seguía
+ * pareciendo solo un cobrador.
+ */
+export async function getCurrentMonthExpenseSummary(
+  orgId: string,
+  today: string,
+): Promise<{ total: number; count: number; monthLabel: string }> {
+  const inicioMes = `${today.slice(0, 7)}-01`;
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("expense_records")
+    .select("amount")
+    .eq("organization_id", orgId)
+    .is("voided_at", null)
+    .gte("expense_date", inicioMes)
+    .lte("expense_date", today);
+
+  const filas = data ?? [];
+  const monthLabel = new Date(`${inicioMes}T00:00:00Z`).toLocaleDateString("es", {
+    month: "long",
+    timeZone: "UTC",
+  });
+
+  return {
+    total: filas.reduce((s, e) => s + Number(e.amount), 0),
+    count: filas.length,
+    monthLabel,
+  };
+}
+
 export async function getOrgInvoices(orgId: string) {
   const supabase = await createClient();
   const { data } = await supabase
@@ -654,6 +690,11 @@ export async function getDashboardContext(
         total_voters: uniqueVoters.size,
       };
     })
+    // Fuera las que ya vencieron. El sort de abajo pone primero la de deadline
+    // más cercano, así que sin este filtro la tarjeta del dashboard destacaba
+    // justo la decisión MÁS vencida: el residente hacía clic para recibir
+    // "Decisión vencida".
+    .filter((d) => !d.closes_at || new Date(d.closes_at as string) > new Date())
     .sort((a, b) => {
       if (!a.closes_at) return 1;
       if (!b.closes_at) return -1;

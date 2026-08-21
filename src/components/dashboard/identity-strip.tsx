@@ -65,7 +65,7 @@ export function IdentityStrip({ ctx }: { ctx: DashboardContext }) {
           {extraCount > 0 && (
             <Link
               href="/mi-unidad"
-              className="font-meta text-cyan hover:text-marine-deep transition-colors"
+              className="font-meta text-cyan-ink hover:text-marine-deep transition-colors"
             >
               + {extraCount} UNIDAD{extraCount > 1 ? "ES" : ""} MÁS →
             </Link>
@@ -78,7 +78,7 @@ export function IdentityStrip({ ctx }: { ctx: DashboardContext }) {
       )}
 
       <div>
-        <span className="font-meta-loose text-cyan">{getGreeting(ctx.org?.timezone)}</span>
+        <span className="font-meta-loose text-cyan-ink">{getGreeting(ctx.org?.timezone)}</span>
         <h1 className="mt-3 font-display text-[clamp(2rem,4.5vw,3.25rem)] leading-[1.02] tracking-[-0.035em] text-marine-deep">
           <em className="font-editorial">{firstName}</em>
         </h1>

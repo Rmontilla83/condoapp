@@ -1,4 +1,9 @@
-import { getCurrentProfile, getDashboardContext } from "@/lib/queries";
+import {
+  getCurrentProfile,
+  getDashboardContext,
+  getCurrentMonthExpenseSummary,
+} from "@/lib/queries";
+import { todayInTimeZone, describeDueDate } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { AnimatedCounter } from "@/components/ui/animated-counter";
@@ -43,6 +48,17 @@ export default async function DashboardPage() {
   const bankAccounts: BankAccount[] = Array.isArray(ctx.org?.bank_accounts)
     ? (ctx.org.bank_accounts as BankAccount[])
     : [];
+
+  const hoy = todayInTimeZone(ctx.org?.timezone ?? undefined);
+  // La cuota más próxima a vencer: es la que responde "¿de qué es y para cuándo?"
+  const proxima = [...actionableInvoices].sort((a, b) =>
+    String(a.due_date).localeCompare(String(b.due_date)),
+  )[0];
+  const vencimiento = proxima ? describeDueDate(String(proxima.due_date), hoy) : null;
+  const tasa = Number(ctx.rate?.rate ?? 0);
+  const totalBs = tasa > 0 ? actionableTotal * tasa : 0;
+
+  const gastoDelMes = await getCurrentMonthExpenseSummary(profile.organization_id, hoy);
   const inReviewTotal = inReviewInvoices.reduce((s, i) => s + Number(i.amount), 0);
 
   return (
@@ -76,7 +92,43 @@ export default async function DashboardPage() {
                 </p>
               )}
               {actionableTotal === 0 && inReviewTotal === 0 && (
-                <p className="mt-3 font-meta text-cyan">AL DÍA · GRACIAS</p>
+                <p className="mt-3 font-meta text-cyan-ink">AL DÍA · GRACIAS</p>
+              )}
+
+              {/* De qué es y para cuándo. Sin esto el número grande no termina
+                  de responder la pregunta con la que el propietario abre la app. */}
+              {proxima && vencimiento && (
+                <div className="mt-3 space-y-1">
+                  <p className="text-[14px] text-marine-deep/80">
+                    {proxima.description}
+                    {actionableInvoices.length > 1 && (
+                      <span className="text-mute">
+                        {" "}· y {actionableInvoices.length - 1} cuota
+                        {actionableInvoices.length - 1 !== 1 ? "s" : ""} más
+                      </span>
+                    )}
+                  </p>
+                  <p
+                    className={`font-meta ${
+                      vencimiento.tone === "vencida"
+                        ? "text-destructive"
+                        : vencimiento.tone === "hoy" || vencimiento.tone === "pronto"
+                          ? "text-ember"
+                          : "text-mute"
+                    }`}
+                  >
+                    {vencimiento.label}
+                  </p>
+                </div>
+              )}
+
+              {/* Paga en bolívares: el monto convertido va acá, no una pantalla
+                  más adentro, porque lo teclea en la app del banco. */}
+              {totalBs > 0 && (
+                <p className="mt-2 font-mono text-[13px] text-mute tabular-nums">
+                  Bs {totalBs.toFixed(2)}
+                  <span className="font-sans"> · tasa {tasa.toFixed(2)}</span>
+                </p>
               )}
             </div>
             <SmartPayButton
@@ -88,6 +140,30 @@ export default async function DashboardPage() {
             />
           </div>
         </div>
+      )}
+
+      {/* Transparencia del gasto. /finanzas ya lo resolvía bien pero no tenía
+          UN SOLO enlace desde el inicio, así que el propietario nunca descubría
+          que existía y la app le seguía pareciendo un cobrador. */}
+      {gastoDelMes.count > 0 && (
+        <Link
+          href="/finanzas"
+          className="group flex flex-wrap items-center justify-between gap-x-4 gap-y-2 rounded-2xl bg-card border border-border p-5 transition-all duration-300 hover:border-cyan/40 hover:shadow-[0_18px_50px_-18px_rgb(15,46,90,0.18)]"
+        >
+          <div className="min-w-0">
+            <p className="font-meta text-mute">¿EN QUÉ SE FUE TU CUOTA?</p>
+            <p className="mt-2 text-[15px] text-marine-deep">
+              En {gastoDelMes.monthLabel} el condominio lleva gastados{" "}
+              <span className="font-mono tabular-nums">
+                ${gastoDelMes.total.toFixed(2)}
+              </span>{" "}
+              en {gastoDelMes.count} concepto{gastoDelMes.count !== 1 ? "s" : ""}.
+            </p>
+          </div>
+          <span className="font-meta text-cyan-ink shrink-0 transition-transform group-hover:translate-x-0.5">
+            VER EL DETALLE →
+          </span>
+        </Link>
       )}
 
       {/* Decisión pendiente (si aplica) */}
@@ -151,7 +227,7 @@ export default async function DashboardPage() {
             <p className="font-meta text-mute">MIS REPORTES</p>
             <p className="mt-2 text-[15px] font-medium text-marine-deep">Seguimiento</p>
           </div>
-          <Link href="/mantenimiento" className="font-meta text-cyan hover:text-marine-deep transition-colors">
+          <Link href="/mantenimiento" className="font-meta text-cyan-ink hover:text-marine-deep transition-colors">
             VER TODOS
           </Link>
         </div>

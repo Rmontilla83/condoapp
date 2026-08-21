@@ -39,7 +39,7 @@ export function PendingDecisionCard({ decisions }: { decisions: OpenDecision[] }
         </div>
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2 flex-wrap">
-            <p className="font-meta text-cyan">DECISIÓN PENDIENTE</p>
+            <p className="font-meta text-cyan-ink">DECISIÓN PENDIENTE</p>
             {isFormal && (
               <span className="font-meta bg-marine-deep/5 border border-marine-deep/10 text-marine-deep px-2 py-0.5 rounded-md">
                 ASAMBLEA FORMAL
@@ -59,7 +59,7 @@ export function PendingDecisionCard({ decisions }: { decisions: OpenDecision[] }
           <div className="mt-3 flex flex-wrap items-center gap-3">
             <Link
               href={`/decisiones#decision-${main.id}`}
-              className="inline-flex items-center font-meta text-cyan hover:text-marine-deep transition-colors"
+              className="inline-flex items-center font-meta text-cyan-ink hover:text-marine-deep transition-colors"
             >
               VOTAR AHORA →
             </Link>

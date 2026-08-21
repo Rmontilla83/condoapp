@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { PAYMENT_METHOD_LABELS } from "@/lib/labels";
 import { approvePayment, rejectPayment, REJECTION_REASONS } from "../pagos/actions";
 
 interface PendingPayment {
@@ -16,15 +17,6 @@ interface PendingPayment {
   invoices: { description: string; units: { unit_number: string } | null } | null;
 }
 
-const methodLabels: Record<string, string> = {
-  transfer: "Transferencia",
-  mobile_payment: "Pago móvil",
-  zelle: "Zelle",
-  paypal: "PayPal",
-  binance: "Binance",
-  cash: "Efectivo",
-  other: "Otro",
-};
 
 const OTRO = "__otro__";
 
@@ -94,7 +86,7 @@ export function PaymentReviewer({ payments }: { payments: PendingPayment[] }) {
                   {p.invoices?.description ?? "Pago"} — Apto {p.invoices?.units?.unit_number ?? "?"}
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  {methodLabels[p.payment_method] ?? p.payment_method}
+                  {PAYMENT_METHOD_LABELS[p.payment_method] ?? p.payment_method}
                   {p.reference ? ` — Ref: ${p.reference}` : " — sin referencia"}
                 </p>
               </div>

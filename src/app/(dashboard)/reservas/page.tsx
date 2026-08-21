@@ -84,10 +84,28 @@ export default async function ReservasPage() {
             Reserva <em className="font-editorial text-cyan">espacios</em>
           </h1>
         </div>
-        <ReserveDialog areas={areas} />
+        {areas.length > 0 && <ReserveDialog areas={areas} />}
       </div>
 
-      {/* Available spaces */}
+      {/* Sin áreas cargadas, esta pantalla era un título y nada debajo, con un
+          botón que abría un formulario sin opciones. Un vacío que no explica
+          nada deja al propietario pensando que la app está rota. */}
+      {areas.length === 0 ? (
+        <div className="rounded-2xl bg-card border border-border p-8 text-center">
+          <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-cloud">
+            <svg className="h-6 w-6 text-mute" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" aria-hidden="true">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 21v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21m0 0h4.5V3.545M12.75 21h7.5V10.75M2.25 21h1.5m18 0h-18M2.25 9l4.5-1.636M18.75 3l-1.5.545m0 6.205l3 1m1.5.5l-1.5-.5M6.75 7.364V3h-3v18m3-13.636l10.5-3.819" />
+            </svg>
+          </span>
+          <p className="mt-4 text-[15px] font-medium text-marine-deep">
+            Tu condominio todavía no tiene áreas comunes reservables
+          </p>
+          <p className="mt-2 text-[14px] text-mute max-w-sm mx-auto">
+            Pídele al administrador que agregue el salón de fiestas, la piscina o
+            la cancha desde su panel, y acá vas a poder reservarlos.
+          </p>
+        </div>
+      ) : (
       <div>
         <p className="font-meta text-mute mb-3">ESPACIOS DISPONIBLES</p>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -104,6 +122,7 @@ export default async function ReservasPage() {
           ))}
         </div>
       </div>
+      )}
 
       {/* My reservations */}
       <div className="rounded-2xl bg-card border border-border p-6">

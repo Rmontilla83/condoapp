@@ -11,7 +11,16 @@
   --color-frost: #F4F7FB;           /* Fondo claro (off-white azulado) */
   --color-cloud: #EAEEF4;           /* Superficies elevadas, secondary bg */
   --color-slate: #3B4A63;           /* Body copy dark alt */
-  --color-mute: #6B7A90;            /* Metadatos, captions */
+  --color-mute: #5D6E86;            /* Metadatos, captions — 5.20:1 sobre blanco (AA) */
+
+  /* ═══ Variantes de texto sobre fondo claro ═══
+     cyan (#2FB4E6) da 2.39:1 y ember (#E8732C) 3.03:1 sobre blanco: los dos
+     reprueban AA, y se aplican justo a `.font-meta`, la utilidad de 11.2px que
+     etiqueta casi todo. Estas variantes conservan el tono de marca con contraste
+     suficiente. Los tokens originales siguen siendo los correctos sobre
+     marine-deep, así que se mantienen intactos. */
+  --color-cyan-ink: #17738F;        /* 5.40:1 sobre blanco */
+  --color-ember-ink: #B4530F;       /* 5.02:1 sobre blanco */
 
   /* ═══ Shadcn token mapping → Atryum V3 ═══ */
   --color-background: var(--background);
@@ -80,7 +89,7 @@
   --secondary-foreground: #0F2E5A;
 
   --muted: #EAEEF4;
-  --muted-foreground: #6B7A90;    /* Mute */
+  --muted-foreground: #5D6E86;    /* Mute — AA sobre blanco */
 
   --accent: #2FB4E6;              /* Cyan */
   --accent-foreground: #0F2E5A;

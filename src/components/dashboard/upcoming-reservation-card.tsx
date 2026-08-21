@@ -44,7 +44,7 @@ export function UpcomingReservationCard({ reservation }: Props) {
             <div className="flex items-center gap-2 flex-wrap">
               <p className="font-meta text-mute">TU PRÓXIMA RESERVA</p>
               {isOngoing && (
-                <span className="font-meta bg-cyan/10 text-cyan px-2 py-0.5 rounded-md">
+                <span className="font-meta bg-cyan/10 text-cyan-ink px-2 py-0.5 rounded-md">
                   EN CURSO
                 </span>
               )}
@@ -59,7 +59,7 @@ export function UpcomingReservationCard({ reservation }: Props) {
         </div>
         <Link
           href="/reservas"
-          className="shrink-0 font-meta text-cyan hover:text-marine-deep transition-colors"
+          className="shrink-0 font-meta text-cyan-ink hover:text-marine-deep transition-colors"
         >
           VER →
         </Link>

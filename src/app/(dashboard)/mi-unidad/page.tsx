@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getCurrentProfile } from "@/lib/queries";
 import { TenantManager } from "./tenant-manager";
 import type { MemberRole, OwnershipMode, TenantPermissions } from "@/types/database";
+import { UNIT_TYPE_LABELS } from "@/lib/labels";
 
 const MODE_LABEL: Record<OwnershipMode, string> = {
   owner_occupied: "HABITADA POR TI",
@@ -92,7 +93,7 @@ export default async function MiUnidadPage() {
                 <div className="flex items-start justify-between gap-4">
                   <div>
                     <p className="font-meta text-mute">
-                      {unit.type.toUpperCase()}
+                      {(UNIT_TYPE_LABELS[unit.type] ?? unit.type).toUpperCase()}
                       {unit.floor != null && ` · PISO ${unit.floor}`}
                     </p>
                     <h2 className="mt-3 font-display text-[28px] leading-tight text-marine-deep">
