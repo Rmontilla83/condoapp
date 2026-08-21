@@ -1,6 +1,5 @@
 "use server";
 
-import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getCurrentProfile } from "@/lib/queries";
 import { revalidatePath } from "next/cache";
@@ -51,7 +50,12 @@ export async function createOrganization(formData: FormData) {
     "-" +
     new Date().getFullYear();
 
-  const supabase = await createClient();
+  // Admin client: el INSERT lo permitía la policy de super_admin, pero el
+  // .select() posterior necesita además una policy de SELECT, y un super_admin
+  // tiene organization_id NULL, así que "Users can view their org" nunca matchea.
+  // Antes funcionaba de rebote por la policy permisiva que elimina la migration
+  // 029. La autorización real es requireSuperAdmin(), al principio de la acción.
+  const supabase = createAdminClient();
   const { data, error } = await supabase
     .from("organizations")
     .insert({ name, address, city, invite_code: code })
@@ -257,7 +261,11 @@ export async function switchViewAs(viewAs: string | null, orgId?: string | null)
   const profile = await getCurrentProfile();
   requireSuperAdmin(profile);
 
-  const supabase = await createClient();
+  // Admin client obligatorio: la migration 029 congela role/organization_id/
+  // view_as para cualquier conexión que no sea service_role (así un residente no
+  // puede auto-promoverse desde la consola). requireSuperAdmin() arriba es la
+  // autorización real de esta mutación.
+  const supabase = createAdminClient();
 
   // Para super_admin: organization_id se gestiona junto con view_as.
   // - viewAs !== null → necesita organization_id (pasado o el ya existente)

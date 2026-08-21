@@ -236,7 +236,12 @@ export async function voteDecision(questionId: string, option: string, decisionI
     // Si el user es tenant (sin owner active) en este org, weight=0 pero el voto se registra
   }
 
-  const { error } = await supabase.from("decision_responses").insert({
+  // El insert va por el admin client. La policy de RLS (migration 029) solo
+  // admite weight = 1.0 sobre decisiones abiertas y vigentes, justamente para
+  // que nadie pueda inyectar un voto ponderado desde el cliente. El peso real
+  // por alícuota lo calcula el servidor, arriba, tras validar permisos, estado
+  // de la decisión y vencimiento.
+  const { error } = await createAdminClient().from("decision_responses").insert({
     question_id: questionId,
     voter_id: profile.id,
     selected_option: option,

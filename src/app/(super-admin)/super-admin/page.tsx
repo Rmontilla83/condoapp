@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { getCurrentProfile } from "@/lib/queries";
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { CreateOrgDialog } from "./create-org-dialog";
 import { InviteAdminDialog } from "./invite-admin-dialog";
 import { EnterOrgButton } from "./enter-org-button";
@@ -10,7 +10,13 @@ export default async function SuperAdminPage() {
   const profile = await getCurrentProfile();
   if (!profile || profile.role !== "super_admin") redirect("/dashboard");
 
-  const supabase = await createClient();
+  // Esta es la vista global del SaaS: cuenta unidades, facturas y perfiles de
+  // TODOS los condominios. Con el client de usuario nunca pudo hacerlo bien —
+  // un super_admin tiene organization_id NULL, así que user_org_id() es NULL y
+  // las policies org-scoped no devuelven nada; la lista de condominios solo
+  // aparecía gracias a la policy permisiva que la migration 029 elimina.
+  // El guard de autorización es el redirect de arriba.
+  const supabase = createAdminClient();
 
   const [orgsRes, profilesRes, unitsRes, invoicesRes, invitationsRes] = await Promise.all([
     supabase.from("organizations").select("id, name, city, invite_code, is_active, created_at").order("created_at", { ascending: false }),
