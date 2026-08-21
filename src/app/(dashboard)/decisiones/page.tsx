@@ -69,12 +69,13 @@ export default async function DecisionesPage() {
   const quorumByDecision: Record<string, { achieved_pct: number; required_pct: number | null; met: boolean }> = {};
   for (const d of decisions) {
     if (d.kind !== "formal_assembly" || d.quorum_pct === null) continue;
-    const universe = await getOrgQuorumUniverse(d.organization_id, d.weighted_by_aliquot);
+    const universo = await getOrgQuorumUniverse(d.organization_id, d.weighted_by_aliquot);
     const allResponses = (d.decision_questions ?? []).flatMap((q) => q.decision_responses);
     const stats = computeQuorum({
       weighted_by_aliquot: d.weighted_by_aliquot,
       quorum_pct: d.quorum_pct,
-      universe,
+      universe: universo.universe,
+      reliable: universo.reliable,
       voters: allResponses.map((r) => ({ voter_id: r.voter_id, weight: Number(r.weight) })),
     });
     quorumByDecision[d.id] = {

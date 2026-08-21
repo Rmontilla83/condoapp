@@ -50,14 +50,25 @@ function round2(n: number): number {
   return Math.round(n * 100) / 100;
 }
 
+function roundTo(n: number, decimals: number): number {
+  const f = 10 ** decimals;
+  return Math.round(n * f) / f;
+}
+
 /**
  * Reparte `total` entre las unidades según sus `weights`, garantizando que la
- * suma de los montos sea EXACTAMENTE `total` (compensa el residuo de redondeo
- * en la unidad con mayor peso). Si Σweights ≤ 0, todas reciben 0.
+ * suma sea EXACTAMENTE `total` (compensa el residuo de redondeo en la unidad
+ * con mayor peso). Si Σweights ≤ 0, todas reciben 0.
+ *
+ * `decimals` por defecto 2, que es dinero. El editor de alícuotas la reutiliza
+ * con 4 decimales para que el criterio de residuo sea UNO SOLO en todo el
+ * sistema: si el editor repartiera con su propia regla, las alícuotas semilla
+ * podrían no cuadrar con el reparto real de las cuotas.
  */
-function distributeExact(
+export function distributeExact(
   total: number,
   weights: Array<{ id: string; w: number }>,
+  decimals: number = 2,
 ): Map<string, number> {
   const map = new Map<string, number>();
   const sumW = weights.reduce((s, x) => s + x.w, 0);
@@ -67,16 +78,16 @@ function distributeExact(
   }
   let allocated = 0;
   for (const x of weights) {
-    const amt = x.w > 0 ? round2((total * x.w) / sumW) : 0;
+    const amt = x.w > 0 ? roundTo((total * x.w) / sumW, decimals) : 0;
     map.set(x.id, amt);
-    allocated = round2(allocated + amt);
+    allocated = roundTo(allocated + amt, decimals);
   }
-  const residual = round2(total - allocated);
+  const residual = roundTo(total - allocated, decimals);
   if (residual !== 0) {
     const target = weights
       .filter((x) => x.w > 0)
       .sort((a, b) => b.w - a.w)[0];
-    if (target) map.set(target.id, round2((map.get(target.id) ?? 0) + residual));
+    if (target) map.set(target.id, roundTo((map.get(target.id) ?? 0) + residual, decimals));
   }
   return map;
 }

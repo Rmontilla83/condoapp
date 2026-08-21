@@ -78,13 +78,15 @@ export default async function DecisionDetailPage({ params }: { params: Promise<{
 
   // Quorum stats si aplica
   let quorumStats = null;
+  let quorumUniverse: Awaited<ReturnType<typeof getOrgQuorumUniverse>> | null = null;
   if (decision.quorum_pct !== null) {
-    const universe = await getOrgQuorumUniverse(decision.organization_id, decision.weighted_by_aliquot);
+    quorumUniverse = await getOrgQuorumUniverse(decision.organization_id, decision.weighted_by_aliquot);
     const allResponses = questions.flatMap((q) => q.decision_responses);
     quorumStats = computeQuorum({
       weighted_by_aliquot: decision.weighted_by_aliquot,
       quorum_pct: decision.quorum_pct,
-      universe,
+      universe: quorumUniverse.universe,
+      reliable: quorumUniverse.reliable,
       voters: allResponses.map((r) => ({ voter_id: r.voter_id, weight: Number(r.weight) })),
     });
   }
@@ -158,12 +160,31 @@ export default async function DecisionDetailPage({ params }: { params: Promise<{
         </div>
       </div>
 
-      {quorumStats && (
+      {quorumStats && !quorumStats.reliable && (
+        <div className="rounded-2xl border border-ember/40 bg-ember/5 p-5">
+          <p className="font-meta text-ember-ink">QUÓRUM NO CONFIABLE</p>
+          <p className="mt-2 text-[14px] text-marine-deep max-w-2xl">
+            {quorumUniverse && quorumUniverse.unset > 0
+              ? `${quorumUniverse.unset} de ${quorumUniverse.totalUnits} unidades no tienen alícuota cargada, así que el universo de esta votación está incompleto y el porcentaje no representa al condominio.`
+              : "El condominio no tiene alícuotas cargadas, así que no hay universo contra el cual medir el quórum."}
+          </p>
+          {isAdmin && (
+            <Link
+              href="/admin/units/alicuotas"
+              className="mt-3 inline-block font-meta text-ember-ink hover:text-marine-deep transition-colors"
+            >
+              CARGAR ALÍCUOTAS →
+            </Link>
+          )}
+        </div>
+      )}
+
+      {quorumStats && quorumStats.reliable && (
         <div className="rounded-2xl bg-card border border-border p-5">
           <div className="flex items-center justify-between mb-2">
             <p className="font-meta text-mute">QUÓRUM</p>
             <p className="font-meta text-marine-deep">
-              {quorumStats.achieved_pct.toFixed(1)}% · REQUIERE {(quorumStats.required_pct ?? 0).toFixed(0)}%
+              {Math.min(quorumStats.achieved_pct, 100).toFixed(1)}% · REQUIERE {(quorumStats.required_pct ?? 0).toFixed(0)}%
               {quorumStats.met && " ✓ ALCANZADO"}
             </p>
           </div>

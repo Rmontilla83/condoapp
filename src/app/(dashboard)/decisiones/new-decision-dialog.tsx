@@ -346,20 +346,26 @@ export function NewDecisionDialog() {
 
         {step === "config" && (
           <div className="space-y-4">
-            <label className="flex items-start gap-3 rounded-lg border p-3 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={weighted}
-                onChange={(e) => setWeighted(e.target.checked)}
-                className="mt-1 h-4 w-4 cursor-pointer"
-              />
-              <div className="flex-1">
-                <p className="text-sm font-semibold">Voto ponderado por alícuota</p>
-                <p className="text-xs text-muted-foreground mt-0.5">
-                  Cada propietario vota con su % de alícuota. Inquilinos votan con peso 0 (queda registro pero no afecta cómputo).
-                </p>
-              </div>
-            </label>
+            {/* Solo en asamblea formal: en una encuesta rápida los resultados se
+                cuentan por cabeza, así que ofrecer voto ponderado ahí era una
+                promesa que el cómputo no cumple. */}
+            {kind === "formal_assembly" && (
+              <label className="flex items-start gap-3 rounded-lg border p-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={weighted}
+                  onChange={(e) => setWeighted(e.target.checked)}
+                  className="mt-1 h-4 w-4 cursor-pointer"
+                />
+                <div className="flex-1">
+                  <p className="text-sm font-semibold">Voto ponderado por alícuota</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    Cada propietario vota con su % de alícuota. Requiere tener las alícuotas
+                    cargadas. Inquilinos votan con peso 0 (queda registro pero no afecta cómputo).
+                  </p>
+                </div>
+              </label>
+            )}
 
             {kind === "formal_assembly" && (
               <div className="space-y-2">

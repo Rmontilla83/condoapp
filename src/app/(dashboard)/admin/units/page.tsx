@@ -1,7 +1,9 @@
 import { redirect } from "next/navigation";
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentProfile, getEffectiveRole } from "@/lib/queries";
 import { UnitManagerDialog } from "./unit-manager-dialog";
+import { aliquotStatus, computeCoverage, formatAliquot } from "@/lib/units/aliquot";
 import type { OwnershipMode } from "@/types/database";
 
 const MODE_LABEL: Record<OwnershipMode, string> = {
@@ -28,11 +30,30 @@ export default async function AdminUnitsPage() {
 
   const { data: units } = await supabase
     .from("units")
-    .select("id, unit_number, floor, block, type, ownership_mode")
+    .select("id, unit_number, floor, block, type, ownership_mode, aliquot")
     .eq("organization_id", profile.organization_id)
     .order("unit_number");
 
   const unitIds = (units ?? []).map((u) => u.id);
+
+  // Semáforo de alícuotas. Es el punto de entrada a la hoja: sin esto, la
+  // pantalla no da ninguna pista de que la alícuota existe ni de que hace falta.
+  const cobertura = computeCoverage(
+    (units ?? []).map((u) => ({
+      aliquot: u.aliquot === null || u.aliquot === undefined ? null : Number(u.aliquot),
+    })),
+  );
+  const estadoAliquot = aliquotStatus(cobertura);
+  const TONO_ALIQUOT: Record<string, string> = {
+    ok: "border-cyan/40 bg-cyan/5",
+    warn: "border-ember/40 bg-ember/5",
+    danger: "border-destructive/40 bg-destructive/5",
+  };
+  const TEXTO_ALIQUOT: Record<string, string> = {
+    ok: "text-cyan-ink",
+    warn: "text-ember-ink",
+    danger: "text-destructive",
+  };
 
   const [membersRes, invitesRes, codesRes] = await Promise.all([
     supabase
@@ -94,6 +115,23 @@ export default async function AdminUnitsPage() {
         </div>
       )}
 
+      {(units ?? []).length > 0 && (
+        <Link
+          href="/admin/units/alicuotas"
+          className={`group flex flex-wrap items-center justify-between gap-x-5 gap-y-2 rounded-2xl border p-5 transition-colors ${TONO_ALIQUOT[estadoAliquot.tone]}`}
+        >
+          <div className="min-w-0">
+            <p className={`font-meta ${TEXTO_ALIQUOT[estadoAliquot.tone]}`}>
+              ALÍCUOTAS · {estadoAliquot.label}
+            </p>
+            <p className="mt-2 text-[14px] text-marine-deep max-w-2xl">{estadoAliquot.detail}</p>
+          </div>
+          <span className={`font-meta shrink-0 transition-transform group-hover:translate-x-0.5 ${TEXTO_ALIQUOT[estadoAliquot.tone]}`}>
+            {cobertura.configured === 0 ? "CARGARLAS" : "EDITAR"} →
+          </span>
+        </Link>
+      )}
+
       <div className="grid gap-4 md:grid-cols-2">
         {(units ?? []).map((unit) => {
           const mode = unit.ownership_mode as OwnershipMode;
@@ -117,9 +155,22 @@ export default async function AdminUnitsPage() {
                       {unit.block && <span className="text-mute"> · {unit.block}</span>}
                     </h2>
                   </div>
-                  <span className={`font-meta px-2.5 py-1 rounded-md shrink-0 ${MODE_TONE[mode]}`}>
-                    {MODE_LABEL[mode]}
-                  </span>
+                  <div className="flex flex-col items-end gap-1.5 shrink-0">
+                    <span className={`font-meta px-2.5 py-1 rounded-md ${MODE_TONE[mode]}`}>
+                      {MODE_LABEL[mode]}
+                    </span>
+                    <span
+                      className={`font-meta px-2.5 py-1 rounded-md ${
+                        unit.aliquot === null || unit.aliquot === undefined
+                          ? "bg-ember/10 text-ember-ink"
+                          : "bg-cloud text-mute"
+                      }`}
+                    >
+                      {unit.aliquot === null || unit.aliquot === undefined
+                        ? "SIN ALÍCUOTA"
+                        : formatAliquot(Number(unit.aliquot))}
+                    </span>
+                  </div>
                 </div>
               </div>
 

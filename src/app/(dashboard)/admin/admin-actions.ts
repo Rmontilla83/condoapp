@@ -242,7 +242,9 @@ export async function addUnit(formData: FormData) {
       floor,
       block,
       type,
-      aliquot: 0,
+      // NULL = sin configurar. Antes se fijaba en 0, que era indistinguible de
+      // "exenta a propósito" y dejaba el condominio descuadrado en silencio.
+      aliquot: null,
     })
     .select("id, unit_number, organization_id")
     .single();

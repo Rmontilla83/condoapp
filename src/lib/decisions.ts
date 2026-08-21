@@ -41,6 +41,12 @@ export interface QuorumStats {
   achieved_pct: number;
   /** True si achieved_pct >= required_pct. False si required_pct=null. */
   met: boolean;
+  /**
+   * False cuando el universo no representa al condominio completo: sin alícuotas
+   * cargadas, o con carga parcial. En ese caso `achieved_pct` y `met` NO se
+   * pueden mostrar como un resultado: hay que decir que no es confiable.
+   */
+  reliable: boolean;
 }
 
 interface QuorumInput {
@@ -48,6 +54,8 @@ interface QuorumInput {
   quorum_pct: number | null;
   /** Suma alícuotas org (si weighted) O count owners activos (si no). */
   universe: number;
+  /** Ver QuorumStats.reliable. Por defecto true. */
+  reliable?: boolean;
   /** Lista de voters únicos: { voter_id, weight } */
   voters: Array<{ voter_id: string; weight: number }>;
 }
@@ -73,7 +81,9 @@ export function computeQuorum(input: QuorumInput): QuorumStats {
   }
 
   const achieved_pct = (achieved / universe) * 100;
-  const met = input.quorum_pct !== null && achieved_pct >= input.quorum_pct;
+  const reliable = input.reliable !== false;
+  // Un quórum sobre un universo incompleto no está "alcanzado": está mal medido.
+  const met = reliable && input.quorum_pct !== null && achieved_pct >= input.quorum_pct;
 
   return {
     required_pct: input.quorum_pct,
@@ -81,16 +91,33 @@ export function computeQuorum(input: QuorumInput): QuorumStats {
     achieved,
     achieved_pct,
     met,
+    reliable,
   };
+}
+
+export interface QuorumUniverse {
+  universe: number;
+  reliable: boolean;
+  /** Unidades sin alícuota cargada (solo aplica al modo ponderado). */
+  unset: number;
+  totalUnits: number;
 }
 
 /**
  * Calcula el universo (total esperado) para una org según el modo de quórum.
- * Si weighted=true: suma alícuotas de TODAS las units. Si suma=0 (fee_mode=flat),
- * fallback a count(units).
- * Si weighted=false: count owners activos.
+ *
+ * OJO con el modo ponderado: antes, si la suma de alícuotas era 0 esto caía a
+ * `units.length`, mezclando escalas — el universo quedaba en "cantidad de
+ * unidades" mientras `achieved` seguía sumando puntos de alícuota. Y con carga
+ * PARCIAL era peor todavía: si 10 de 40 unidades tienen alícuotas que suman 25%
+ * y esas 10 votan, achieved=25 sobre universe=25 daba **100% de quórum
+ * alcanzado** con 30 unidades sin representar, en la pantalla que decide una
+ * derrama. Ahora eso se reporta como no confiable en vez de como un número.
  */
-export async function getOrgQuorumUniverse(orgId: string, weighted: boolean): Promise<number> {
+export async function getOrgQuorumUniverse(
+  orgId: string,
+  weighted: boolean,
+): Promise<QuorumUniverse> {
   const supabase = await createClient();
 
   if (weighted) {
@@ -98,10 +125,15 @@ export async function getOrgQuorumUniverse(orgId: string, weighted: boolean): Pr
       .from("units")
       .select("aliquot")
       .eq("organization_id", orgId);
-    const total = (units ?? []).reduce((s, u) => s + Number(u.aliquot ?? 0), 0);
-    if (total > 0) return total;
-    // Fallback si aliquots no configuradas
-    return units?.length ?? 0;
+    const filas = units ?? [];
+    const total = filas.reduce((s, u) => s + Number(u.aliquot ?? 0), 0);
+    const unset = filas.filter((u) => u.aliquot === null || u.aliquot === undefined).length;
+    return {
+      universe: total,
+      reliable: total > 0 && unset === 0,
+      unset,
+      totalUnits: filas.length,
+    };
   }
 
   // No weighted: count owners activos
@@ -115,5 +147,35 @@ export async function getOrgQuorumUniverse(orgId: string, weighted: boolean): Pr
         .map((u) => u.id),
     );
 
-  return count ?? 0;
+  return {
+    universe: count ?? 0,
+    reliable: (count ?? 0) > 0,
+    unset: 0,
+    totalUnits: count ?? 0,
+  };
+}
+
+/**
+ * Cobertura de alícuotas del condominio. La usan los guards que impiden crear
+ * una asamblea ponderada sobre un padrón que todavía no existe.
+ */
+export async function getAliquotCoverage(orgId: string): Promise<{
+  totalUnits: number;
+  configured: number;
+  unset: number;
+  sum: number;
+}> {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("units")
+    .select("aliquot")
+    .eq("organization_id", orgId);
+
+  const filas = data ?? [];
+  return {
+    totalUnits: filas.length,
+    configured: filas.filter((u) => u.aliquot !== null && u.aliquot !== undefined).length,
+    unset: filas.filter((u) => u.aliquot === null || u.aliquot === undefined).length,
+    sum: filas.reduce((s, u) => s + Number(u.aliquot ?? 0), 0),
+  };
 }

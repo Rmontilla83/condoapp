@@ -85,7 +85,8 @@ export interface Unit {
   block: string | null;
   type: string;
   area_sqm: number | null;
-  aliquot: number;
+  /** NULL = sin configurar. 0 = exenta por decisión. Ver migration 034. */
+  aliquot: number | null;
   ownership_mode: OwnershipMode;
   created_at: string;
 }

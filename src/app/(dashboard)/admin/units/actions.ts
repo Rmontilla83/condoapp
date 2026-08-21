@@ -6,6 +6,11 @@ import { getCurrentProfile } from "@/lib/queries";
 import { isAdminRole } from "@/lib/permissions";
 import { revalidatePath } from "next/cache";
 import { randomBytes } from "node:crypto";
+import {
+  parseAliquotInput,
+  sumAliquots,
+  ALIQUOT_MAX_DECIMALS,
+} from "@/lib/units/aliquot";
 import type { OwnershipMode, MemberRole, TenantPermissions } from "@/types/database";
 
 function portalUrl() {
@@ -487,4 +492,163 @@ export async function setOrgPolicies(policies: {
   revalidatePath("/admin");
   revalidatePath("/admin/settings");
   return { success: true };
+}
+
+
+/**
+ * Guarda las alícuotas de todas las unidades del condominio, en un solo lote.
+ *
+ * Es la primera vía de escritura de `units.aliquot` en la historia de la app:
+ * hasta ahora addUnit() la fijaba en 0 y no había ningún UPDATE, así que el
+ * cobro `by_aliquot` y el voto ponderado —el diferenciador del landing— eran
+ * inutilizables para cualquier condominio nuevo.
+ *
+ * Todo-o-nada a propósito: un reparto a medio guardar es peor que no guardar.
+ */
+export async function setUnitAliquots(formData: FormData) {
+  const profile = await requireAdminOrSuper();
+  const orgId = profile.organization_id as string;
+
+  const motivo = ((formData.get("reason") as string) ?? "").trim();
+  if (motivo.length < 10) {
+    return {
+      error:
+        "Escribe por qué cambias las alícuotas (mínimo 10 caracteres). Es un dato con efectos de cobranza y de voto.",
+    };
+  }
+
+  let crudo: unknown;
+  try {
+    crudo = JSON.parse((formData.get("items") as string) ?? "[]");
+  } catch {
+    return { error: "No pudimos leer los valores enviados." };
+  }
+  if (!Array.isArray(crudo) || crudo.length === 0) {
+    return { error: "No hay alícuotas que guardar." };
+  }
+
+  // 1) Parseo y validación de cada fila ANTES de tocar la base.
+  const parsed: Array<{ id: string; value: number | null }> = [];
+  for (const item of crudo) {
+    const row = item as { id?: unknown; value?: unknown };
+    if (typeof row.id !== "string" || !row.id) {
+      return { error: "Envío inválido: falta el identificador de una unidad." };
+    }
+    const r = parseAliquotInput(
+      row.value === null || row.value === undefined ? "" : String(row.value),
+    );
+    if (!r.ok) return { error: `Unidad ${row.id.slice(0, 8)}: ${r.error}` };
+    parsed.push({ id: row.id, value: r.value });
+  }
+
+  const admin = createAdminClient();
+
+  // 2) Toda unidad recibida tiene que ser de ESTA organización.
+  //    Obligatorio: el admin client bypassa RLS y acá se escriben N filas de
+  //    una, así que un id colado escribiría en otro condominio.
+  const { data: propias, error: unitsError } = await admin
+    .from("units")
+    .select("id, unit_number, aliquot")
+    .eq("organization_id", orgId);
+
+  if (unitsError) return { error: `No pudimos leer las unidades: ${unitsError.message}` };
+
+  const porId = new Map((propias ?? []).map((u) => [u.id as string, u]));
+  const ajenas = parsed.filter((p) => !porId.has(p.id));
+  if (ajenas.length > 0) {
+    await logAuthEvent({
+      organization_id: orgId,
+      actor_id: profile.id,
+      event: "aliquots_update_rejected",
+      payload: { reason: "unit_not_in_org", count: ajenas.length },
+    });
+    return { error: "Algunas unidades no pertenecen a este condominio. No se guardó nada." };
+  }
+
+  // 3) Con una asamblea ponderada abierta Y con votos ya emitidos, cambiar las
+  //    alícuotas corrompe un cómputo en curso: decision_responses.weight quedó
+  //    congelado al votar, pero el quórum se recalcula en vivo en cada lectura.
+  //    Si todavía nadie votó, no hay nada que corromper y se deja pasar.
+  const { data: abiertas } = await admin
+    .from("decisions")
+    .select("id, title, decision_questions(id, decision_responses(id))")
+    .eq("organization_id", orgId)
+    .eq("status", "open")
+    .eq("weighted_by_aliquot", true);
+
+  const conVotos = (abiertas ?? []).filter((d) => {
+    const qs = (d.decision_questions ?? []) as Array<{ decision_responses?: unknown[] }>;
+    return qs.some((q) => (q.decision_responses ?? []).length > 0);
+  });
+
+  if (conVotos.length > 0) {
+    const nombres = conVotos.map((d) => `"${d.title}"`).join(", ");
+    return {
+      error:
+        `No puedes cambiar las alícuotas mientras ${conVotos.length === 1 ? "la asamblea" : "las asambleas"} ` +
+        `${nombres} ${conVotos.length === 1 ? "está" : "están"} en curso y con votos emitidos: los votos ya ` +
+        `contados quedaron con el peso anterior. Ciérrala en Decisiones y vuelve.`,
+    };
+  }
+
+  // 4) Escritura. Solo las que efectivamente cambian.
+  const antes = sumAliquots(
+    (propias ?? []).map((u) => ({ aliquot: u.aliquot === null ? null : Number(u.aliquot) })),
+  );
+
+  const cambios: Record<string, [number | null, number | null]> = {};
+  const aEscribir = parsed.filter((p) => {
+    const actual = porId.get(p.id)!.aliquot;
+    const valorActual = actual === null ? null : Number(actual);
+    if (valorActual === p.value) return false;
+    cambios[porId.get(p.id)!.unit_number as string] = [valorActual, p.value];
+    return true;
+  });
+
+  if (aEscribir.length === 0) {
+    return { success: true, changed: 0, sum: antes };
+  }
+
+  const resultados = await Promise.all(
+    aEscribir.map((p) =>
+      admin
+        .from("units")
+        .update({ aliquot: p.value })
+        .eq("id", p.id)
+        .eq("organization_id", orgId),
+    ),
+  );
+
+  const fallo = resultados.find((r) => r.error);
+  if (fallo?.error) {
+    await logAuthEvent({
+      organization_id: orgId,
+      actor_id: profile.id,
+      event: "aliquots_update_failed",
+      payload: { error: fallo.error.message, intentadas: aEscribir.length },
+    });
+    return { error: `No se pudieron guardar todas las alícuotas: ${fallo.error.message}` };
+  }
+
+  const despues = sumAliquots(parsed.map((p) => ({ aliquot: p.value })));
+
+  await logAuthEvent({
+    organization_id: orgId,
+    actor_id: profile.id,
+    event: "aliquots_updated",
+    payload: {
+      reason: motivo,
+      sum_before: antes,
+      sum_after: despues,
+      decimals: ALIQUOT_MAX_DECIMALS,
+      changes: cambios,
+    },
+  });
+
+  revalidatePath("/admin/units");
+  revalidatePath("/admin/units/alicuotas");
+  revalidatePath("/admin");
+  revalidatePath("/decisiones");
+
+  return { success: true, changed: aEscribir.length, sum: despues };
 }

@@ -4,7 +4,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentProfile } from "@/lib/queries";
 import { isAdminRole, canTenantAct } from "@/lib/permissions";
-import { getVoterAliquot } from "@/lib/decisions";
+import { getVoterAliquot, getAliquotCoverage } from "@/lib/decisions";
 import { revalidatePath } from "next/cache";
 import type { DecisionKind } from "@/types/database";
 
@@ -45,7 +45,30 @@ export async function createDecision(formData: FormData) {
     }
   }
 
-  const weighted_by_aliquot = formData.get("weighted_by_aliquot") === "true";
+  // El voto ponderado solo tiene sentido en una asamblea formal: en un
+  // quick_poll la UI cuenta por cabeza (decision-card.tsx), así que marcarlo ahí
+  // hacía que la app dijera una cosa y computara otra.
+  const weighted_by_aliquot =
+    kind === "formal_assembly" && formData.get("weighted_by_aliquot") === "true";
+
+  // Sin alícuotas cargadas, getVoterAliquot devuelve 0 para todos: la asamblea
+  // nace con todos los pesos en cero y el quórum no se puede medir.
+  if (weighted_by_aliquot) {
+    const cobertura = await getAliquotCoverage(profile.organization_id);
+    if (cobertura.sum <= 0) {
+      return {
+        error:
+          "No puedes crear una asamblea con voto ponderado si el condominio no tiene alícuotas cargadas: todos los votos pesarían 0. Cárgalas en Unidades → Alícuotas y vuelve.",
+      };
+    }
+    if (cobertura.unset > 0) {
+      return {
+        error:
+          `Faltan ${cobertura.unset} de ${cobertura.totalUnits} unidades por cargar su alícuota. ` +
+          "Esos propietarios votarían con peso 0 y el quórum quedaría mal medido. Complétalas en Unidades → Alícuotas.",
+      };
+    }
+  }
   const quorumRaw = formData.get("quorum_pct") as string;
   const quorum_pct = kind === "formal_assembly" && quorumRaw
     ? Math.min(Math.max(parseFloat(quorumRaw), 0), 100)
