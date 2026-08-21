@@ -1,6 +1,7 @@
 import { getCurrentProfile, getUserUnitIds, getOrganization } from "@/lib/queries";
 import { createClient } from "@/lib/supabase/server";
 import { ProfileForm } from "./profile-form";
+import { PasswordForm } from "./password-form";
 
 export default async function PerfilPage() {
   const profile = await getCurrentProfile();
@@ -48,6 +49,8 @@ export default async function PerfilPage() {
           unitNumber={unitNumber}
         />
       </div>
+
+      <PasswordForm />
     </div>
   );
 }

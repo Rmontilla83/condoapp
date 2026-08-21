@@ -10,7 +10,7 @@ import {
 import { OrgPoliciesForm } from "./org-policies-form";
 import { BankAccountsForm } from "./bank-accounts-form";
 import { FeeConfigForm } from "./fee-config-form";
-import { AmenityPoliciesForm } from "./amenity-policies-form";
+import { CommonAreasManager } from "./common-areas-manager";
 import type {
   BankAccount,
   CommonArea,
@@ -44,8 +44,10 @@ export default async function AdminSettingsPage() {
     supabase
       .from("common_areas")
       .select("*")
+      // Sin filtrar por is_active: el gestor también lista las retiradas para
+      // poder reactivarlas. /reservas sí filtra, que es donde importa.
       .eq("organization_id", org.id)
-      .eq("is_active", true)
+      .order("is_active", { ascending: false })
       .order("name"),
   ]);
 
@@ -108,7 +110,7 @@ export default async function AdminSettingsPage() {
           mismo residente, duración máxima y con cuánta anticipación. Se aplican automáticamente
           cuando alguien intenta reservar.
         </p>
-        <AmenityPoliciesForm areas={amenities} />
+        <CommonAreasManager areas={amenities} />
       </div>
     </div>
   );

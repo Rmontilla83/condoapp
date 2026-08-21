@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { AtryumLogo } from "@/components/brand/atryum-logo";
 
-type Stage = "email" | "otp" | "verifying" | "success";
+type Stage = "email" | "otp" | "verifying" | "success" | "password";
 
 const RESEND_COOLDOWN_SECONDS = 60; // Supabase Auth rate-limita a 60s entre OTPs del mismo email
 const LAST_EMAIL_KEY = "atryum:lastEmail";
@@ -33,6 +33,9 @@ function translateAuthError(message: string): string {
   if (m.includes("signup") && m.includes("disabled")) {
     return "Este correo no tiene acceso. Pide una invitación al administrador.";
   }
+  if (m.includes("invalid login credentials")) {
+    return "Correo o contraseña incorrectos. Si nunca creaste una contraseña, entra con el código y créala desde tu perfil.";
+  }
   if (m.includes("smtp") || m.includes("email")) {
     return `Problema al enviar el correo: ${message}`;
   }
@@ -56,6 +59,7 @@ export default function LoginPage() {
     return "";
   });
   const [cooldown, setCooldown] = useState(0);
+  const [password, setPassword] = useState("");
   const otpInputRef = useRef<HTMLInputElement>(null);
   const emailInOtpRef = useRef<HTMLInputElement>(null);
 
@@ -91,6 +95,37 @@ export default function LoginPage() {
       },
     });
     return sendError;
+  }
+
+  /**
+   * Entrada con contraseña.
+   *
+   * El acceso principal sigue siendo el código por correo: es lo que usa un
+   * residente que entra dos veces al mes y no quiere recordar nada. La
+   * contraseña existe para quien entra todo el tiempo —administradores,
+   * pruebas— y no quiere esperar un correo cada vez. Cada persona la crea desde
+   * su propio perfil; nadie se la asigna.
+   */
+  async function handlePasswordLogin(e: React.FormEvent) {
+    e.preventDefault();
+    setError("");
+    if (!email || !password) {
+      setError("Escribe tu correo y tu contraseña.");
+      return;
+    }
+    setLoading(true);
+    const supabase = createClient();
+    const { error: signInError } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+    if (signInError) {
+      setError(translateAuthError(signInError.message));
+      setLoading(false);
+      return;
+    }
+    setStage("success");
+    router.push("/dashboard");
   }
 
   async function handleRequest(e: React.FormEvent) {
@@ -268,14 +303,82 @@ export default function LoginPage() {
                   </Button>
                 </form>
 
-                <div className="mt-5 pt-5 border-t border-border text-center">
+                <div className="mt-5 pt-5 border-t border-border flex flex-wrap items-center justify-center gap-x-5 gap-y-2">
                   <button
                     type="button"
                     onClick={jumpToOtp}
-                    className="font-meta text-cyan hover:text-marine-deep transition-colors"
+                    className="font-meta text-cyan-ink hover:text-marine-deep transition-colors"
                   >
                     YA TENGO UN CÓDIGO →
                   </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setError("");
+                      setStage("password");
+                    }}
+                    className="font-meta text-mute hover:text-marine-deep transition-colors"
+                  >
+                    ENTRAR CON CONTRASEÑA
+                  </button>
+                </div>
+              </>
+            )}
+
+            {stage === "password" && (
+              <>
+                <form onSubmit={handlePasswordLogin} className="space-y-5">
+                  <div className="space-y-2">
+                    <Label htmlFor="email-pwd" className="font-meta text-mute">
+                      CORREO ELECTRÓNICO
+                    </Label>
+                    <Input
+                      id="email-pwd"
+                      type="email"
+                      placeholder="tu@correo.com"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      required
+                      autoFocus
+                      autoComplete="email"
+                      className="h-11 text-[15px]"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="pwd" className="font-meta text-mute">
+                      CONTRASEÑA
+                    </Label>
+                    <Input
+                      id="pwd"
+                      type="password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      required
+                      autoComplete="current-password"
+                      className="h-11 text-[15px]"
+                    />
+                  </div>
+                  {error && <p className="text-[13px] text-destructive">{error}</p>}
+                  <Button type="submit" className="w-full h-11" disabled={loading}>
+                    {loading ? "Entrando..." : "Entrar"}
+                  </Button>
+                </form>
+
+                <div className="mt-5 pt-5 border-t border-border text-center space-y-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setError("");
+                      setPassword("");
+                      setStage("email");
+                    }}
+                    className="font-meta text-cyan-ink hover:text-marine-deep transition-colors"
+                  >
+                    ← ENTRAR CON UN CÓDIGO POR CORREO
+                  </button>
+                  <p className="text-[12px] text-mute">
+                    ¿Nunca creaste una contraseña? Entra con el código y créala desde tu perfil.
+                  </p>
                 </div>
               </>
             )}

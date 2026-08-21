@@ -264,3 +264,146 @@ export async function upsertFeeBreakdownItems(formData: FormData): Promise<Actio
   revalidatePath("/pagos");
   return { success: true };
 }
+
+
+/* ═══════════════════════════════════════════════════════════════════
+   Áreas comunes
+   ═══════════════════════════════════════════════════════════════════
+
+   `common_areas` no tenía NINGÚN camino de creación en la app: solo se leían y
+   se editaban las políticas de las que ya existían. Un condominio nuevo tenía
+   /reservas permanentemente vacía, igual que pasaba con las alícuotas.
+
+   Escritura por admin client: la tabla solo tiene una policy de SELECT, así que
+   ni un admin puede escribirla por RLS. La autorización real es requireAdmin().
+   ═══════════════════════════════════════════════════════════════════ */
+
+const MAX_COMMON_AREAS = 40;
+
+function textoLimpio(v: FormDataEntryValue | null, max: number): string {
+  return typeof v === "string" ? v.trim().slice(0, max) : "";
+}
+
+export async function createCommonArea(formData: FormData): Promise<ActionResult> {
+  const profile = await getCurrentProfile();
+  const guard = requireAdmin(profile);
+  if (guard) return guard;
+
+  const name = textoLimpio(formData.get("name"), 60);
+  if (name.length < 2) return { error: "Ponle un nombre al área (mínimo 2 caracteres)." };
+
+  const description = textoLimpio(formData.get("description"), 300) || null;
+  const rules = textoLimpio(formData.get("rules"), 1000) || null;
+
+  const capacityRaw = formData.get("capacity");
+  const capacity = toNullableInt(capacityRaw);
+  if (capacity === undefined) return { error: "Capacidad inválida." };
+  if (capacity !== null && capacity < 0) return { error: "La capacidad no puede ser negativa." };
+
+  const supabase = createAdminClient();
+
+  // Cota defensiva: ningún condominio tiene 40 amenidades, y sin límite un
+  // script podría llenar la tabla.
+  const { count } = await supabase
+    .from("common_areas")
+    .select("id", { count: "exact", head: true })
+    .eq("organization_id", profile!.organization_id!);
+
+  if ((count ?? 0) >= MAX_COMMON_AREAS) {
+    return { error: `No puedes tener más de ${MAX_COMMON_AREAS} áreas comunes.` };
+  }
+
+  // Sin UNIQUE en la tabla: dos "Salón de fiestas" en el mismo condominio son
+  // indistinguibles para el residente al reservar.
+  const { data: existente } = await supabase
+    .from("common_areas")
+    .select("id")
+    .eq("organization_id", profile!.organization_id!)
+    .ilike("name", name)
+    .maybeSingle();
+
+  if (existente) return { error: `Ya existe un área que se llama "${name}".` };
+
+  const { error } = await supabase.from("common_areas").insert({
+    organization_id: profile!.organization_id!,
+    name,
+    description,
+    capacity,
+    rules,
+    is_active: true,
+  });
+
+  if (error) return { error: error.message };
+
+  revalidatePath("/admin/settings");
+  revalidatePath("/reservas");
+  return { success: true };
+}
+
+export async function updateCommonArea(formData: FormData): Promise<ActionResult> {
+  const profile = await getCurrentProfile();
+  const guard = requireAdmin(profile);
+  if (guard) return guard;
+
+  const id = textoLimpio(formData.get("id"), 40);
+  if (!id) return { error: "Falta el área a editar." };
+
+  const name = textoLimpio(formData.get("name"), 60);
+  if (name.length < 2) return { error: "Ponle un nombre al área (mínimo 2 caracteres)." };
+
+  const capacity = toNullableInt(formData.get("capacity"));
+  if (capacity === undefined) return { error: "Capacidad inválida." };
+
+  const supabase = createAdminClient();
+
+  const { data, error } = await supabase
+    .from("common_areas")
+    .update({
+      name,
+      description: textoLimpio(formData.get("description"), 300) || null,
+      rules: textoLimpio(formData.get("rules"), 1000) || null,
+      capacity,
+    })
+    .eq("id", id)
+    .eq("organization_id", profile!.organization_id!)
+    .select("id");
+
+  if (error) return { error: error.message };
+  if (!data || data.length === 0) return { error: "Área no encontrada en este condominio." };
+
+  revalidatePath("/admin/settings");
+  revalidatePath("/reservas");
+  return { success: true };
+}
+
+/**
+ * Retira o reactiva un área.
+ *
+ * NO se borra: `reservations.common_area_id` es ON DELETE CASCADE, así que un
+ * DELETE se llevaría por delante todo el historial de reservas del salón. Un
+ * área retirada deja de aparecer para reservar y conserva su historia.
+ */
+export async function setCommonAreaActive(
+  areaId: string,
+  active: boolean,
+): Promise<ActionResult> {
+  const profile = await getCurrentProfile();
+  const guard = requireAdmin(profile);
+  if (guard) return guard;
+
+  const supabase = createAdminClient();
+
+  const { data, error } = await supabase
+    .from("common_areas")
+    .update({ is_active: active })
+    .eq("id", areaId)
+    .eq("organization_id", profile!.organization_id!)
+    .select("id");
+
+  if (error) return { error: error.message };
+  if (!data || data.length === 0) return { error: "Área no encontrada en este condominio." };
+
+  revalidatePath("/admin/settings");
+  revalidatePath("/reservas");
+  return { success: true };
+}
