@@ -165,6 +165,68 @@ export async function getCurrentMonthExpenseSummary(
   };
 }
 
+/**
+ * Pagos aprobados de cada cuota, para que el propietario pueda DEMOSTRAR que pagó.
+ *
+ * Hasta ahora una cuota pagada solo mostraba el badge "Pagado": sin fecha, sin
+ * referencia, sin enlace al comprobante que él mismo subió. Seis meses después,
+ * cuando un administrador nuevo le reclama la cuota de marzo, no tenía nada que
+ * mostrar. Es el reclamo que termina en el grupo de WhatsApp.
+ */
+export interface ApprovedPaymentInfo {
+  transaction_id: string;
+  invoice_id: string;
+  amount: number;
+  amount_bs: number | null;
+  currency_paid: string | null;
+  exchange_rate: number | null;
+  payment_method: string;
+  reference: string | null;
+  receipt_url: string | null;
+  paid_at: string;
+  reviewed_at: string | null;
+}
+
+export async function getApprovedPaymentsByInvoice(
+  invoiceIds: string[],
+): Promise<Map<string, ApprovedPaymentInfo>> {
+  const out = new Map<string, ApprovedPaymentInfo>();
+  if (invoiceIds.length === 0) return out;
+
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("transactions")
+    .select(
+      "id, invoice_id, amount, amount_bs, currency_paid, exchange_rate, payment_method, reference, receipt_url, paid_at, reviewed_at",
+    )
+    .in("invoice_id", invoiceIds)
+    .eq("status", "approved")
+    .order("paid_at", { ascending: false });
+
+  for (const t of data ?? []) {
+    const invoiceId = t.invoice_id as string;
+    // La más reciente gana: si una cuota se pagó dos veces, la constancia es la
+    // del pago que quedó.
+    if (out.has(invoiceId)) continue;
+    out.set(invoiceId, {
+      transaction_id: t.id as string,
+      invoice_id: invoiceId,
+      amount: Number(t.amount),
+      amount_bs: t.amount_bs === null || t.amount_bs === undefined ? null : Number(t.amount_bs),
+      currency_paid: (t.currency_paid as string | null) ?? null,
+      exchange_rate:
+        t.exchange_rate === null || t.exchange_rate === undefined ? null : Number(t.exchange_rate),
+      payment_method: (t.payment_method as string) ?? "transfer",
+      reference: (t.reference as string | null) ?? null,
+      receipt_url: (t.receipt_url as string | null) ?? null,
+      paid_at: t.paid_at as string,
+      reviewed_at: (t.reviewed_at as string | null) ?? null,
+    });
+  }
+
+  return out;
+}
+
 export async function getOrgInvoices(orgId: string) {
   const supabase = await createClient();
   const { data } = await supabase

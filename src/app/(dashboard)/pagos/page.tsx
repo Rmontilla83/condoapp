@@ -4,11 +4,13 @@ import {
   getInvoicesForUser,
   getInvoiceIdsWithPendingTransactions,
   getLatestRejectionsByInvoice,
+  getApprovedPaymentsByInvoice,
   getFeeBreakdown,
   getCurrentRate,
   getOrganization,
 } from "@/lib/queries";
 import { todayInTimeZone } from "@/lib/utils";
+import { signStorageRefs } from "@/lib/storage";
 import { InvoiceRow } from "./invoice-row";
 import { PendingInvoices } from "./pending-invoices";
 import { PaymentMethods } from "./payment-methods";
@@ -47,6 +49,16 @@ export default async function PagosPage() {
   // Cuotas que volvieron a estar pendientes porque el admin rechazó el
   // comprobante. Antes reaparecían sin explicación ninguna.
   const rechazos = await getLatestRejectionsByInvoice(actionableInvoices.map((i) => i.id));
+
+  // Pagos aprobados del historial: fecha, referencia y el comprobante que subió
+  // el propio dueño. Sin esto, una cuota pagada solo decía "Pagado" y el
+  // propietario no tenía con qué demostrarlo.
+  const pagos = await getApprovedPaymentsByInvoice(paidInvoices.map((i) => i.id));
+  const pagosLista = [...pagos.values()];
+  const firmasComprobantes = await signStorageRefs(pagosLista.map((p) => p.receipt_url));
+  const urlFirmadaPorTx = new Map(
+    pagosLista.map((p, i) => [p.transaction_id, firmasComprobantes[i]]),
+  );
 
   const inReviewTotal = inReviewInvoices.reduce((sum, i) => sum + Number(i.amount), 0);
   const actionableTotal = actionableInvoices.reduce((sum, i) => sum + Number(i.amount), 0);
@@ -253,9 +265,29 @@ export default async function PagosPage() {
             </div>
           </div>
           <div className="space-y-3">
-            {paidInvoices.map((invoice) => (
-              <InvoiceRow key={invoice.id} invoice={invoice} rate={rate} />
-            ))}
+            {paidInvoices.map((invoice) => {
+              const pago = pagos.get(invoice.id);
+              return (
+                <InvoiceRow
+                  key={invoice.id}
+                  invoice={invoice}
+                  rate={rate}
+                  today={hoy}
+                  payment={
+                    pago
+                      ? {
+                          paid_at: pago.paid_at,
+                          reviewed_at: pago.reviewed_at,
+                          payment_method: pago.payment_method,
+                          reference: pago.reference,
+                          receipt_url: urlFirmadaPorTx.get(pago.transaction_id) ?? null,
+                          amount_bs: pago.amount_bs,
+                        }
+                      : undefined
+                  }
+                />
+              );
+            })}
           </div>
         </div>
       )}

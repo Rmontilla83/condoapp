@@ -2,7 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { getCurrentProfile } from "@/lib/queries";
+import { getCurrentProfile, getCurrentRate } from "@/lib/queries";
 import { isAdminRole } from "@/lib/permissions";
 import { revalidatePath } from "next/cache";
 import {
@@ -94,6 +94,16 @@ export async function submitPaymentForMultipleInvoices(formData: FormData) {
 
   const groupId = invoices.length > 1 ? crypto.randomUUID() : null;
 
+  // Tasa del día, congelada en la transacción.
+  //
+  // Las columnas `amount_bs` y `currency_paid` existen desde la migration 007 y
+  // nunca las escribió nadie: de un pago hecho en bolívares no quedaba ningún
+  // rastro de a qué tasa se hizo. Sin eso no hay constancia que valga: seis
+  // meses después nadie puede reconstruir cuánto se transfirió realmente.
+  const rateData = await getCurrentRate(profile.organization_id as string);
+  const tasa = Number(rateData?.rate) || 0;
+  const pagadoEnBs = method === "transfer" || method === "mobile_payment";
+
   const txInserts = invoices.map((inv) => ({
     invoice_id: inv.id as string,
     amount: Number(inv.amount),
@@ -104,6 +114,9 @@ export async function submitPaymentForMultipleInvoices(formData: FormData) {
     paid_by: profile.id,
     status: "pending" as const,
     payment_group_id: groupId,
+    amount_bs: tasa > 0 ? Math.round(Number(inv.amount) * tasa * 100) / 100 : null,
+    currency_paid: pagadoEnBs && tasa > 0 ? "VES" : (inv.currency as string),
+    exchange_rate: tasa > 0 ? tasa : null,
   }));
 
   const { error } = await supabase.from("transactions").insert(txInserts);

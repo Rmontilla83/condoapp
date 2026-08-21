@@ -382,3 +382,43 @@
   background: rgba(47, 180, 230, 0.25);
   color: var(--color-marine-deep);
 }
+
+/* ═══ Impresión ═══
+   La constancia de pago es lo único que se imprime en esta app. Todo lo que es
+   navegación estorba en el papel: sidebar, header, bottom-nav, el FAB de pago y
+   la franja de "VIENDO COMO" del super_admin. */
+@media print {
+  aside,
+  header,
+  nav,
+  [data-print-hide],
+  .print\:hidden {
+    display: none !important;
+  }
+
+  html,
+  body {
+    background: #fff !important;
+  }
+
+  main {
+    padding: 0 !important;
+    margin: 0 !important;
+    max-width: none !important;
+  }
+
+  /* Los tokens de marca en papel: fondos oscuros gastan tinta y no aportan. */
+  .bg-card,
+  .bg-cloud,
+  .bg-frost {
+    background: #fff !important;
+  }
+
+  a[href]::after {
+    content: none !important;
+  }
+
+  @page {
+    margin: 1.5cm;
+  }
+}

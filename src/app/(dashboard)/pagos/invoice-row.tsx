@@ -27,9 +27,22 @@ interface Props {
    * introducir un desajuste de hidratación (el servidor está en UTC).
    */
   today?: string;
+  /**
+   * Datos del pago aprobado, para que una cuota pagada pueda DEMOSTRARSE.
+   * Antes solo mostraba el badge "Pagado": sin fecha, sin referencia, sin
+   * comprobante. El propietario no tenía nada que enseñar seis meses después.
+   */
+  payment?: {
+    paid_at: string;
+    reviewed_at: string | null;
+    payment_method: string;
+    reference: string | null;
+    receipt_url: string | null;
+    amount_bs: number | null;
+  };
 }
 
-export function InvoiceRow({ invoice, rate = 0, selected, onToggle, onPayClick, inReview, today }: Props) {
+export function InvoiceRow({ invoice, rate = 0, selected, onToggle, onPayClick, inReview, today, payment }: Props) {
   const isPaid = invoice.status === "paid";
   // El vencimiento se deriva de la fecha, no del status: nada en el código
   // escribe nunca 'overdue', así que este badge jamás se encendía en producción.
@@ -42,13 +55,17 @@ export function InvoiceRow({ invoice, rate = 0, selected, onToggle, onPayClick, 
     : statusConfig[invoice.status as keyof typeof statusConfig] ?? statusConfig.pending;
   const selectable = onToggle !== undefined;
 
+  const fmt = (iso: string | null | undefined) =>
+    iso ? new Date(iso).toLocaleDateString("es", { day: "numeric", month: "short", year: "numeric" }) : null;
+
   return (
     <div
-      className={`flex items-center justify-between rounded-lg border p-4 gap-3 transition ${
+      className={`rounded-lg border p-4 transition ${
         inReview ? "border-amber-300 bg-amber-50/50" :
         selectable && selected ? "border-cyan bg-cyan/5" : ""
       }`}
     >
+      <div className="flex items-center justify-between gap-3">
       <div className="flex items-center gap-3 min-w-0 flex-1">
         {selectable && (
           <input
@@ -115,7 +132,42 @@ export function InvoiceRow({ invoice, rate = 0, selected, onToggle, onPayClick, 
             {config.label}
           </Badge>
         ) : null}
+        </div>
       </div>
+
+      {/* Comprobante de que se pagó: fecha, referencia, la captura que subió el
+          propio dueño, y la constancia imprimible. */}
+      {isPaid && payment && (
+        <div className="mt-3 pt-3 border-t border-border flex flex-wrap items-center gap-x-4 gap-y-1.5">
+          <span className="font-meta text-mute">
+            PAGADO EL {fmt(payment.paid_at)?.toUpperCase()}
+          </span>
+          {payment.reference && (
+            <span className="font-mono text-[12px] text-mute">REF {payment.reference}</span>
+          )}
+          {payment.amount_bs != null && payment.amount_bs > 0 && (
+            <span className="font-mono text-[12px] text-mute tabular-nums">
+              Bs {payment.amount_bs.toFixed(2)}
+            </span>
+          )}
+          {payment.receipt_url && (
+            <a
+              href={payment.receipt_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-meta text-cyan-ink hover:text-marine-deep transition-colors"
+            >
+              VER COMPROBANTE
+            </a>
+          )}
+          <a
+            href={`/pagos/${invoice.id}/constancia`}
+            className="font-meta text-cyan-ink hover:text-marine-deep transition-colors"
+          >
+            DESCARGAR CONSTANCIA →
+          </a>
+        </div>
+      )}
     </div>
   );
 }
