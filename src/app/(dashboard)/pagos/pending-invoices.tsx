@@ -62,7 +62,7 @@ export function PendingInvoices({
   if (invoices.length === 0) {
     return (
       <div className="py-6 text-center">
-        <p className="font-meta text-cyan">SIN CUOTAS PENDIENTES</p>
+        <p className="font-meta text-cyan-ink">SIN CUOTAS PENDIENTES</p>
       </div>
     );
   }
@@ -125,7 +125,7 @@ export function PendingInvoices({
             disabled={mixed}
             className="bg-ember hover:bg-ember/90 text-marine-deep"
           >
-            Subir comprobante
+            Registrar pago
           </Button>
         </div>
       )}

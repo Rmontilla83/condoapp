@@ -2,6 +2,7 @@ import {
   getCurrentProfile,
   getDashboardContext,
   getCurrentMonthExpenseSummary,
+  getLatestRejectionsByInvoice,
 } from "@/lib/queries";
 import { todayInTimeZone, describeDueDate } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -24,10 +25,10 @@ const statusLabels: Record<string, string> = {
 };
 
 const statusTone: Record<string, string> = {
-  new: "bg-cyan/10 text-cyan",
-  in_review: "bg-ember/15 text-ember",
-  in_progress: "bg-ember/15 text-ember",
-  resolved: "bg-cyan/10 text-cyan",
+  new: "bg-cyan/10 text-cyan-ink",
+  in_review: "bg-ember/15 text-ember-ink",
+  in_progress: "bg-ember/15 text-ember-ink",
+  resolved: "bg-cyan/10 text-cyan-ink",
   cancelled: "bg-mute/15 text-mute",
 };
 
@@ -58,7 +59,12 @@ export default async function DashboardPage() {
   const tasa = Number(ctx.rate?.rate ?? 0);
   const totalBs = tasa > 0 ? actionableTotal * tasa : 0;
 
-  const gastoDelMes = await getCurrentMonthExpenseSummary(profile.organization_id, hoy);
+  const [gastoDelMes, rechazos] = await Promise.all([
+    getCurrentMonthExpenseSummary(profile.organization_id, hoy),
+    // El rechazo tiene que llegar a la PRIMERA pantalla: es acá donde el
+    // propietario ve reaparecer una deuda que creía resuelta.
+    getLatestRejectionsByInvoice(actionableInvoices.map((i) => i.id)),
+  ]);
   const inReviewTotal = inReviewInvoices.reduce((s, i) => s + Number(i.amount), 0);
 
   return (
@@ -76,7 +82,7 @@ export default async function DashboardPage() {
               <p className="font-meta text-mute">SALDO PENDIENTE · USD</p>
               <p
                 className={`mt-4 font-display text-[clamp(2.75rem,6vw,4rem)] leading-none tracking-[-0.03em] tabular-nums ${
-                  actionableTotal > 0 ? "text-marine-deep" : "text-cyan"
+                  actionableTotal > 0 ? "text-marine-deep" : "text-cyan-ink"
                 }`}
               >
                 <AnimatedCounter
@@ -113,7 +119,7 @@ export default async function DashboardPage() {
                       vencimiento.tone === "vencida"
                         ? "text-destructive"
                         : vencimiento.tone === "hoy" || vencimiento.tone === "pronto"
-                          ? "text-ember"
+                          ? "text-ember-ink"
                           : "text-mute"
                     }`}
                   >
@@ -140,6 +146,29 @@ export default async function DashboardPage() {
             />
           </div>
         </div>
+      )}
+
+      {/* Un comprobante rechazado explica por qué volvió a subir el saldo. */}
+      {rechazos.size > 0 && (
+        <Link
+          href="/pagos"
+          className="group flex flex-wrap items-center justify-between gap-x-4 gap-y-2 rounded-2xl border border-destructive/40 bg-destructive/5 p-5 transition-colors hover:bg-destructive/10"
+        >
+          <div className="min-w-0">
+            <p className="font-meta text-destructive">
+              COMPROBANTE{rechazos.size !== 1 ? "S" : ""} RECHAZADO{rechazos.size !== 1 ? "S" : ""}
+            </p>
+            <p className="mt-2 text-[15px] text-marine-deep">
+              {rechazos.size === 1
+                ? "El administrador no pudo confirmar uno de tus pagos."
+                : `El administrador no pudo confirmar ${rechazos.size} de tus pagos.`}{" "}
+              <span className="text-mute">Por eso la cuota sigue pendiente.</span>
+            </p>
+          </div>
+          <span className="font-meta text-destructive shrink-0 transition-transform group-hover:translate-x-0.5">
+            VER POR QUÉ →
+          </span>
+        </Link>
       )}
 
       {/* Transparencia del gasto. /finanzas ya lo resolvía bien pero no tenía

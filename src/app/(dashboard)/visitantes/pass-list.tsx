@@ -69,7 +69,7 @@ export function PassList({ passes, orgName, showUnit = false, hideShareButton = 
                   <p className="text-[14px] font-medium text-marine-deep truncate">
                     {pass.visitor_name}
                     {pass.vehicle_plate && (
-                      <span className="ml-2 font-meta text-cyan">🚗 {pass.vehicle_plate}</span>
+                      <span className="ml-2 font-meta text-cyan-ink">🚗 {pass.vehicle_plate}</span>
                     )}
                   </p>
                   <p className="mt-0.5 font-meta text-mute truncate">

@@ -234,7 +234,7 @@ export function BudgetEditor({ year, budget, items, categories, executedByCatego
       </div>
 
       {isApproved && (
-        <p className="font-meta text-cyan">
+        <p className="font-meta text-cyan-ink">
           ✓ APROBADO {budget?.approved_at && `EL ${new Date(budget.approved_at).toLocaleDateString("es")}`}
         </p>
       )}

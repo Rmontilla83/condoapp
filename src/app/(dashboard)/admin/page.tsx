@@ -120,7 +120,7 @@ export default async function AdminPage() {
   return (
     <div className="space-y-10">
       <div>
-        <span className="font-meta-loose text-cyan">PANEL ADMINISTRADOR</span>
+        <span className="font-meta-loose text-cyan-ink">PANEL ADMINISTRADOR</span>
         <h1 className="mt-4 font-display text-[clamp(2rem,4.5vw,3.25rem)] leading-[1.05] tracking-[-0.035em] text-marine-deep">
           Vista <em className="font-editorial text-cyan">general</em>
         </h1>
@@ -219,7 +219,7 @@ export default async function AdminPage() {
 
           {morosos.length === 0 ? (
             <div className="py-6 text-center">
-              <p className="font-meta text-cyan">TODAS AL DÍA · GRACIAS</p>
+              <p className="font-meta text-cyan-ink">TODAS AL DÍA · GRACIAS</p>
             </div>
           ) : (
             <div className="space-y-0">

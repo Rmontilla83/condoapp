@@ -22,8 +22,11 @@ const KIND_BADGE_DARK: Record<BankAccountKind, string> = {
   other: "border-gray-300 text-gray-700 bg-gray-50",
 };
 
+// Sobre fondo claro el cian vivo da 2.19:1 en un chip de 10px: ilegible, y
+// `transfer` es el kind por defecto y el más común. El resto de los kinds ya
+// usaban tonos -700, que sí contrastan sobre su propio fondo -50.
 const KIND_BADGE_LIGHT: Record<BankAccountKind, string> = {
-  transfer: "border-cyan/40 text-cyan bg-cyan/10",
+  transfer: "border-cyan/40 text-cyan-ink bg-cyan/10",
   mobile_payment: "border-emerald-300 text-emerald-700 bg-emerald-50",
   zelle: "border-blue-300 text-blue-700 bg-blue-50",
   paypal: "border-indigo-300 text-indigo-700 bg-indigo-50",
@@ -90,7 +93,7 @@ export function BankAccountCard({
           {account.label}
         </p>
         <span
-          className={`text-[10px] font-meta border px-2 py-0.5 rounded-md ${badge[account.kind] ?? "border-gray-300 text-gray-500"}`}
+          className={`text-[10px] font-meta border px-2 py-0.5 rounded-md ${badge[account.kind] ?? "border-border text-mute"}`}
         >
           {BANK_ACCOUNT_KIND_LABELS[account.kind].toUpperCase()}
         </span>

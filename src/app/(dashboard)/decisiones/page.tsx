@@ -88,7 +88,7 @@ export default async function DecisionesPage() {
     <div className="space-y-8">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <span className="font-meta-loose text-cyan">DECISIONES</span>
+          <span className="font-meta-loose text-cyan-ink">DECISIONES</span>
           <h1 className="mt-4 font-display text-[clamp(1.75rem,3.5vw,2.5rem)] leading-[1.1] tracking-[-0.03em] text-marine-deep">
             Encuestas y <em className="font-editorial text-cyan">asambleas</em>
           </h1>

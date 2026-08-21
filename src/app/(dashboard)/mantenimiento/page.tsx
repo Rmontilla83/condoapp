@@ -7,10 +7,10 @@ import type { UnitOption } from "./location-step";
 import { UNIT_TYPE_LABELS, MAINTENANCE_CATEGORY_LABELS } from "@/lib/labels";
 
 const statusConfig: Record<string, { label: string; tag: string; step: number }> = {
-  new: { label: "NUEVO", tag: "bg-cyan/10 text-cyan", step: 1 },
-  in_review: { label: "EN REVISIÓN", tag: "bg-ember/15 text-ember", step: 2 },
-  in_progress: { label: "EN CURSO", tag: "bg-ember/15 text-ember", step: 3 },
-  resolved: { label: "RESUELTO", tag: "bg-cyan/10 text-cyan", step: 4 },
+  new: { label: "NUEVO", tag: "bg-cyan/10 text-cyan-ink", step: 1 },
+  in_review: { label: "EN REVISIÓN", tag: "bg-ember/15 text-ember-ink", step: 2 },
+  in_progress: { label: "EN CURSO", tag: "bg-ember/15 text-ember-ink", step: 3 },
+  resolved: { label: "RESUELTO", tag: "bg-cyan/10 text-cyan-ink", step: 4 },
 };
 
 const priorityConfig = {
@@ -73,7 +73,7 @@ export default async function MantenimientoPage() {
     <div className="space-y-8">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <span className="font-meta-loose text-cyan">MANTENIMIENTO</span>
+          <span className="font-meta-loose text-cyan-ink">MANTENIMIENTO</span>
           <h1 className="mt-4 font-display text-[clamp(1.75rem,3.5vw,2.5rem)] leading-[1.1] tracking-[-0.03em] text-marine-deep">
             Reporta y da <em className="font-editorial text-cyan">seguimiento</em>
           </h1>

@@ -108,7 +108,7 @@ export function InvoiceRow({ invoice, rate = 0, selected, onToggle, onPayClick, 
           </Badge>
         ) : isPending && onPayClick ? (
           <Button size="sm" onClick={onPayClick}>
-            Subir comprobante
+            Registrar pago
           </Button>
         ) : !isPending ? (
           <Badge variant="outline" className={config.className}>

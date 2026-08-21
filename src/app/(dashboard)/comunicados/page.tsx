@@ -2,8 +2,8 @@ import { getCurrentProfile, getEffectiveRole, getAnnouncements } from "@/lib/que
 import { NewAnnouncementDialog } from "./new-announcement-dialog";
 
 const priorityConfig = {
-  normal: { label: "INFO", dot: "bg-cyan", tag: "bg-cyan/10 text-cyan" },
-  important: { label: "IMPORTANTE", dot: "bg-ember", tag: "bg-ember/15 text-ember" },
+  normal: { label: "INFO", dot: "bg-cyan", tag: "bg-cyan/10 text-cyan-ink" },
+  important: { label: "IMPORTANTE", dot: "bg-ember", tag: "bg-ember/15 text-ember-ink" },
   urgent: { label: "URGENTE", dot: "bg-destructive", tag: "bg-destructive/10 text-destructive" },
 };
 
@@ -17,7 +17,7 @@ export default async function ComunicadosPage() {
     <div className="space-y-8">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <span className="font-meta-loose text-cyan">COMUNICADOS</span>
+          <span className="font-meta-loose text-cyan-ink">COMUNICADOS</span>
           <h1 className="mt-4 font-display text-[clamp(1.75rem,3.5vw,2.5rem)] leading-[1.1] tracking-[-0.03em] text-marine-deep">
             Noticias de tu <em className="font-editorial text-cyan">comunidad</em>
           </h1>

@@ -115,7 +115,7 @@ export function MultiPayDialog({ target, rate, onClose, bankAccounts = [] }: Pro
         {success ? (
           <>
             <DialogHeader>
-              <DialogTitle>Comprobante enviado</DialogTitle>
+              <DialogTitle>Pago registrado</DialogTitle>
               <DialogDescription>
                 {target.invoices.length === 1
                   ? "Tu comprobante está siendo revisado por el administrador."
@@ -140,7 +140,7 @@ export function MultiPayDialog({ target, rate, onClose, bankAccounts = [] }: Pro
           <>
             <DialogHeader>
               <DialogTitle>
-                {target.invoices.length === 1 ? "Subir comprobante" : `Pagar ${target.invoices.length} cuotas`}
+                {target.invoices.length === 1 ? "Registrar pago" : `Pagar ${target.invoices.length} cuotas`}
               </DialogTitle>
               <DialogDescription>
                 Total: ${total.toFixed(2)} {currency}
@@ -240,6 +240,12 @@ export function MultiPayDialog({ target, rate, onClose, bankAccounts = [] }: Pro
               {error && (
                 <p className="text-sm text-destructive border border-destructive/30 bg-destructive/5 rounded p-2">
                   {error}
+                </p>
+              )}
+              {!receiptName && !reference.trim() && !error && (
+                <p className="text-[13px] text-mute">
+                  Adjunta la captura <em>o</em> escribe el número de referencia
+                  para poder registrar el pago.
                 </p>
               )}
               <div className="flex gap-3 pt-2">

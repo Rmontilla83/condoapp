@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { todayInTimeZone, isInvoiceOverdue } from "@/lib/utils";
 import type {
+  BankAccount,
   Profile,
   Invoice,
   MaintenanceRequest,
@@ -461,20 +462,29 @@ export async function getPendingInvoicesForFAB(profileId: string): Promise<{
   inReview: Invoice[];
   rate: number;
   canSeeFee: boolean;
+  /** El FAB abre el mismo diálogo de pago; sin esto le decía al residente que
+   *  su condominio no tenía datos bancarios aunque sí los tuviera. */
+  bankAccounts: BankAccount[];
 } | null> {
   const profile = await getCurrentProfile();
   if (!profile?.organization_id || profile.id !== profileId) return null;
 
   const supabase = await createClient();
 
-  const [membersRes, rateData] = await Promise.all([
+  const [membersRes, rateData, orgRaw] = await Promise.all([
     supabase
       .from("unit_members")
       .select("unit_id, role, permissions")
       .eq("profile_id", profileId)
       .eq("active", true),
     getCurrentRate(profile.organization_id),
+    getOrganization(profile.organization_id),
   ]);
+
+  const orgFab = orgRaw as Organization | null;
+  const bankAccounts: BankAccount[] = Array.isArray(orgFab?.bank_accounts)
+    ? (orgFab.bank_accounts as BankAccount[])
+    : [];
 
   const memberships = membersRes.data ?? [];
   const unitIds = memberships.map((m) => m.unit_id as string);
@@ -486,7 +496,7 @@ export async function getPendingInvoicesForFAB(profileId: string): Promise<{
   );
 
   if (!unitIds.length || !canSeeFee) {
-    return { actionable: [], inReview: [], rate: Number(rateData.rate) || 0, canSeeFee };
+    return { actionable: [], inReview: [], rate: Number(rateData.rate) || 0, canSeeFee, bankAccounts };
   }
 
   const { data: pending } = await supabase
@@ -504,6 +514,7 @@ export async function getPendingInvoicesForFAB(profileId: string): Promise<{
     inReview: all.filter((i) => inReviewIds.has(i.id)),
     rate: Number(rateData.rate) || 0,
     canSeeFee,
+    bankAccounts,
   };
 }
 

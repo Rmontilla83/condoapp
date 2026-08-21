@@ -5,6 +5,10 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { getCurrentProfile } from "@/lib/queries";
 import { isAdminRole } from "@/lib/permissions";
 import { revalidatePath } from "next/cache";
+import {
+  MIN_REASON_LENGTH,
+  normalizeRejectionReason,
+} from "@/lib/rejection-reasons";
 
 /**
  * Sube 1 comprobante que cubre N invoices (n>=1). Crea N transactions
@@ -34,6 +38,17 @@ export async function submitPaymentForMultipleInvoices(formData: FormData) {
   const reference = (formData.get("reference") as string)?.trim();
   const method = (formData.get("method") as string) || "transfer";
   const photo = formData.get("receipt") as File;
+
+  // La misma regla que aplica el diálogo, pero acá, que es donde vale: el
+  // cliente puede tener el bundle viejo, o alguien puede llamar la acción
+  // directamente. Sin comprobante ni referencia el admin no tiene con qué
+  // confirmar el pago, y la cuota igual desaparecía del saldo accionable.
+  if (!reference && (!photo || photo.size === 0)) {
+    return {
+      error:
+        "Necesitamos la captura o el número de referencia para que el administrador pueda confirmar tu pago.",
+    };
+  }
 
   const supabase = await createClient();
 
@@ -114,12 +129,18 @@ export async function approvePayment(transactionId: string) {
   // Get transaction — verify it belongs to this org via invoice
   const { data: tx } = await supabase
     .from("transactions")
-    .select("invoice_id, invoices!inner(organization_id)")
+    .select("invoice_id, status, invoices!inner(organization_id)")
     .eq("id", transactionId)
     .eq("invoices.organization_id", profile.organization_id)
     .single();
 
   if (!tx) return { error: "Transacción no encontrada" };
+  // Doble clic, doble pestaña o reintento tras un error de red: sin este corte
+  // se podía rechazar un pago ya aprobado y dejar la cuota en 'paid' con la
+  // transacción en 'rejected'.
+  if (tx.status !== "pending") {
+    return { error: "Este comprobante ya fue revisado." };
+  }
 
   const { error: txError } = await supabase
     .from("transactions")
@@ -127,7 +148,10 @@ export async function approvePayment(transactionId: string) {
       status: "approved",
       reviewed_at: new Date().toISOString(),
       reviewed_by: profile.id,
-      rejection_reason: null,
+      // rejection_reason NO se borra: si un admin rechazó y otro aprobó la misma
+      // transacción, el motivo del primer rechazo es justo la traza que hay que
+      // conservar. El residente no lo ve igual, porque
+      // getLatestRejectionsByInvoice solo reporta si la ÚLTIMA quedó rechazada.
     })
     .eq("id", transactionId);
 
@@ -146,28 +170,13 @@ export async function approvePayment(transactionId: string) {
   return { success: true };
 }
 
-/**
- * Motivos predefinidos. Que el admin elija de una lista en vez de escribir
- * libremente hace que el residente reciba siempre un texto accionable, y que
- * rechazar cueste un toque en vez de una redacción.
- */
-export const REJECTION_REASONS = [
-  "No se ve el monto en la captura",
-  "La referencia no coincide con el pago",
-  "El dinero no llegó a la cuenta",
-  "El monto no corresponde a la cuota",
-  "El comprobante está repetido",
-] as const;
-
-const MIN_REASON_LENGTH = 4;
-
 export async function rejectPayment(transactionId: string, reason: string) {
   const profile = await getCurrentProfile();
   if (!profile?.organization_id || !isAdminRole(profile)) {
     return { error: "No autorizado" };
   }
 
-  const motivo = (reason ?? "").trim();
+  const motivo = normalizeRejectionReason(reason);
   if (motivo.length < MIN_REASON_LENGTH) {
     return {
       error:
@@ -179,12 +188,15 @@ export async function rejectPayment(transactionId: string, reason: string) {
 
   const { data: check } = await supabase
     .from("transactions")
-    .select("id, invoices!inner(organization_id)")
+    .select("id, status, invoices!inner(organization_id)")
     .eq("id", transactionId)
     .eq("invoices.organization_id", profile.organization_id)
     .single();
 
   if (!check) return { error: "Transacción no encontrada" };
+  if (check.status !== "pending") {
+    return { error: "Este comprobante ya fue revisado." };
+  }
 
   const { error } = await supabase
     .from("transactions")

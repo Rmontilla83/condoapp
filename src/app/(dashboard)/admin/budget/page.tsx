@@ -51,7 +51,7 @@ export default async function BudgetPage({
     <div className="space-y-8">
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
-          <span className="font-meta-loose text-cyan">PRESUPUESTO ANUAL</span>
+          <span className="font-meta-loose text-cyan-ink">PRESUPUESTO ANUAL</span>
           <h1 className="mt-4 font-display text-[clamp(1.75rem,3.5vw,2.5rem)] leading-[1.1] tracking-[-0.03em] text-marine-deep">
             Presupuesto <em className="font-editorial text-cyan">{year}</em>
           </h1>

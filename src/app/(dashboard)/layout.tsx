@@ -87,6 +87,7 @@ export default async function DashboardLayout({
           inReview={fabData.inReview}
           rate={fabData.rate}
           canSeeFee={fabData.canSeeFee}
+          bankAccounts={fabData.bankAccounts}
         />
       )}
       <BottomNav isAdmin={isAdmin} />

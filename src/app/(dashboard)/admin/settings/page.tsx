@@ -55,7 +55,7 @@ export default async function AdminSettingsPage() {
   return (
     <div className="space-y-8">
       <div>
-        <span className="font-meta-loose text-cyan">CONFIGURACIÓN</span>
+        <span className="font-meta-loose text-cyan-ink">CONFIGURACIÓN</span>
         <h1 className="mt-4 font-display text-[clamp(1.75rem,3.5vw,2.5rem)] leading-[1.1] tracking-[-0.03em] text-marine-deep">
           <em className="font-editorial">{org.name}</em>
         </h1>

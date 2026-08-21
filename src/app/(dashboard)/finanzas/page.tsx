@@ -131,7 +131,7 @@ export default async function FinanzasPage() {
     <div className="space-y-8">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <span className="font-meta-loose text-cyan">FINANZAS</span>
+          <span className="font-meta-loose text-cyan-ink">FINANZAS</span>
           <h1 className="mt-4 font-display text-[clamp(1.75rem,3.5vw,2.5rem)] leading-[1.1] tracking-[-0.03em] text-marine-deep">
             Transparencia <em className="font-editorial text-cyan">financiera</em>
           </h1>
@@ -255,7 +255,7 @@ export default async function FinanzasPage() {
                       >
                         {expense.description}
                         {vendor && (
-                          <span className="ml-2 font-meta text-cyan">· {vendor.name.toUpperCase()}</span>
+                          <span className="ml-2 font-meta text-cyan-ink">· {vendor.name.toUpperCase()}</span>
                         )}
                         {voided && (
                           <span className="ml-2 font-meta bg-destructive/10 text-destructive px-2 py-0.5 rounded">

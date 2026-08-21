@@ -63,7 +63,7 @@ export default async function PagosPage() {
         <div>
           <span className="font-meta-loose text-cyan-ink">CUOTAS · ATRYUM</span>
           <h1 className="mt-4 font-display text-[clamp(1.75rem,3.5vw,2.5rem)] leading-[1.1] tracking-[-0.03em] text-marine-deep">
-            Tu estado de <em className="font-editorial text-cyan">cuenta</em>
+            Tu estado de <em className="font-editorial text-cyan-ink">cuenta</em>
           </h1>
         </div>
         {rate > 0 && (
@@ -84,7 +84,7 @@ export default async function PagosPage() {
           <p className="font-meta text-mute">SALDO PENDIENTE</p>
           <p
             className={`mt-3 font-display text-[32px] leading-none tracking-[-0.02em] ${
-              actionableTotal > 0 ? "text-marine-deep" : "text-cyan"
+              actionableTotal > 0 ? "text-marine-deep" : "text-cyan-ink"
             }`}
           >
             ${actionableTotal.toFixed(2)}

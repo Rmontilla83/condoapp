@@ -77,7 +77,7 @@ export default async function AdminUnitsPage() {
   return (
     <div className="space-y-8">
       <div>
-        <span className="font-meta-loose text-cyan">GESTIÓN · UNIDADES</span>
+        <span className="font-meta-loose text-cyan-ink">GESTIÓN · UNIDADES</span>
         <h1 className="mt-4 font-display text-[clamp(1.75rem,3.5vw,2.5rem)] leading-[1.1] tracking-[-0.03em] text-marine-deep">
           Configura <em className="font-editorial text-cyan">ocupación</em> y acceso
         </h1>
@@ -150,7 +150,7 @@ export default async function AdminUnitsPage() {
                   {(invites.length > 0 || codes.length > 0) && (
                     <div className="flex items-baseline gap-3 flex-wrap">
                       <span className="font-meta text-mute w-24 shrink-0">PENDIENTES</span>
-                      <span className="font-meta text-ember">
+                      <span className="font-meta text-ember-ink">
                         {invites.length > 0 && `${invites.length} INVITACIÓN(ES)`}
                         {invites.length > 0 && codes.length > 0 && " · "}
                         {codes.length > 0 && `${codes.length} CÓDIGO(S)`}

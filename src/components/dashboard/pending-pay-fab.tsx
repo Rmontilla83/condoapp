@@ -4,16 +4,23 @@ import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { MultiPayDialog } from "@/app/(dashboard)/pagos/multi-pay-dialog";
-import type { Invoice } from "@/types/database";
+import type { BankAccount, Invoice } from "@/types/database";
 
 interface Props {
   actionable: Invoice[];
   inReview: Invoice[];
   rate: number;
   canSeeFee: boolean;
+  bankAccounts?: BankAccount[];
 }
 
-export function PendingPayFab({ actionable, inReview, rate, canSeeFee }: Props) {
+export function PendingPayFab({
+  actionable,
+  inReview,
+  rate,
+  canSeeFee,
+  bankAccounts = [],
+}: Props) {
   const pathname = usePathname();
   const [target, setTarget] = useState<{ invoices: Invoice[] } | null>(null);
 
@@ -66,7 +73,12 @@ export function PendingPayFab({ actionable, inReview, rate, canSeeFee }: Props) 
         >
           {fabInner}
         </button>
-        <MultiPayDialog target={target} rate={rate} onClose={() => setTarget(null)} />
+        <MultiPayDialog
+        target={target}
+        rate={rate}
+        bankAccounts={bankAccounts}
+        onClose={() => setTarget(null)}
+      />
       </>
     );
   }

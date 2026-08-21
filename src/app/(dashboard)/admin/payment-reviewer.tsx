@@ -3,7 +3,12 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { PAYMENT_METHOD_LABELS } from "@/lib/labels";
-import { approvePayment, rejectPayment, REJECTION_REASONS } from "../pagos/actions";
+import {
+  REJECTION_REASONS,
+  MIN_REASON_LENGTH,
+  MAX_REASON_LENGTH,
+} from "@/lib/rejection-reasons";
+import { approvePayment, rejectPayment } from "../pagos/actions";
 
 interface PendingPayment {
   id: string;
@@ -47,7 +52,7 @@ export function PaymentReviewer({ payments }: { payments: PendingPayment[] }) {
   }
 
   async function confirmarRechazo(id: string) {
-    if (motivoFinal.length < 4) {
+    if (motivoFinal.length < MIN_REASON_LENGTH) {
       setError("Elige o escribe el motivo: el residente lo va a ver.");
       return;
     }
@@ -145,6 +150,7 @@ export function PaymentReviewer({ payments }: { payments: PendingPayment[] }) {
                       id={`motivo-libre-${p.id}`}
                       value={motivoLibre}
                       onChange={(e) => setMotivoLibre(e.target.value)}
+                      maxLength={MAX_REASON_LENGTH}
                       placeholder="Explícale qué pasó, en una línea"
                       className="flex h-11 w-full rounded-md border border-input bg-background px-3 text-base md:text-sm"
                     />
@@ -165,7 +171,7 @@ export function PaymentReviewer({ payments }: { payments: PendingPayment[] }) {
                     size="sm"
                     className="flex-1 bg-red-600 hover:bg-red-700"
                     onClick={() => confirmarRechazo(p.id)}
-                    disabled={isLoading || motivoFinal.length < 4}
+                    disabled={isLoading || motivoFinal.length < MIN_REASON_LENGTH}
                   >
                     {isLoading ? "Rechazando…" : "Confirmar rechazo"}
                   </Button>
