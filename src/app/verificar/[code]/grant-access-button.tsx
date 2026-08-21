@@ -1,12 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { grantAccess } from "./actions";
 
-export function GrantAccessButton({ passId }: { passId: string }) {
-  const router = useRouter();
+export function GrantAccessButton({ qrCode }: { qrCode: string }) {
   const [loading, setLoading] = useState(false);
   const [granted, setGranted] = useState(false);
   const [error, setError] = useState("");
@@ -14,7 +12,7 @@ export function GrantAccessButton({ passId }: { passId: string }) {
   async function handleGrant() {
     setLoading(true);
     setError("");
-    const res = await grantAccess(passId);
+    const res = await grantAccess(qrCode);
     if (res.error) {
       setError(res.error);
     } else {
@@ -33,7 +31,7 @@ export function GrantAccessButton({ passId }: { passId: string }) {
           </svg>
         </div>
         <p className="text-sm font-bold text-emerald-700">Acceso registrado</p>
-        <p className="text-xs text-emerald-600 mt-0.5">El propietario fue notificado</p>
+        <p className="text-xs text-emerald-600 mt-0.5">Este pase ya no puede volver a usarse</p>
       </div>
     );
   }

@@ -6,6 +6,7 @@ import {
 } from "@/lib/queries";
 import { createClient } from "@/lib/supabase/server";
 import { signStorageRefs } from "@/lib/storage";
+import { executedByCategory } from "@/lib/budget";
 import { NewExpenseDialog } from "./new-expense-dialog";
 import { VoidExpenseDialog } from "./void-expense-dialog";
 import { BudgetProgressCard } from "@/components/budget/budget-progress-card";
@@ -86,6 +87,19 @@ export default async function FinanzasPage() {
     byCategoryId[e.category_id] = (byCategoryId[e.category_id] ?? 0) + Number(e.amount);
   }
 
+  // El progreso del presupuesto compara contra el presupuesto de UN año, así que
+  // lo ejecutado también tiene que filtrarse por año. `byCategoryId` suma todo el
+  // histórico y se queda para el gráfico de distribución, que sí es acumulado.
+  const ejecutadoDelAno = executedByCategory(
+    expensesAll.map((e) => ({
+      category_id: e.category_id as string,
+      amount: Number(e.amount),
+      expense_date: e.expense_date as string,
+      voided_at: e.voided_at as string | null,
+    })),
+    currentYear,
+  );
+
   // Budget approved: solo mostrar tarjeta si está approved
   const currentBudget = currentBudgetData?.budget as OrgBudget | undefined;
   const currentBudgetItems = (currentBudgetData?.items as OrgBudgetItem[] | undefined) ?? [];
@@ -165,7 +179,7 @@ export default async function FinanzasPage() {
         <BudgetProgressCard
           budget={currentBudget}
           items={currentBudgetItems}
-          executedByCategoryId={byCategoryId}
+          executedByCategoryId={ejecutadoDelAno}
           categories={categories}
         />
       )}

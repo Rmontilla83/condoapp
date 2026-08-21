@@ -112,7 +112,9 @@ export function MultiPayDialog({ target, rate, onClose }: Props) {
                 </svg>
               </div>
               <p className="text-sm text-muted-foreground">
-                Recibirás una notificación cuando sea aprobado.
+                Tu comprobante quedó registrado. El estado se actualiza en
+                <span className="font-medium text-marine-deep"> Pagos</span> en
+                cuanto el administrador lo revise.
               </p>
               <Button onClick={handleClose} className="mt-4">Entendido</Button>
             </div>

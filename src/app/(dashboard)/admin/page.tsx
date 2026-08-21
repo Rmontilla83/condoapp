@@ -9,6 +9,7 @@ import {
 } from "@/lib/queries";
 import { createClient } from "@/lib/supabase/server";
 import { signStorageRefs, signStorageRefRows } from "@/lib/storage";
+import { todayInTimeZone, isInvoiceOverdue } from "@/lib/utils";
 import { RequestManager } from "./request-manager";
 import { PaymentReviewer } from "./payment-reviewer";
 import { RateUpdater } from "./rate-updater";
@@ -87,8 +88,15 @@ export default async function AdminPage() {
     photo_urls: firmasFotos[i],
   }));
 
+  // Solo cuentan como morosidad las cuotas cuya fecha ya pasó. La consulta trae
+  // todas las impagas porque también alimenta el detalle; el corte por fecha va
+  // acá, con la zona horaria del condominio.
+  const hoy = todayInTimeZone(org?.timezone ?? undefined);
   const morosMap: Record<string, { unit: string; total: number; count: number; oldest: string }> = {};
   for (const inv of overdueInvoices) {
+    if (!isInvoiceOverdue({ status: inv.status as string, due_date: inv.due_date as string }, hoy)) {
+      continue;
+    }
     const key = inv.unit_id;
     const unitData = Array.isArray(inv.units) ? inv.units[0] : inv.units;
     const unitNum = unitData?.unit_number ?? "?";

@@ -7,6 +7,7 @@ import {
   getCurrentRate,
   getOrganization,
 } from "@/lib/queries";
+import { todayInTimeZone } from "@/lib/utils";
 import { InvoiceRow } from "./invoice-row";
 import { PendingInvoices } from "./pending-invoices";
 import { PaymentMethods } from "./payment-methods";
@@ -25,6 +26,7 @@ export default async function PagosPage() {
   ]);
 
   const org = orgRaw as Organization | null;
+  const hoy = todayInTimeZone(org?.timezone ?? undefined);
   const bankAccounts: BankAccount[] = org && Array.isArray(org.bank_accounts) ? org.bank_accounts : [];
 
   const rate = Number(rateData.rate);
@@ -145,7 +147,7 @@ export default async function PagosPage() {
               aprobación del administrador
             </p>
             <p className="mt-1 text-[12px] text-amber-700/80">
-              El admin del condominio aprobará tu pago. Recibirás notificación cuando se confirme.
+              El admin del condominio revisará tu comprobante. El estado se actualiza en esta misma pantalla.
             </p>
           </div>
           <div className="space-y-3">
@@ -154,6 +156,7 @@ export default async function PagosPage() {
                 key={invoice.id}
                 invoice={invoice}
                 rate={rate}
+                today={hoy}
                 inReview={true}
               />
             ))}
@@ -170,7 +173,7 @@ export default async function PagosPage() {
               {actionableInvoices.length} pendiente{actionableInvoices.length !== 1 ? "s" : ""} de pago
             </p>
           </div>
-          <PendingInvoices invoices={actionableInvoices} rate={rate} />
+          <PendingInvoices invoices={actionableInvoices} rate={rate} today={hoy} />
         </div>
       )}
 

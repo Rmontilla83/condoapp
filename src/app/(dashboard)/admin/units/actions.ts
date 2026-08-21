@@ -185,9 +185,53 @@ export async function inviteUnitMember(params: {
   }
 
   // 3. Si el user ya existía, procesar la invitación manualmente
-  //    (el trigger solo corre en INSERT de nuevo user)
+  //    (el trigger handle_new_user solo corre en INSERT de nuevo user).
+  //
+  //    OJO: aquí se llamaba a `accept_unit_invitation()` con el admin client.
+  //    Esa función resuelve el usuario con auth.uid(), que con el service-role
+  //    client es NULL, así que devolvía 'not_authenticated' y no hacía nada —
+  //    y el retorno ni se miraba. Invitar a alguien con cuenta previa nunca lo
+  //    vinculaba a la unidad, pero el admin leía "invitación enviada".
+  //    La migration 031 agrega la variante que recibe el usuario explícito.
   if (!ensureRes.created) {
-    await admin.rpc("accept_unit_invitation");
+    const { data: existing } = await admin
+      .from("profiles")
+      .select("id")
+      .ilike("email", email)
+      .maybeSingle();
+
+    if (!existing?.id) {
+      await logAuthEvent({
+        organization_id: unit.organization_id,
+        actor_id: access.profile.id,
+        target_email: email,
+        event: "unit_invite_link_failed",
+        payload: { reason: "profile_not_found_for_existing_user" },
+      });
+    } else {
+      const { data: linkRes, error: linkError } = await admin.rpc(
+        "accept_unit_invitation_for",
+        { p_user_id: existing.id },
+      );
+
+      const linkOk = !linkError && (linkRes as { ok?: boolean } | null)?.ok === true;
+      if (!linkOk) {
+        await logAuthEvent({
+          organization_id: unit.organization_id,
+          actor_id: access.profile.id,
+          target_email: email,
+          event: "unit_invite_link_failed",
+          payload: {
+            error: linkError?.message ?? null,
+            result: linkRes ?? null,
+          },
+        });
+        return {
+          error:
+            "Guardamos la invitación pero no pudimos vincular la unidad. Revisa el registro de eventos.",
+        };
+      }
+    }
   }
 
   // 4. Enviar magic link

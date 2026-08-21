@@ -13,9 +13,12 @@ interface PaymentTarget {
 export function PendingInvoices({
   invoices,
   rate,
+  today,
 }: {
   invoices: Invoice[];
   rate: number;
+  /** Hoy en la zona horaria del condominio, calculado en el servidor. */
+  today?: string;
 }) {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [target, setTarget] = useState<PaymentTarget | null>(null);
@@ -94,6 +97,7 @@ export function PendingInvoices({
             key={invoice.id}
             invoice={invoice}
             rate={rate}
+            today={today}
             selected={selected.has(invoice.id)}
             onToggle={() => toggle(invoice.id)}
             onPayClick={() => payOne(invoice)}

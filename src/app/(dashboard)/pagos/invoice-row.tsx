@@ -2,6 +2,7 @@
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { isInvoiceOverdue } from "@/lib/utils";
 import type { Invoice } from "@/types/database";
 
 const statusConfig = {
@@ -20,13 +21,25 @@ interface Props {
   onPayClick?: () => void;
   /** True si la invoice tiene un comprobante en revisión por el admin. */
   inReview?: boolean;
+  /**
+   * Hoy como `YYYY-MM-DD` en la zona horaria del condominio, calculado en el
+   * servidor. Se pasa como prop en vez de hacer `new Date()` acá para no
+   * introducir un desajuste de hidratación (el servidor está en UTC).
+   */
+  today?: string;
 }
 
-export function InvoiceRow({ invoice, rate = 0, selected, onToggle, onPayClick, inReview }: Props) {
-  const config = statusConfig[invoice.status as keyof typeof statusConfig] ?? statusConfig.pending;
+export function InvoiceRow({ invoice, rate = 0, selected, onToggle, onPayClick, inReview, today }: Props) {
   const isPaid = invoice.status === "paid";
-  const isOverdue = invoice.status === "overdue";
+  // El vencimiento se deriva de la fecha, no del status: nada en el código
+  // escribe nunca 'overdue', así que este badge jamás se encendía en producción.
+  const isOverdue = today
+    ? isInvoiceOverdue({ status: invoice.status, due_date: invoice.due_date }, today)
+    : false;
   const isPending = invoice.status === "pending" || invoice.status === "overdue";
+  const config = isOverdue
+    ? statusConfig.overdue
+    : statusConfig[invoice.status as keyof typeof statusConfig] ?? statusConfig.pending;
   const selectable = onToggle !== undefined;
 
   return (

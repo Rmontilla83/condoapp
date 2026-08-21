@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { todayInTimeZone, isInvoiceOverdue } from "@/lib/utils";
 import type {
   Profile,
   Invoice,
@@ -138,7 +139,7 @@ export async function getAdminStats(orgId: string) {
         .eq("organization_id", orgId),
       supabase
         .from("invoices")
-        .select("id, status, amount, unit_id")
+        .select("id, status, amount, unit_id, due_date")
         .eq("organization_id", orgId),
       supabase
         .from("maintenance_requests")
@@ -153,6 +154,11 @@ export async function getAdminStats(orgId: string) {
         .from("transactions")
         .select("amount, paid_at, invoice_id, invoices!inner(organization_id)")
         .eq("invoices.organization_id", orgId)
+        // Solo lo efectivamente cobrado. Sin este filtro, un comprobante que el
+        // admin rechazó seguía sumando a RECAUDADO y a BALANCE para siempre, y
+        // /finanzas (que sí filtraba) mostraba una cifra distinta del mismo
+        // dinero en la misma app.
+        .eq("status", "approved")
         .order("paid_at", { ascending: false }),
     ]);
 
@@ -167,9 +173,19 @@ export async function getAdminStats(orgId: string) {
   const paymentRate =
     totalInvoices > 0 ? Math.round((paidInvoices / totalInvoices) * 100) : 0;
 
+  // Moroso = tiene al menos una cuota cuya fecha ya pasó y sigue impaga.
+  // Antes se contaba cualquier cuota pendiente sin mirar la fecha, así que el
+  // día que el admin generaba las cuotas del mes el condominio entero aparecía
+  // en rojo.
+  const today = todayInTimeZone();
   const overdueCount = new Set(
     invoices
-      .filter((i) => i.status === "overdue" || i.status === "pending")
+      .filter((i) =>
+        isInvoiceOverdue(
+          { status: i.status as string, due_date: i.due_date as string },
+          today,
+        ),
+      )
       .map((i) => i.unit_id)
   ).size;
 

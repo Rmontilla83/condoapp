@@ -97,7 +97,7 @@ export default async function VerificarPage({
           </p>
         </div>
 
-        {status === "valid" && <GrantAccessButton passId={pass.id} />}
+        {status === "valid" && <GrantAccessButton qrCode={pass.qr_code} />}
       </div>
     </VerificarShell>
   );
