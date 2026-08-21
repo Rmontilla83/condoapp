@@ -35,7 +35,10 @@ export async function proxy(request: NextRequest) {
   }
 
   if (hostname === LANDING_APEX) {
-    if (pathname === "/") {
+    // La landing y las guías de uso son las dos cosas públicas del apex. Las
+    // guías se le mandan por link a un condominio que todavía no es cliente,
+    // así que no pueden pasar por `updateSession` ni redirigir al portal.
+    if (pathname === "/" || pathname.startsWith("/guias")) {
       return NextResponse.next();
     }
     return NextResponse.redirect(
@@ -45,6 +48,10 @@ export async function proxy(request: NextRequest) {
   }
 
   if (hostname === PORTAL_HOST) {
+    // Que el link funcione también si alguien lo comparte con el host del portal.
+    if (pathname.startsWith("/guias")) {
+      return NextResponse.next();
+    }
     if (pathname === "/") {
       const url = request.nextUrl.clone();
       url.pathname = "/login";

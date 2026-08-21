@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { ExitViewAs } from "./exit-view-as";
 import { createClient } from "@/lib/supabase/server";
 import {
   getCurrentProfile,
@@ -73,9 +74,7 @@ export default async function DashboardLayout({
             }`}
           >
             VIENDO COMO · {viewingAs === "admin" ? "ADMIN" : "RESIDENTE"}{" "}
-            <a href="/super-admin" className="underline underline-offset-2 ml-2">
-              VOLVER A SUPER ADMIN
-            </a>
+            <ExitViewAs />
           </div>
         )}
         <main className="flex-1 overflow-y-auto pb-32 md:pb-0">
