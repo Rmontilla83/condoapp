@@ -5,6 +5,7 @@ import {
   getCurrentBudget,
 } from "@/lib/queries";
 import { createClient } from "@/lib/supabase/server";
+import { signStorageRefs } from "@/lib/storage";
 import { NewExpenseDialog } from "./new-expense-dialog";
 import { VoidExpenseDialog } from "./void-expense-dialog";
 import { BudgetProgressCard } from "@/components/budget/budget-progress-card";
@@ -58,7 +59,14 @@ export default async function FinanzasPage() {
     getCurrentBudget(profile.organization_id, currentYear),
   ]);
 
-  const expensesAll = (expensesRes.data ?? []) as unknown as ExpenseRow[];
+  const expensesRaw = (expensesRes.data ?? []) as unknown as ExpenseRow[];
+  // El bucket es privado (migration 030): `receipt_url` guarda una referencia
+  // `bucket/path`, no una URL navegable. Se firma en el servidor.
+  const firmasRecibos = await signStorageRefs(expensesRaw.map((e) => e.receipt_url));
+  const expensesAll: ExpenseRow[] = expensesRaw.map((e, i) => ({
+    ...e,
+    receipt_url: firmasRecibos[i],
+  }));
   // Filtrar voided (no cuentan en totales ni gráficos)
   const expenses = expensesAll.filter((e) => e.voided_at === null);
   const transactions = transactionsRes.data ?? [];

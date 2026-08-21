@@ -1,5 +1,6 @@
 import { getCurrentProfile, getMaintenanceForUser, getCommonAreas } from "@/lib/queries";
 import { createClient } from "@/lib/supabase/server";
+import { signStorageRefRows } from "@/lib/storage";
 import { NewRequestDialog } from "./new-request-dialog";
 import type { CommonArea, MaintenanceStatus } from "@/types/database";
 import type { UnitOption } from "./location-step";
@@ -34,7 +35,7 @@ export default async function MantenimientoPage() {
 
   const supabase = await createClient();
 
-  const [requests, commonAreas, membersRes] = await Promise.all([
+  const [requestsRaw, commonAreas, membersRes] = await Promise.all([
     getMaintenanceForUser(profile.id),
     getCommonAreas(profile.organization_id),
     supabase
@@ -44,6 +45,14 @@ export default async function MantenimientoPage() {
       .eq("active", true)
       .order("joined_at", { ascending: false }),
   ]);
+
+  // El bucket es privado (migration 030): `photo_urls` guarda referencias
+  // `bucket/path`, no URLs navegables. Se firman en el servidor y las que
+  // fallen se descartan, así nunca se renderiza un <img> roto.
+  const firmasFotos = await signStorageRefRows(
+    requestsRaw.map((r) => r.photo_urls as string[] | null),
+  );
+  const requests = requestsRaw.map((r, i) => ({ ...r, photo_urls: firmasFotos[i] }));
 
   const units: UnitOption[] = (membersRes.data ?? [])
     .map((m) => {

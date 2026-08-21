@@ -74,8 +74,8 @@ export async function createExpense(formData: FormData) {
       .from("maintenance-photos")
       .upload(path, photo, { contentType: photo.type });
     if (!uploadError) {
-      const { data } = supabase.storage.from("maintenance-photos").getPublicUrl(path);
-      receiptUrl = data.publicUrl;
+      // Referencia `bucket/path`: el bucket es privado desde la migration 030.
+      receiptUrl = `maintenance-photos/${path}`;
     }
   }
 

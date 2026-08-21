@@ -8,6 +8,7 @@ import {
   getFeeTypeAmounts,
 } from "@/lib/queries";
 import { createClient } from "@/lib/supabase/server";
+import { signStorageRefs, signStorageRefRows } from "@/lib/storage";
 import { RequestManager } from "./request-manager";
 import { PaymentReviewer } from "./payment-reviewer";
 import { RateUpdater } from "./rate-updater";
@@ -66,8 +67,25 @@ export default async function AdminPage() {
     aliquot: Number(u.aliquot ?? 0),
   }));
 
-  const pendingPayments = pendingPaymentsRes.data ?? [];
+  const pendingPaymentsRaw = pendingPaymentsRes.data ?? [];
   const overdueInvoices = morosRes.data ?? [];
+
+  // Los buckets son privados (migration 030): lo guardado es una referencia
+  // `bucket/path`, no una URL navegable. Se firma acá, en el servidor, y a los
+  // componentes cliente les llega ya una URL utilizable y de vida corta.
+  const [firmasComprobantes, firmasFotos] = await Promise.all([
+    signStorageRefs(pendingPaymentsRaw.map((p) => p.receipt_url as string | null)),
+    signStorageRefRows(maintenance.map((m) => m.photo_urls as string[] | null)),
+  ]);
+
+  const pendingPayments = pendingPaymentsRaw.map((p, i) => ({
+    ...p,
+    receipt_url: firmasComprobantes[i],
+  }));
+  const maintenanceSigned = maintenance.map((m, i) => ({
+    ...m,
+    photo_urls: firmasFotos[i],
+  }));
 
   const morosMap: Record<string, { unit: string; total: number; count: number; oldest: string }> = {};
   for (const inv of overdueInvoices) {
@@ -238,7 +256,7 @@ export default async function AdminPage() {
             Toca una para gestionar — asignar responsable, cambiar estado
           </p>
         </div>
-        <RequestManager requests={maintenance} />
+        <RequestManager requests={maintenanceSigned} />
       </div>
 
       {/* Resumen financiero */}

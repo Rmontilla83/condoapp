@@ -88,10 +88,9 @@ export async function createMaintenanceRequest(
         continue;
       }
 
-      const { data: urlData } = supabase.storage
-        .from("maintenance-photos")
-        .getPublicUrl(path);
-      photoUrls.push(urlData.publicUrl);
+      // Referencia `bucket/path`: el bucket es privado desde la migration 030
+      // y se firma al momento de renderizar.
+      photoUrls.push(`maintenance-photos/${path}`);
       photosUploaded++;
     }
 

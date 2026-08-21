@@ -72,8 +72,9 @@ export async function submitPaymentForMultipleInvoices(formData: FormData) {
       .from("payment-receipts")
       .upload(path, photo, { contentType: photo.type });
     if (uploadError) return { error: `Error subiendo comprobante: ${uploadError.message}` };
-    const { data } = supabase.storage.from("payment-receipts").getPublicUrl(path);
-    receiptUrl = data.publicUrl;
+    // Guardamos la referencia `bucket/path`, no una URL pública: desde la
+    // migration 030 el bucket es privado y se firma al momento de mostrarla.
+    receiptUrl = `payment-receipts/${path}`;
   }
 
   const groupId = invoices.length > 1 ? crypto.randomUUID() : null;
