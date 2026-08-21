@@ -2,6 +2,12 @@ import { getCurrentProfile } from "@/lib/queries";
 import { createClient } from "@/lib/supabase/server";
 import { ReserveDialog } from "./reserve-dialog";
 import { CancelButton } from "./cancel-button";
+import {
+  DEFAULT_TIME_ZONE,
+  formatDateInZone,
+  formatTimeInZone,
+  todayInTimeZone,
+} from "@/lib/utils";
 
 // Iconos geométricos por tipo de área (sustituye emojis del brand original)
 function AreaIcon({ name, className }: { name: string; className?: string }) {
@@ -43,7 +49,12 @@ export default async function ReservasPage() {
 
   const supabase = await createClient();
 
-  const [areasRes, reservationsRes] = await Promise.all([
+  const [orgRes, areasRes, reservationsRes] = await Promise.all([
+    supabase
+      .from("organizations")
+      .select("timezone")
+      .eq("id", profile.organization_id)
+      .maybeSingle(),
     supabase
       .from("common_areas")
       .select(
@@ -60,6 +71,15 @@ export default async function ReservasPage() {
       .order("start_time", { ascending: true }),
   ]);
 
+  // Sin zona explícita, el servidor formateaba en UTC y el navegador en la hora
+  // del visitante: la misma reserva se leía distinta antes y después de hidratar.
+  const zona = orgRes.data?.timezone || DEFAULT_TIME_ZONE;
+  // Primer día reservable en la hora del condominio, no en la del navegador.
+  const hoy = todayInTimeZone(zona);
+  const manana = new Date(`${hoy}T12:00:00Z`);
+  manana.setUTCDate(manana.getUTCDate() + 1);
+  const primerDiaReservable = manana.toISOString().slice(0, 10);
+
   const areas = areasRes.data ?? [];
   const reservations = reservationsRes.data ?? [];
 
@@ -67,12 +87,10 @@ export default async function ReservasPage() {
   const otherReservations = reservations.filter((r) => r.reserved_by !== profile.id);
 
   function formatTime(iso: string) {
-    return new Date(iso).toLocaleTimeString("es", { hour: "2-digit", minute: "2-digit", hour12: true });
+    return formatTimeInZone(iso, zona);
   }
   function formatDate(iso: string) {
-    return new Date(iso)
-      .toLocaleDateString("es", { weekday: "short", day: "numeric", month: "short" })
-      .toUpperCase();
+    return formatDateInZone(iso, zona).toUpperCase();
   }
 
   return (
@@ -84,7 +102,7 @@ export default async function ReservasPage() {
             Reserva <em className="font-editorial text-cyan">espacios</em>
           </h1>
         </div>
-        {areas.length > 0 && <ReserveDialog areas={areas} />}
+        {areas.length > 0 && <ReserveDialog areas={areas} manana={primerDiaReservable} />}
       </div>
 
       {/* Sin áreas cargadas, esta pantalla era un título y nada debajo, con un

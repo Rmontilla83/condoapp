@@ -37,6 +37,31 @@ const statusBadge: Record<DecisionStatus, { label: string; className: string }> 
   cancelled: { label: "CANCELADA", className: "border-destructive/30 text-destructive bg-destructive/5" },
 };
 
+/** Forma del acta que escribe `closeDecision` (migration 039, version 1). */
+interface ActaSnapshot {
+  version: number;
+  closed_at: string;
+  closed_by_name: string | null;
+  weighted_by_aliquot: boolean;
+  quorum: {
+    required_pct: number | null;
+    universe: number;
+    achieved: number;
+    achieved_pct: number;
+    met: boolean;
+    reliable: boolean;
+    units_total?: number;
+    units_without_aliquot?: number;
+  };
+  questions: Array<{
+    question_id: string;
+    question: string;
+    winner: string | null;
+    tied: boolean;
+    total_voters: number;
+  }>;
+}
+
 export default async function DecisionDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const profile = await getCurrentProfile();
@@ -76,10 +101,37 @@ export default async function DecisionDetailPage({ params }: { params: Promise<{
     ? await getVoterAliquot(profile.id, decision.organization_id as string)
     : 0;
 
-  // Quorum stats si aplica
+  // El acta congelada al cerrar (migration 039). Mientras la asamblea está
+  // abierta el quórum se calcula en vivo; una vez cerrada se lee de acá, para
+  // que corregir una alícuota mañana no reescriba el resultado de hoy.
+  const acta = (decision as unknown as { result_snapshot?: ActaSnapshot | null })
+    .result_snapshot;
+  const cerradaConActa = decision.status === "closed" && !!acta?.questions;
+
+  // El acta guarda el bloque `quorum` siempre, incluso cuando la asamblea se
+  // creó sin exigir quórum (`quorum_pct` nulo). Sin esta segunda condición, al
+  // cerrarla aparecía de la nada un panel "QUÓRUM · REQUIERE 0%" —o el banner
+  // rojo de "no confiable"— sobre una votación que nunca midió quórum.
+  const actaConQuorum = cerradaConActa && acta?.quorum?.required_pct !== null;
+
   let quorumStats = null;
   let quorumUniverse: Awaited<ReturnType<typeof getOrgQuorumUniverse>> | null = null;
-  if (decision.quorum_pct !== null) {
+  if (actaConQuorum && acta) {
+    quorumStats = {
+      required_pct: acta.quorum.required_pct,
+      universe: acta.quorum.universe,
+      achieved: acta.quorum.achieved,
+      achieved_pct: acta.quorum.achieved_pct,
+      met: acta.quorum.met,
+      reliable: acta.quorum.reliable,
+    };
+    quorumUniverse = {
+      universe: acta.quorum.universe,
+      reliable: acta.quorum.reliable,
+      unset: acta.quorum.units_without_aliquot ?? 0,
+      totalUnits: acta.quorum.units_total ?? 0,
+    };
+  } else if (decision.quorum_pct !== null && !cerradaConActa) {
     quorumUniverse = await getOrgQuorumUniverse(decision.organization_id, decision.weighted_by_aliquot);
     const allResponses = questions.flatMap((q) => q.decision_responses);
     quorumStats = computeQuorum({
@@ -88,6 +140,7 @@ export default async function DecisionDetailPage({ params }: { params: Promise<{
       universe: quorumUniverse.universe,
       reliable: quorumUniverse.reliable,
       voters: allResponses.map((r) => ({ voter_id: r.voter_id, weight: Number(r.weight) })),
+      eligibleVoterIds: quorumUniverse.voterIds,
     });
   }
 
@@ -194,6 +247,47 @@ export default async function DecisionDetailPage({ params }: { params: Promise<{
               style={{ width: `${Math.min(quorumStats.achieved_pct, 100)}%` }}
             />
           </div>
+        </div>
+      )}
+
+      {cerradaConActa && acta && (
+        <div className="rounded-2xl border border-marine-deep/20 bg-marine-deep/[0.03] p-5">
+          <p className="font-meta text-mute">ACTA DE CIERRE</p>
+          <p className="mt-2 text-[14px] text-marine-deep max-w-2xl">
+            Cerrada el{" "}
+            {new Date(acta.closed_at).toLocaleDateString("es", {
+              day: "numeric",
+              month: "long",
+              year: "numeric",
+            })}
+            {acta.closed_by_name ? ` por ${acta.closed_by_name}` : ""}. Este resultado
+            quedó congelado en ese momento y no cambia aunque después se corrijan
+            alícuotas o se den de alta unidades.
+          </p>
+          <ul className="mt-4 space-y-2">
+            {acta.questions.map((q, i) => (
+              <li key={q.question_id} className="text-[14px] text-marine-deep">
+                <span className="font-meta text-mute mr-2">{i + 1}.</span>
+                {q.question}
+                <span className="block mt-0.5 text-[13px]">
+                  {q.tied ? (
+                    <span className="text-ember-ink">Empate — sin resultado</span>
+                  ) : q.winner ? (
+                    <>
+                      <span className="text-mute">Resultado: </span>
+                      <strong className="text-marine-deep">{q.winner}</strong>
+                    </>
+                  ) : (
+                    <span className="text-mute">Nadie votó esta pregunta</span>
+                  )}
+                  <span className="text-mute">
+                    {" "}
+                    · {q.total_voters} {q.total_voters === 1 ? "votante" : "votantes"}
+                  </span>
+                </span>
+              </li>
+            ))}
+          </ul>
         </div>
       )}
 

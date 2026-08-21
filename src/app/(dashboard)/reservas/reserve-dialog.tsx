@@ -31,7 +31,21 @@ function policyHints(a: Area): string[] {
   return hints;
 }
 
-export function ReserveDialog({ areas }: { areas: Area[] }) {
+export function ReserveDialog({
+  areas,
+  manana,
+}: {
+  areas: Area[];
+  /**
+   * Primer día reservable, `YYYY-MM-DD`, calculado en la zona del condominio.
+   *
+   * Antes salía de `new Date(Date.now() + 86400000)` en el navegador: un
+   * residente conectado desde Madrid a las 03:00 veía bloqueado un día que en
+   * Venezuela todavía es reservable, y uno en México podía elegir un día que el
+   * servidor rechazaba. La hora del condominio es la única que manda acá.
+   */
+  manana: string;
+}) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -39,7 +53,6 @@ export function ReserveDialog({ areas }: { areas: Area[] }) {
   const [success, setSuccess] = useState(false);
   const [selectedAreaId, setSelectedAreaId] = useState("");
 
-  const tomorrow = new Date(Date.now() + 86400000).toISOString().split("T")[0];
   const selectedArea = areas.find((a) => a.id === selectedAreaId);
   const hints = selectedArea ? policyHints(selectedArea) : [];
 
@@ -106,7 +119,7 @@ export function ReserveDialog({ areas }: { areas: Area[] }) {
                   name="area_id"
                   value={selectedAreaId}
                   onChange={(e) => setSelectedAreaId(e.target.value)}
-                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                  className="flex h-11 w-full rounded-md border border-input bg-background px-3 py-2 text-base md:text-sm"
                   required
                 >
                   <option value="">Selecciona</option>
@@ -134,12 +147,12 @@ export function ReserveDialog({ areas }: { areas: Area[] }) {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="date">Fecha</Label>
-                <Input id="date" name="date" type="date" min={tomorrow} required />
+                <Input id="date" name="date" type="date" min={manana} required />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-2">
                   <Label htmlFor="start_hour">Desde</Label>
-                  <select id="start_hour" name="start_hour" className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" required>
+                  <select id="start_hour" name="start_hour" className="flex h-11 w-full rounded-md border border-input bg-background px-3 py-2 text-base md:text-sm" required>
                     {Array.from({ length: 15 }, (_, i) => i + 7).map((h) => (
                       <option key={h} value={`${h.toString().padStart(2, "0")}:00`}>
                         {h > 12 ? `${h - 12}:00 PM` : h === 12 ? "12:00 PM" : `${h}:00 AM`}
@@ -149,7 +162,7 @@ export function ReserveDialog({ areas }: { areas: Area[] }) {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="end_hour">Hasta</Label>
-                  <select id="end_hour" name="end_hour" className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" required>
+                  <select id="end_hour" name="end_hour" className="flex h-11 w-full rounded-md border border-input bg-background px-3 py-2 text-base md:text-sm" required>
                     {Array.from({ length: 15 }, (_, i) => i + 8).map((h) => (
                       <option key={h} value={`${h.toString().padStart(2, "0")}:00`}>
                         {h > 12 ? `${h - 12}:00 PM` : h === 12 ? "12:00 PM" : `${h}:00 AM`}

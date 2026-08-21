@@ -4,7 +4,13 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentProfile } from "@/lib/queries";
 import { isAdminRole, canTenantAct } from "@/lib/permissions";
-import { getVoterAliquot, getAliquotCoverage, normalizeOptions } from "@/lib/decisions";
+import {
+  getVoterAliquot,
+  getAliquotCoverage,
+  normalizeOptions,
+  computeQuorum,
+  getOrgQuorumUniverse,
+} from "@/lib/decisions";
 import { revalidatePath } from "next/cache";
 import type { DecisionKind } from "@/types/database";
 
@@ -312,13 +318,148 @@ export async function closeDecision(decisionId: string) {
   if (!isAdminRole(profile)) return { error: "Solo administradores" };
 
   const supabase = createAdminClient();
-  const { error } = await supabase
+
+  // El acta.
+  //
+  // Antes esto solo escribía status='closed'. El resultado se recalculaba en
+  // vivo cada vez que alguien abría la página, contra las alícuotas y las
+  // unidades de HOY: corregir una alícuota en agosto cambiaba el resultado de
+  // la asamblea de marzo. Un acta que se puede reescribir sin querer no sirve
+  // como acta. Acá se congela.
+  const { data: decision, error: readError } = await supabase
     .from("decisions")
-    .update({ status: "closed" })
+    .select(
+      "id, status, weighted_by_aliquot, quorum_pct, decision_questions(id, question, options, position, decision_responses(voter_id, selected_option, weight))",
+    )
     .eq("id", decisionId)
-    .eq("organization_id", profile.organization_id);
+    .eq("organization_id", profile.organization_id)
+    .maybeSingle();
+
+  if (readError) return { error: readError.message };
+  if (!decision) return { error: "Decisión no encontrada" };
+  if (decision.status === "closed") return { error: "Ya estaba cerrada." };
+  if (decision.status === "cancelled") {
+    return { error: "Esta decisión fue cancelada." };
+  }
+
+  const preguntas = ((decision.decision_questions ?? []) as unknown as Array<{
+    id: string;
+    question: string;
+    options: unknown;
+    position: number;
+    decision_responses: Array<{
+      voter_id: string;
+      selected_option: string;
+      weight: number | string;
+    }>;
+  }>).sort((a, b) => a.position - b.position);
+
+  const todasLasRespuestas = preguntas.flatMap((q) => q.decision_responses ?? []);
+
+  const universo = await getOrgQuorumUniverse(
+    profile.organization_id,
+    decision.weighted_by_aliquot as boolean,
+  );
+
+  const quorum = computeQuorum({
+    weighted_by_aliquot: decision.weighted_by_aliquot as boolean,
+    quorum_pct: decision.quorum_pct as number | null,
+    universe: universo.universe,
+    reliable: universo.reliable,
+    voters: todasLasRespuestas.map((r) => ({
+      voter_id: r.voter_id,
+      weight: Number(r.weight),
+    })),
+    eligibleVoterIds: universo.voterIds,
+  });
+
+  const resultadoPorPregunta = preguntas.map((q) => {
+    const opciones = normalizeOptions(q.options);
+    const respuestas = q.decision_responses ?? [];
+
+    // Un votante cuenta una sola vez por pregunta, igual que en el quórum.
+    const porVotante = new Map<string, { opcion: string; peso: number }>();
+    for (const r of respuestas) {
+      if (!porVotante.has(r.voter_id)) {
+        porVotante.set(r.voter_id, {
+          opcion: r.selected_option,
+          peso: Number(r.weight),
+        });
+      }
+    }
+
+    const conteo: Record<string, { votos: number; peso: number }> = {};
+    for (const opcion of opciones) conteo[opcion] = { votos: 0, peso: 0 };
+    for (const { opcion, peso } of porVotante.values()) {
+      if (!conteo[opcion]) conteo[opcion] = { votos: 0, peso: 0 };
+      conteo[opcion].votos += 1;
+      conteo[opcion].peso += peso;
+    }
+
+    const metrica = decision.weighted_by_aliquot ? "peso" : "votos";
+    const ordenadas = Object.entries(conteo).sort(
+      (a, b) => b[1][metrica as "votos" | "peso"] - a[1][metrica as "votos" | "peso"],
+    );
+    const mejor = ordenadas[0];
+    const segunda = ordenadas[1];
+    const hayEmpate =
+      !!mejor &&
+      !!segunda &&
+      mejor[1][metrica as "votos" | "peso"] ===
+        segunda[1][metrica as "votos" | "peso"];
+
+    return {
+      question_id: q.id,
+      question: q.question,
+      options: opciones,
+      tally: conteo,
+      total_voters: porVotante.size,
+      winner: !mejor || hayEmpate || porVotante.size === 0 ? null : mejor[0],
+      tied: hayEmpate && porVotante.size > 0,
+    };
+  });
+
+  const snapshot = {
+    version: 1,
+    closed_at: new Date().toISOString(),
+    closed_by: profile.id,
+    closed_by_name: profile.full_name ?? null,
+    weighted_by_aliquot: decision.weighted_by_aliquot,
+    quorum: {
+      required_pct: quorum.required_pct,
+      universe: quorum.universe,
+      achieved: quorum.achieved,
+      achieved_pct: quorum.achieved_pct,
+      met: quorum.met,
+      reliable: quorum.reliable,
+      units_total: universo.totalUnits,
+      units_without_aliquot: universo.unset,
+    },
+    questions: resultadoPorPregunta,
+  };
+
+  const { data: cerrada, error } = await supabase
+    .from("decisions")
+    .update({
+      status: "closed",
+      closed_at: snapshot.closed_at,
+      closed_by: profile.id,
+      result_snapshot: snapshot,
+    })
+    .eq("id", decisionId)
+    .eq("organization_id", profile.organization_id)
+    // Que no se cierre dos veces desde dos pestañas y se pisen las actas.
+    .eq("status", decision.status)
+    // Sin el .select() no hay forma de distinguir "cerré" de "no afecté ninguna
+    // fila": las dos devuelven error null, y el segundo admin veía recargar la
+    // página como si su cierre hubiera contado.
+    .select("id")
+    .maybeSingle();
 
   if (error) return { error: error.message };
+  if (!cerrada) {
+    return { error: "Alguien la cerró antes que tú. Recarga para ver el acta." };
+  }
 
   revalidatePath("/decisiones");
   revalidatePath(`/decisiones/${decisionId}`);

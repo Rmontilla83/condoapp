@@ -161,7 +161,7 @@ export function NewRequestDialog({ units, commonAreas }: Props) {
               id="location"
               value={locationValue}
               onChange={(e) => setLocationValue(e.target.value)}
-              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              className="flex h-11 w-full rounded-md border border-input bg-background px-3 py-2 text-base md:text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               required
               disabled={loading}
             >
@@ -202,7 +202,7 @@ export function NewRequestDialog({ units, commonAreas }: Props) {
             <select
               id="category"
               name="category"
-              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              className="flex h-11 w-full rounded-md border border-input bg-background px-3 py-2 text-base md:text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               required
               disabled={loading}
             >
@@ -223,7 +223,7 @@ export function NewRequestDialog({ units, commonAreas }: Props) {
               id="description"
               name="description"
               rows={3}
-              className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-base md:text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               placeholder="Describe el problema con detalle..."
               required
               disabled={loading}
@@ -234,7 +234,7 @@ export function NewRequestDialog({ units, commonAreas }: Props) {
             <select
               id="priority"
               name="priority"
-              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              className="flex h-11 w-full rounded-md border border-input bg-background px-3 py-2 text-base md:text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               defaultValue="medium"
               disabled={loading}
             >

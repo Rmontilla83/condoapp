@@ -81,7 +81,7 @@ export default async function DashboardPage() {
             <div className="min-w-0">
               <p className="font-meta text-mute">SALDO PENDIENTE · USD</p>
               <p
-                className={`mt-4 font-display text-[clamp(2.75rem,6vw,4rem)] leading-none tracking-[-0.03em] tabular-nums ${
+                className={`mt-4 font-display text-[clamp(2rem,9vw,4rem)] leading-none tracking-[-0.03em] tabular-nums ${
                   actionableTotal > 0 ? "text-marine-deep" : "text-cyan-ink"
                 }`}
               >

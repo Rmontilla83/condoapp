@@ -48,6 +48,51 @@ export async function getUserUnitIds(profileId: string) {
   return (data ?? []).map((r) => r.unit_id as string);
 }
 
+/**
+ * Unidades cuyas CUOTAS puede ver este perfil.
+ *
+ * El propietario decide en /mi-unidad si su inquilino ve las cuotas
+ * (`unit_members.permissions.can_see_fee`) — pero /pagos nunca lo miraba, así
+ * que ese interruptor era una promesa falsa: el inquilino veía todo igual.
+ *
+ * El propietario siempre ve las suyas; para el inquilino manda el permiso, y el
+ * default (permiso ausente) es que SÍ ve, que es como venía funcionando.
+ */
+export async function getUnitIdsWithFeeAccess(profileId: string) {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("unit_members")
+    .select("unit_id, role, permissions")
+    .eq("profile_id", profileId)
+    .eq("active", true);
+
+  return (data ?? [])
+    .filter((m) => {
+      if (m.role === "owner") return true;
+      const perms = (m.permissions as TenantPermissions | null) ?? {};
+      return perms.can_see_fee !== false;
+    })
+    .map((r) => r.unit_id as string);
+}
+
+/** Unidades en las que este perfil puede REGISTRAR un pago. */
+export async function getUnitIdsWithPayAccess(profileId: string) {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("unit_members")
+    .select("unit_id, role, permissions")
+    .eq("profile_id", profileId)
+    .eq("active", true);
+
+  return (data ?? [])
+    .filter((m) => {
+      if (m.role === "owner") return true;
+      const perms = (m.permissions as TenantPermissions | null) ?? {};
+      return perms.can_see_fee !== false && perms.can_pay_fee !== false;
+    })
+    .map((r) => r.unit_id as string);
+}
+
 // ── Invoices ────────────────────────────────────────────
 
 export async function getInvoicesForUser(unitIds: string[]) {

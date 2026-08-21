@@ -1,5 +1,6 @@
 import {
   getCurrentProfile,
+  getUnitIdsWithFeeAccess,
   getUserUnitIds,
   getInvoicesForUser,
   getInvoiceIdsWithPendingTransactions,
@@ -20,7 +21,42 @@ export default async function PagosPage() {
   const profile = await getCurrentProfile();
   if (!profile?.organization_id) return null;
 
-  const unitIds = await getUserUnitIds(profile.id);
+  // Solo las unidades cuyas cuotas puede ver: el propietario puede haberle
+  // ocultado las finanzas a su inquilino desde /mi-unidad.
+  const [unitIds, todasSusUnidades] = await Promise.all([
+    getUnitIdsWithFeeAccess(profile.id),
+    getUserUnitIds(profile.id),
+  ]);
+
+  // Un inquilino sin permiso de ver cuotas no tiene que ver un saldo en cero y
+  // un "estás al día": eso le está diciendo que no debe nada, que es distinto
+  // de que no le toca verlo. Se lo decimos con todas las letras.
+  const sinPermisoDeVerCuotas =
+    unitIds.length === 0 && todasSusUnidades.length > 0;
+
+  if (sinPermisoDeVerCuotas) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <span className="font-meta-loose text-cyan-ink">CUOTAS · ATRYUM</span>
+          <h1 className="mt-4 font-display text-[clamp(1.75rem,3.5vw,2.5rem)] leading-[1.1] tracking-[-0.03em] text-marine-deep">
+            Tu estado de <em className="font-editorial text-cyan-ink">cuenta</em>
+          </h1>
+        </div>
+        <div className="rounded-2xl border border-border bg-card p-6 md:p-7 max-w-2xl">
+          <p className="font-meta text-mute">SIN ACCESO A LAS CUOTAS</p>
+          <p className="mt-3 text-[15px] text-marine-deep leading-relaxed">
+            El propietario de tu unidad no habilitó la parte financiera para tu cuenta, así que
+            desde aquí no vas a ver el saldo ni las cuotas.
+          </p>
+          <p className="mt-2 text-[14px] text-mute leading-relaxed">
+            No quiere decir que la unidad esté al día ni que esté en deuda: quiere decir que esa
+            información la maneja el propietario. Si necesitas verla, háblalo con él.
+          </p>
+        </div>
+      </div>
+    );
+  }
   const [invoices, feeBreakdown, rateData, orgRaw] = await Promise.all([
     getInvoicesForUser(unitIds),
     getFeeBreakdown(profile.organization_id),

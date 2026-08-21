@@ -78,6 +78,7 @@ export function BottomNav({ isAdmin = false }: { isAdmin?: boolean }) {
                     key={item.href}
                     href={item.href}
                     onClick={() => setShowMore(false)}
+                    aria-current={isActive ? "page" : undefined}
                     className={`flex items-center justify-center rounded-lg px-3 py-3 text-[12px] font-medium transition-colors ${
                       isActive ? "bg-marine-deep text-frost" : "text-marine-deep/70 hover:bg-cloud/50"
                     }`}
@@ -92,7 +93,12 @@ export function BottomNav({ isAdmin = false }: { isAdmin?: boolean }) {
       )}
 
       {/* Bottom bar — Ink background */}
-      <nav className="fixed bottom-0 left-0 right-0 z-50 bg-sidebar text-sidebar-foreground md:hidden">
+      {/* pb con safe-area: en iPhone la franja del gesto de inicio se comía la
+          fila de etiquetas y "Mantenimiento" quedaba a medias. */}
+      <nav
+        aria-label="Navegación principal"
+        className="fixed bottom-0 left-0 right-0 z-50 bg-sidebar text-sidebar-foreground md:hidden pb-[env(safe-area-inset-bottom)]"
+      >
         <div className="flex items-center justify-around py-2">
           {mainItems.map((item) => {
             const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
@@ -100,6 +106,7 @@ export function BottomNav({ isAdmin = false }: { isAdmin?: boolean }) {
               <Link
                 key={item.href}
                 href={item.href}
+                aria-current={isActive ? "page" : undefined}
                 className={`flex flex-col items-center gap-1 px-2 py-1.5 text-[10px] font-medium whitespace-nowrap transition-colors ${
                   isActive ? "text-ember" : "text-sidebar-foreground/60"
                 }`}
@@ -111,6 +118,9 @@ export function BottomNav({ isAdmin = false }: { isAdmin?: boolean }) {
           })}
           <button
             onClick={() => setShowMore(!showMore)}
+            aria-expanded={showMore}
+            aria-haspopup="menu"
+            aria-label="Más secciones"
             className={`flex flex-col items-center gap-1 px-3 py-1.5 text-[10px] font-medium transition-colors ${
               isMoreActive || showMore ? "text-ember" : "text-sidebar-foreground/60"
             }`}

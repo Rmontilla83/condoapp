@@ -80,14 +80,24 @@ interface QuorumInput {
   reliable?: boolean;
   /** Lista de voters únicos: { voter_id, weight } */
   voters: Array<{ voter_id: string; weight: number }>;
+  /**
+   * Padrón del modo NO ponderado. Si viene, solo estos perfiles suman a
+   * `achieved`. Sin él, un inquilino o un administrador sin unidad empujaba el
+   * quórum de un universo que solo cuenta propietarios.
+   */
+  eligibleVoterIds?: string[];
 }
 
 export function computeQuorum(input: QuorumInput): QuorumStats {
   const universe = Math.max(input.universe, 0.0001); // evitar div/0
 
   // Deduplicar por voter_id (un voter cuenta máximo una vez aunque vote N preguntas)
+  const padron = input.eligibleVoterIds ? new Set(input.eligibleVoterIds) : null;
   const seen = new Map<string, number>();
   for (const v of input.voters) {
+    // En el modo no ponderado el denominador son los propietarios: quien no
+    // está en el padrón puede votar, pero no mueve el quórum.
+    if (padron && !padron.has(v.voter_id)) continue;
     if (!seen.has(v.voter_id)) {
       seen.set(v.voter_id, v.weight);
     }
@@ -123,6 +133,15 @@ export interface QuorumUniverse {
   /** Unidades sin alícuota cargada (solo aplica al modo ponderado). */
   unset: number;
   totalUnits: number;
+  /**
+   * Perfiles que forman el padrón: los propietarios activos del condominio.
+   *
+   * Solo se llena en el modo NO ponderado, que es donde hace falta: ahí
+   * `achieved` cuenta votantes, y sin esta lista contaba a cualquiera que
+   * votara —inquilinos, administradores sin unidad— contra un denominador que
+   * solo tiene propietarios. Dos escalas distintas divididas entre sí.
+   */
+  voterIds?: string[];
 }
 
 /**
@@ -158,22 +177,36 @@ export async function getOrgQuorumUniverse(
     };
   }
 
-  // No weighted: count owners activos
-  const { count } = await supabase
+  // No ponderado: propietarios activos, contados por PERSONA.
+  //
+  // Antes esto era un `count: "exact"` sobre unit_members, que cuenta FILAS.
+  // Un propietario con dos apartamentos sumaba 2 al universo, pero su voto
+  // sigue valiendo 1 (`UNIQUE(question_id, voter_id)` en la migration 019, más
+  // el dedupe de computeQuorum). Resultado: en un edificio con multipropiedad
+  // el quórum era matemáticamente inalcanzable — y desde la migration 039 ese
+  // número se congela en el acta.
+  const { data: unidades } = await supabase
+    .from("units")
+    .select("id")
+    .eq("organization_id", orgId);
+
+  const { data: miembros } = await supabase
     .from("unit_members")
-    .select("profile_id", { count: "exact", head: true })
+    .select("profile_id")
     .eq("active", true)
     .eq("role", "owner")
-    .in("unit_id",
-      ((await supabase.from("units").select("id").eq("organization_id", orgId)).data ?? [])
-        .map((u) => u.id),
-    );
+    .in("unit_id", (unidades ?? []).map((u) => u.id));
+
+  const propietarios = [
+    ...new Set((miembros ?? []).map((m) => m.profile_id as string)),
+  ];
 
   return {
-    universe: count ?? 0,
-    reliable: (count ?? 0) > 0,
+    universe: propietarios.length,
+    reliable: propietarios.length > 0,
     unset: 0,
-    totalUnits: count ?? 0,
+    totalUnits: propietarios.length,
+    voterIds: propietarios,
   };
 }
 

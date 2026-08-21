@@ -7,12 +7,19 @@ const CRON_SECRET = process.env.CRON_SECRET;
 
 // GET /api/bcv-rate
 //
-// Devuelve la tasa BCV más actualizada y la sincroniza en la tabla
-// exchange_rates de todas las orgs. Usa admin client para el upsert
-// (bypass RLS, ya validamos que el caller está autenticado).
+// Devuelve la tasa oficial del Banco Central de Venezuela y la sincroniza en
+// exchange_rates. Usa admin client para el upsert (bypass RLS, ya validamos que
+// el caller está autenticado).
+//
+// SOLO PARA CONDOMINIOS EN VENEZUELA. La versión anterior escribía esta tasa en
+// todas las organizaciones sin mirar el país: el día que entre un condominio en
+// Colombia o Panamá, sus cuotas quedarían convertidas a bolívares y los montos
+// que ve el propietario serían basura. `organizations.country` ya existía y
+// nadie lo estaba mirando.
 //
 // Acepta auth por cookie (usuario logueado) o header Bearer CRON_SECRET
 // para llamadas automáticas.
+const PAISES_BCV = ["VE", "VEN", "VENEZUELA"];
 export async function GET(request: NextRequest) {
   const authHeader = request.headers.get("authorization");
   const isCron = !!(CRON_SECRET && authHeader === `Bearer ${CRON_SECRET}`);
@@ -55,7 +62,14 @@ export async function GET(request: NextRequest) {
 
     // Admin client para upsert — bypassa RLS.
     const admin = createAdminClient();
-    const { data: orgs } = await admin.from("organizations").select("id");
+    const { data: todasLasOrgs } = await admin
+      .from("organizations")
+      .select("id, country");
+
+    const orgs = (todasLasOrgs ?? []).filter((o) =>
+      PAISES_BCV.includes(String(o.country ?? "").trim().toUpperCase()),
+    );
+    const omitidas = (todasLasOrgs ?? []).length - orgs.length;
 
     let updated = 0;
     if (orgs) {
@@ -78,6 +92,7 @@ export async function GET(request: NextRequest) {
       date,
       source: "bcv",
       updated_orgs: updated,
+      skipped_orgs: omitidas,
       fetched_at: new Date().toISOString(),
     });
   } catch (err) {

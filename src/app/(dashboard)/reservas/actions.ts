@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getCurrentProfile } from "@/lib/queries";
 import { canTenantAct } from "@/lib/permissions";
 import { revalidatePath } from "next/cache";
+import { DEFAULT_TIME_ZONE, zonedToISO } from "@/lib/utils";
 
 export async function createReservation(formData: FormData) {
   const profile = await getCurrentProfile();
@@ -26,14 +27,30 @@ export async function createReservation(formData: FormData) {
     return { error: "Completa todos los campos" };
   }
 
-  const startTime = `${date}T${startHour}:00`;
-  const endTime = `${date}T${endHour}:00`;
-
   if (startHour >= endHour) {
     return { error: "La hora de fin debe ser posterior a la de inicio" };
   }
 
   const supabase = await createClient();
+
+  // La hora que eligió el residente es la hora del condominio, no la del
+  // servidor. Sin convertirla, "de 2 a 4" se guardaba como 14:00 UTC y se leía
+  // como 10:00 de la mañana en Venezuela.
+  const { data: org } = await supabase
+    .from("organizations")
+    .select("timezone")
+    .eq("id", profile.organization_id)
+    .maybeSingle();
+  const zona = org?.timezone || DEFAULT_TIME_ZONE;
+
+  let startTime: string;
+  let endTime: string;
+  try {
+    startTime = zonedToISO(date, startHour, zona);
+    endTime = zonedToISO(date, endHour, zona);
+  } catch {
+    return { error: "La fecha o la hora no son válidas." };
+  }
 
   // Cargar la amenidad con sus políticas de uso
   const { data: area } = await supabase
@@ -86,13 +103,18 @@ export async function createReservation(formData: FormData) {
 
   // Máximo de reservas por semana (lun-dom) del mismo residente
   if (area.max_reservations_per_week != null) {
-    const d = new Date(`${date}T00:00:00`);
-    const sinceMonday = (d.getDay() + 6) % 7; // 0=lunes
-    const monday = new Date(d);
-    monday.setDate(d.getDate() - sinceMonday);
-    monday.setHours(0, 0, 0, 0);
-    const nextMonday = new Date(monday);
-    nextMonday.setDate(monday.getDate() + 7);
+    // La semana también es la del condominio: partimos del día elegido a
+    // medianoche local y retrocedemos hasta el lunes, en días de calendario.
+    const [anio, mes, dia] = date.split("-").map(Number);
+    const soloFecha = new Date(Date.UTC(anio, mes - 1, dia));
+    const sinceMonday = (soloFecha.getUTCDay() + 6) % 7; // 0=lunes
+    soloFecha.setUTCDate(soloFecha.getUTCDate() - sinceMonday);
+    const lunesISO = soloFecha.toISOString().slice(0, 10);
+    soloFecha.setUTCDate(soloFecha.getUTCDate() + 7);
+    const siguienteLunesISO = soloFecha.toISOString().slice(0, 10);
+
+    const monday = new Date(zonedToISO(lunesISO, "00:00", zona));
+    const nextMonday = new Date(zonedToISO(siguienteLunesISO, "00:00", zona));
 
     const { count } = await supabase
       .from("reservations")
@@ -132,7 +154,15 @@ export async function createReservation(formData: FormData) {
     notes,
   });
 
-  if (error) return { error: error.message };
+  if (error) {
+    // 23P01 = violación del rango de exclusión (migration 037). Es la carrera
+    // que el SELECT de arriba no puede cerrar: dos personas tocando "Reservar"
+    // a la vez pasaban las dos por el hueco entre el chequeo y el insert.
+    if ((error as { code?: string }).code === "23P01") {
+      return { error: "Alguien acaba de reservar ese horario. Elige otro." };
+    }
+    return { error: error.message };
+  }
 
   revalidatePath("/reservas");
   return { success: true };

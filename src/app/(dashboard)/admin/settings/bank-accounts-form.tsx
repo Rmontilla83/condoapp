@@ -192,7 +192,7 @@ function AccountCard({
               value={account.kind}
               onChange={(e) => onChange({ kind: e.target.value as BankAccountKind })}
               disabled={disabled}
-              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+              className="flex h-11 w-full rounded-md border border-input bg-background px-3 py-2 text-base md:text-sm"
             >
               {BANK_ACCOUNT_KINDS.map((k) => (
                 <option key={k} value={k}>
@@ -297,7 +297,7 @@ function AccountCard({
               })
             }
             disabled={disabled}
-            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+            className="flex h-11 w-full rounded-md border border-input bg-background px-3 py-2 text-base md:text-sm"
           >
             <option value="">— No aplica —</option>
             {BANK_ACCOUNT_TYPES.map((t) => (

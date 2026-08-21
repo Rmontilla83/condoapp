@@ -78,7 +78,7 @@ export function AddUnitDialog() {
           </div>
           <div className="space-y-2">
             <Label htmlFor="type">Tipo</Label>
-            <select id="type" name="type" className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" defaultValue="apartment">
+            <select id="type" name="type" className="flex h-11 w-full rounded-md border border-input bg-background px-3 py-2 text-base md:text-sm" defaultValue="apartment">
               <option value="apartment">Apartamento</option>
               <option value="house">Casa</option>
               <option value="penthouse">Penthouse</option>

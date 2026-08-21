@@ -180,7 +180,7 @@ export function MultiPayDialog({ target, rate, onClose, bankAccounts = [] }: Pro
                 <select
                   id="method"
                   name="method"
-                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                  className="flex h-11 w-full rounded-md border border-input bg-background px-3 py-2 text-base md:text-sm"
                   defaultValue="transfer"
                 >
                   <option value="transfer">Transferencia bancaria</option>

@@ -45,11 +45,11 @@ export function NewAnnouncementDialog() {
           </div>
           <div className="space-y-2">
             <Label htmlFor="content">Contenido</Label>
-            <textarea id="content" name="content" rows={4} className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" placeholder="Detalle del comunicado..." required />
+            <textarea id="content" name="content" rows={4} className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-base md:text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" placeholder="Detalle del comunicado..." required />
           </div>
           <div className="space-y-2">
             <Label htmlFor="priority">Prioridad</Label>
-            <select id="priority" name="priority" className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" defaultValue="normal">
+            <select id="priority" name="priority" className="flex h-11 w-full rounded-md border border-input bg-background px-3 py-2 text-base md:text-sm" defaultValue="normal">
               <option value="normal">Normal</option>
               <option value="important">Importante</option>
               <option value="urgent">Urgente · se envía por correo a todos los residentes</option>

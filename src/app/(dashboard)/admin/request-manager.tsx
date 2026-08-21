@@ -8,13 +8,17 @@ import { updateRequestStatus } from "../mantenimiento/actions";
 import type { MaintenanceRequest } from "@/types/database";
 
 const statusConfig: Record<string, { label: string; tag: string }> = {
-  new: { label: "NUEVO", tag: "bg-cyan/10 text-cyan" },
-  in_review: { label: "EN REVISIÓN", tag: "bg-ember/15 text-ember" },
-  in_progress: { label: "EN CURSO", tag: "bg-ember/15 text-ember" },
-  resolved: { label: "RESUELTO", tag: "bg-cyan/10 text-cyan" },
+  new: { label: "NUEVO", tag: "bg-cyan/10 text-cyan-ink" },
+  in_review: { label: "EN REVISIÓN", tag: "bg-ember/15 text-ember-ink" },
+  in_progress: { label: "EN CURSO", tag: "bg-ember/15 text-ember-ink" },
+  resolved: { label: "RESUELTO", tag: "bg-cyan/10 text-cyan-ink" },
+  cancelled: { label: "DESCARTADO", tag: "bg-cloud text-mute" },
 };
 
 const statusFlow = ["new", "in_review", "in_progress", "resolved"] as const;
+
+/** Un reporte cerrado —resuelto o descartado— ya no avanza, pero se reabre. */
+const CERRADOS = ["resolved", "cancelled"];
 
 export function RequestManager({ requests }: { requests: MaintenanceRequest[] }) {
   const router = useRouter();
@@ -22,8 +26,14 @@ export function RequestManager({ requests }: { requests: MaintenanceRequest[] })
   const [loadingId, setLoadingId] = useState<string | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [assignTo, setAssignTo] = useState<Record<string, string>>({});
+  const [descartando, setDescartando] = useState<string | null>(null);
+  const [motivo, setMotivo] = useState("");
 
-  async function handleStatusChange(requestId: string, newStatus: string) {
+  async function handleStatusChange(
+    requestId: string,
+    newStatus: string,
+    note?: string,
+  ) {
     setLoadingId(requestId);
     setErrors((prev) => {
       const next = { ...prev };
@@ -32,7 +42,12 @@ export function RequestManager({ requests }: { requests: MaintenanceRequest[] })
     });
 
     try {
-      const result = await updateRequestStatus(requestId, newStatus, assignTo[requestId]);
+      const result = await updateRequestStatus(
+        requestId,
+        newStatus,
+        assignTo[requestId],
+        note,
+      );
 
       if ("error" in result && result.error) {
         setErrors((prev) => ({ ...prev, [requestId]: result.error! }));
@@ -135,40 +150,111 @@ export function RequestManager({ requests }: { requests: MaintenanceRequest[] })
                       placeholder="Nombre del responsable"
                       value={assignTo[req.id] ?? req.assigned_to ?? ""}
                       onChange={(e) => setAssignTo((prev) => ({ ...prev, [req.id]: e.target.value }))}
-                      className="h-9 text-sm"
+                      className="h-11"
                     />
                   </div>
-                  {nextStatus && nextConfig && (
-                    <div className="flex items-end">
+                  <div className="flex items-end">
+                    {CERRADOS.includes(req.status) ? (
                       <Button
                         size="sm"
-                        onClick={() => handleStatusChange(req.id, nextStatus)}
+                        variant="outline"
+                        onClick={() => handleStatusChange(req.id, "in_progress")}
                         disabled={isLoading}
                         className="whitespace-nowrap h-9"
                       >
-                        {isLoading ? "Actualizando..." : `Mover a ${nextConfig.label}`}
+                        {isLoading ? "Actualizando..." : "Reabrir"}
                       </Button>
-                    </div>
+                    ) : (
+                      nextStatus &&
+                      nextConfig && (
+                        <Button
+                          size="sm"
+                          onClick={() => handleStatusChange(req.id, nextStatus)}
+                          disabled={isLoading}
+                          className="whitespace-nowrap h-9"
+                        >
+                          {isLoading ? "Actualizando..." : `Mover a ${nextConfig.label}`}
+                        </Button>
+                      )
+                    )}
+                  </div>
+                </div>
+
+                {/* Mover a cualquier estado, incluido volver atrás. Antes, un
+                    reporte marcado RESUELTO por error se quedaba así para
+                    siempre: no había ningún control que lo reabriera. */}
+                <div className="flex gap-2 pt-3 border-t border-border flex-wrap items-center">
+                  <span className="font-meta text-mute mr-1">MOVER A</span>
+                  {statusFlow
+                    .filter((s) => s !== req.status)
+                    .map((s) => {
+                      const cfg = statusConfig[s];
+                      return (
+                        <button
+                          key={s}
+                          onClick={() => handleStatusChange(req.id, s)}
+                          disabled={isLoading}
+                          className={`font-meta px-2.5 py-1 rounded-md transition-opacity hover:opacity-80 disabled:opacity-40 ${cfg.tag}`}
+                        >
+                          {cfg.label}
+                        </button>
+                      );
+                    })}
+                  {req.status !== "cancelled" && (
+                    <button
+                      onClick={() => {
+                        setDescartando(descartando === req.id ? null : req.id);
+                        setMotivo("");
+                      }}
+                      disabled={isLoading}
+                      className="font-meta px-2.5 py-1 rounded-md bg-cloud text-mute transition-opacity hover:opacity-80 disabled:opacity-40"
+                    >
+                      DESCARTAR
+                    </button>
                   )}
                 </div>
 
-                {req.status !== "resolved" && (
-                  <div className="flex gap-2 pt-3 border-t border-border flex-wrap">
-                    {statusFlow
-                      .filter((s) => s !== req.status)
-                      .map((s) => {
-                        const cfg = statusConfig[s];
-                        return (
-                          <button
-                            key={s}
-                            onClick={() => handleStatusChange(req.id, s)}
-                            disabled={isLoading}
-                            className={`font-meta px-2.5 py-1 rounded-md transition-opacity hover:opacity-80 disabled:opacity-40 ${cfg.tag}`}
-                          >
-                            {cfg.label}
-                          </button>
-                        );
-                      })}
+                {descartando === req.id && (
+                  <div className="rounded-lg border border-border bg-card p-3 space-y-2">
+                    <label
+                      className="font-meta text-mute block"
+                      htmlFor={`motivo-${req.id}`}
+                    >
+                      POR QUÉ LO DESCARTAS
+                    </label>
+                    <Input
+                      id={`motivo-${req.id}`}
+                      value={motivo}
+                      onChange={(e) => setMotivo(e.target.value)}
+                      placeholder="Ej: es un problema dentro del apartamento, no del edificio"
+                      className="h-11"
+                    />
+                    <p className="text-[12px] text-mute">
+                      Se lo mandamos por correo a quien lo reportó. Sin explicación, el
+                      vecino solo ve que su reporte desapareció.
+                    </p>
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        className="h-11"
+                        disabled={isLoading || motivo.trim().length < 5}
+                        onClick={() =>
+                          handleStatusChange(req.id, "cancelled", motivo.trim())
+                        }
+                      >
+                        {isLoading ? "Descartando…" : "Descartar reporte"}
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-11"
+                        onClick={() => setDescartando(null)}
+                        disabled={isLoading}
+                      >
+                        Cancelar
+                      </Button>
+                    </div>
                   </div>
                 )}
 

@@ -108,7 +108,7 @@ export function PendingInvoices({
       </div>
 
       {selected.size > 0 && (
-        <div className="sticky bottom-4 mt-5 rounded-2xl bg-marine-deep text-frost p-4 shadow-lg flex items-center justify-between gap-3 z-10">
+        <div className="sticky bottom-24 md:bottom-4 mt-5 rounded-2xl bg-marine-deep text-frost p-4 shadow-lg flex items-center justify-between gap-3 z-10">
           <div className="min-w-0">
             <p className="font-meta text-ember text-[11px]">SELECCIONADAS</p>
             <p className="mt-0.5 text-[14px] truncate">

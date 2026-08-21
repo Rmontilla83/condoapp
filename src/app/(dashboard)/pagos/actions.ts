@@ -2,7 +2,11 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { getCurrentProfile, getCurrentRate } from "@/lib/queries";
+import {
+  getCurrentProfile,
+  getCurrentRate,
+  getUnitIdsWithPayAccess,
+} from "@/lib/queries";
 import { isAdminRole } from "@/lib/permissions";
 import { revalidatePath } from "next/cache";
 import {
@@ -55,14 +59,31 @@ export async function submitPaymentForMultipleInvoices(formData: FormData) {
 
   const supabase = await createClient();
 
+  // Permiso de PAGAR. El propietario puede habérselo quitado a su inquilino en
+  // /mi-unidad; hasta ahora ese interruptor no lo miraba nadie.
+  const unidadesPermitidas = await getUnitIdsWithPayAccess(profile.id);
+  if (unidadesPermitidas.length === 0) {
+    return {
+      error:
+        "El propietario de tu unidad no habilitó el registro de pagos desde tu cuenta. Háblalo con él.",
+    };
+  }
+
   // Validar todas las invoices existen y están pending/overdue
   const { data: invoices } = await supabase
     .from("invoices")
-    .select("id, amount, currency, status")
+    .select("id, amount, currency, status, unit_id")
     .in("id", invoiceIds);
 
   if (!invoices || invoices.length !== invoiceIds.length) {
     return { error: "Una o más cuotas no son válidas" };
+  }
+
+  // Y que todas sean de una unidad en la que este perfil puede pagar. La RLS lo
+  // cubre para unidades ajenas, pero no distingue al inquilino sin permiso.
+  const ajenas = invoices.filter((i) => !unidadesPermitidas.includes(i.unit_id as string));
+  if (ajenas.length > 0) {
+    return { error: "Hay cuotas que no corresponden a tu unidad." };
   }
 
   const allPayable = invoices.every(
@@ -126,7 +147,17 @@ export async function submitPaymentForMultipleInvoices(formData: FormData) {
   }));
 
   const { error } = await supabase.from("transactions").insert(txInserts);
-  if (error) return { error: error.message };
+  if (error) {
+    // 23505 contra el índice parcial de la migration 037: ya hay un comprobante
+    // en revisión para esa cuota. Antes el filtro vivía solo en la UI.
+    if ((error as { code?: string }).code === "23505") {
+      return {
+        error:
+          "Ya tienes un comprobante en revisión para una de esas cuotas. Espera a que el administrador lo revise.",
+      };
+    }
+    return { error: error.message };
+  }
 
   revalidatePath("/pagos");
   revalidatePath("/admin");

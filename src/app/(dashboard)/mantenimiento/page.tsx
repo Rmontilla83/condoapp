@@ -11,6 +11,7 @@ const statusConfig: Record<string, { label: string; tag: string; step: number }>
   in_review: { label: "EN REVISIÓN", tag: "bg-ember/15 text-ember-ink", step: 2 },
   in_progress: { label: "EN CURSO", tag: "bg-ember/15 text-ember-ink", step: 3 },
   resolved: { label: "RESUELTO", tag: "bg-cyan/10 text-cyan-ink", step: 4 },
+  cancelled: { label: "DESCARTADO", tag: "bg-cloud text-mute", step: 0 },
 };
 
 const priorityConfig = {
@@ -39,6 +40,35 @@ export default async function MantenimientoPage() {
       .eq("active", true)
       .order("joined_at", { ascending: false }),
   ]);
+
+  // Historial de cambios. `maintenance_status_log` se escribía desde el primer
+  // día y no lo leía nadie: el vecino veía el estado de HOY y ninguna señal de
+  // que su reporte se estuviera moviendo, ni de por qué se descartó.
+  const { data: historialRaw } = requestsRaw.length
+    ? await supabase
+        .from("maintenance_status_log")
+        .select("request_id, old_status, new_status, note, created_at")
+        .in(
+          "request_id",
+          requestsRaw.map((r) => r.id),
+        )
+        .order("created_at", { ascending: true })
+    : { data: [] };
+
+  const historialPorReporte = new Map<
+    string,
+    { new_status: string; note: string | null; created_at: string }[]
+  >();
+  for (const fila of historialRaw ?? []) {
+    const clave = fila.request_id as string;
+    const lista = historialPorReporte.get(clave) ?? [];
+    lista.push({
+      new_status: fila.new_status as string,
+      note: (fila.note as string | null) ?? null,
+      created_at: fila.created_at as string,
+    });
+    historialPorReporte.set(clave, lista);
+  }
 
   // El bucket es privado (migration 030): `photo_urls` guarda referencias
   // `bucket/path`, no URLs navegables. Se firman en el servidor y las que
@@ -156,7 +186,46 @@ export default async function MantenimientoPage() {
                   </div>
                 </div>
 
-                {/* Progress tracker */}
+                {/* Historial: qué pasó y cuándo, con la nota del administrador
+                    si la escribió. Es lo que convierte "reporté algo" en
+                    "alguien lo está viendo". */}
+                {(historialPorReporte.get(request.id) ?? []).length > 0 && (
+                  <div className="mt-5 pt-5 border-t border-border">
+                    <p className="font-meta text-mute mb-2.5">HISTORIAL</p>
+                    <ol className="space-y-2">
+                      {(historialPorReporte.get(request.id) ?? []).map((h, i) => (
+                        <li key={i} className="flex gap-3 text-[13px]">
+                          <span className="font-meta text-mute shrink-0 pt-0.5 w-16">
+                            {new Date(h.created_at)
+                              .toLocaleDateString("es", { day: "numeric", month: "short" })
+                              .toUpperCase()}
+                          </span>
+                          <span className="text-marine-deep/80">
+                            {statusConfig[h.new_status]?.label ?? h.new_status.toUpperCase()}
+                            {h.note ? (
+                              <span className="block text-mute mt-0.5">{h.note}</span>
+                            ) : null}
+                          </span>
+                        </li>
+                      ))}
+                    </ol>
+                  </div>
+                )}
+
+                {/* Un reporte descartado no está en el camino de los cuatro
+                    pasos: pintar la barra completa en gris se lee como "no ha
+                    pasado nada", que es lo contrario de lo que ocurrió. */}
+                {request.status === "cancelled" ? (
+                  <div className="mt-5 pt-5 border-t border-border">
+                    <p className="font-meta text-mute">
+                      ESTE REPORTE SE CERRÓ SIN ATENDERSE
+                    </p>
+                    <p className="mt-1.5 text-[13px] text-mute">
+                      El motivo está en el historial de arriba. Si crees que hace falta
+                      revisarlo de nuevo, háblalo con la administración: pueden reabrirlo.
+                    </p>
+                  </div>
+                ) : (
                 <div className="mt-5 pt-5 border-t border-border">
                   <div className="flex gap-1.5 mb-2">
                     {steps.map((step) => {
@@ -187,6 +256,7 @@ export default async function MantenimientoPage() {
                     })}
                   </div>
                 </div>
+                )}
               </article>
             );
           })}

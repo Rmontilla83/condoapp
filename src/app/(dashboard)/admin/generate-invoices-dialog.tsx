@@ -544,7 +544,7 @@ function PeriodStep({
             id="month"
             value={form.month}
             onChange={(e) => onChange((p) => ({ ...p, month: e.target.value }))}
-            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+            className="flex h-11 w-full rounded-md border border-input bg-background px-3 py-2 text-base md:text-sm"
           >
             {MONTH_LABELS.map((m, i) => (
               <option key={i} value={String(i + 1)}>

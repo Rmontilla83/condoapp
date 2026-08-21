@@ -27,6 +27,16 @@ interface DecisionWithQuestions extends Decision {
 // Migration 023 ya arregló los datos en DB; esto evita que un nuevo
 // registro corrupto rompa la página.
 
+/** Lo único del acta (migration 039) que necesita esta lista. */
+interface ActaQuorum {
+  quorum?: {
+    required_pct: number | null;
+    achieved_pct: number;
+    met: boolean;
+    reliable: boolean;
+  };
+}
+
 export default async function DecisionesPage() {
   const profile = await getCurrentProfile();
   if (!profile?.organization_id) redirect("/dashboard");
@@ -57,6 +67,28 @@ export default async function DecisionesPage() {
   const quorumByDecision: Record<string, { achieved_pct: number; required_pct: number | null; met: boolean; reliable: boolean }> = {};
   for (const d of decisions) {
     if (d.kind !== "formal_assembly" || d.quorum_pct === null) continue;
+
+    // Si la asamblea ya se cerró, el número sale del acta congelada (migration
+    // 039). Recalcularlo acá hacía que la lista y el detalle mostraran cifras
+    // distintas de la MISMA asamblea en cuanto se corrigiera una alícuota o se
+    // diera de alta una unidad: el detalle leía el acta y la lista el padrón de
+    // hoy.
+    const acta = (d as unknown as { result_snapshot?: ActaQuorum | null })
+      .result_snapshot;
+    if (d.status === "closed" && acta?.quorum) {
+      quorumByDecision[d.id] = {
+        achieved_pct: acta.quorum.achieved_pct,
+        required_pct: acta.quorum.required_pct,
+        met: acta.quorum.met,
+        reliable: acta.quorum.reliable,
+      };
+      continue;
+    }
+
+    // Una asamblea cancelada, o cerrada antes de que existieran las actas, no
+    // tiene resultado que mostrar: un porcentaje recalculado hoy sería inventado.
+    if (d.status !== "open" && d.status !== "draft") continue;
+
     const universo = await getOrgQuorumUniverse(d.organization_id, d.weighted_by_aliquot);
     const allResponses = (d.decision_questions ?? []).flatMap((q) => q.decision_responses);
     const stats = computeQuorum({
@@ -65,12 +97,13 @@ export default async function DecisionesPage() {
       universe: universo.universe,
       reliable: universo.reliable,
       voters: allResponses.map((r) => ({ voter_id: r.voter_id, weight: Number(r.weight) })),
+      eligibleVoterIds: universo.voterIds,
     });
     quorumByDecision[d.id] = {
       achieved_pct: stats.achieved_pct,
       required_pct: stats.required_pct,
       met: stats.met,
-          reliable: stats.reliable,
+      reliable: stats.reliable,
     };
   }
 

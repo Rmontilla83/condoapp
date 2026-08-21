@@ -182,7 +182,7 @@ export function EditDecisionDialog({ decisionId, title: initialTitle, descriptio
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               rows={3}
-              className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+              className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-base md:text-sm"
               placeholder="Contexto adicional..."
             />
           </div>

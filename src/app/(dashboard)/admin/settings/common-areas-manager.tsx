@@ -137,7 +137,9 @@ export function CommonAreasManager({ areas }: { areas: CommonArea[] }) {
                     <p className="mt-2 text-[13px] text-mute max-w-xl">{area.description}</p>
                   )}
                   {area.rules && (
-                    <p className="mt-1 text-[12px] text-mute italic max-w-xl">{area.rules}</p>
+                    <p className="mt-1 text-[12px] text-mute italic max-w-xl whitespace-pre-line">
+                      {area.rules}
+                    </p>
                   )}
                 </div>
                 <div className="flex gap-2 shrink-0">
@@ -271,25 +273,29 @@ function FormularioArea({
 
       <div className="space-y-1.5">
         <Label htmlFor={`desc-${area?.id ?? "nueva"}`}>Descripción</Label>
-        <Input
+        <textarea
           id={`desc-${area?.id ?? "nueva"}`}
           name="description"
           defaultValue={area?.description ?? ""}
           placeholder="Qué es y dónde queda"
           maxLength={300}
-          className="h-11"
+          rows={2}
+          className="flex w-full rounded-lg border border-input bg-background px-3 py-2 text-base md:text-sm resize-y focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         />
       </div>
 
       <div className="space-y-1.5">
         <Label htmlFor={`rules-${area?.id ?? "nueva"}`}>Reglas de uso</Label>
-        <Input
+        {/* Un `Input` de una línea para mil caracteres de reglamento: el admin
+            escribía tres reglas y solo veía la última media frase. */}
+        <textarea
           id={`rules-${area?.id ?? "nueva"}`}
           name="rules"
           defaultValue={area?.rules ?? ""}
-          placeholder="Ej: dejar limpio, no música después de las 10pm"
+          placeholder={"Ej: dejar el espacio limpio" + String.fromCharCode(10) + "Sin música después de las 10 pm" + String.fromCharCode(10) + "Máximo 20 personas"}
           maxLength={1000}
-          className="h-11"
+          rows={4}
+          className="flex w-full rounded-lg border border-input bg-background px-3 py-2 text-base md:text-sm resize-y focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         />
         <p className="text-[12px] text-mute">
           El residente las ve al reservar. Los límites de horario y anticipación se configuran

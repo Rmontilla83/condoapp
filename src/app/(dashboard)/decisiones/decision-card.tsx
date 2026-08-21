@@ -80,8 +80,15 @@ export function DecisionCard({ decision, questions, userId, isAdmin, quorumStats
   async function handleClose() {
     if (!confirm("¿Cerrar esta decisión? Ya no se podrán recibir votos.")) return;
     setLoading(true);
-    await closeDecision(decision.id);
+    // El resultado se descartaba: un cierre rechazado —porque otro admin la
+    // cerró primero, o porque no se pudo leer el acta— recargaba la página como
+    // si hubiera funcionado.
+    const res = await closeDecision(decision.id);
     setLoading(false);
+    if (res && 'error' in res && res.error) {
+      setError(res.error);
+      return;
+    }
     window.location.reload();
   }
 

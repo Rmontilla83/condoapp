@@ -62,7 +62,8 @@ export default async function AdminSettingsPage() {
           <em className="font-editorial">{org.name}</em>
         </h1>
         <p className="mt-3 text-[15px] text-mute">
-          Datos bancarios, modo de cobranza y políticas para inquilinos.
+          Datos bancarios, cómo se cobra, qué puede hacer un inquilino y qué áreas comunes
+          se pueden reservar.
         </p>
       </div>
 

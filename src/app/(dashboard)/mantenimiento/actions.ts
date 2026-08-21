@@ -45,6 +45,28 @@ export async function createMaintenanceRequest(
 
     const supabase = await createClient();
 
+    // La ubicación viene del formulario y hasta ahora se insertaba sin
+    // comprobar nada: se podía reportar una avería a nombre del apartamento de
+    // otro, o de un área común de otro condominio.
+    if (unitId) {
+      const misUnidades = await getUserUnitIds(profile.id);
+      if (!misUnidades.includes(unitId)) {
+        return { error: "Esa unidad no es tuya." };
+      }
+    }
+    if (commonAreaId) {
+      const { data: area } = await supabase
+        .from("common_areas")
+        .select("id")
+        .eq("id", commonAreaId)
+        .eq("organization_id", profile.organization_id)
+        .eq("is_active", true)
+        .maybeSingle();
+      if (!area) {
+        return { error: "Esa área común no está disponible." };
+      }
+    }
+
     // 1) Insert primero — si falla, no intentamos subir fotos huérfanas.
     const { data: inserted, error: insertError } = await supabase
       .from("maintenance_requests")
@@ -123,10 +145,20 @@ export async function createMaintenanceRequest(
   }
 }
 
+/** Los cinco estados que acepta el CHECK de `maintenance_requests`. */
+const ESTADOS_VALIDOS = [
+  "new",
+  "in_review",
+  "in_progress",
+  "resolved",
+  "cancelled",
+] as const;
+
 export async function updateRequestStatus(
   requestId: string,
   status: string,
   assignedTo?: string,
+  note?: string,
 ) {
   try {
     const profile = await getCurrentProfile();
@@ -135,13 +167,37 @@ export async function updateRequestStatus(
       return { error: "Solo administradores pueden cambiar el estado" };
     }
 
+    // El estado llegaba como string libre desde el cliente y se insertaba tal
+    // cual: un valor fuera del CHECK devolvía un error de Postgres crudo.
+    if (!(ESTADOS_VALIDOS as readonly string[]).includes(status)) {
+      return { error: "Ese estado no existe." };
+    }
+
     // Admin client bypasea RLS — el rol ya lo validamos arriba.
     // RLS de maintenance_requests requiere auth.user_role() que falla con view_as.
     const supabase = createAdminClient();
 
+    // Necesitamos el estado anterior para el historial: `old_status` existe en
+    // maintenance_status_log desde la migration 001 y nunca se escribió, así
+    // que el log solo decía "ahora está en X", sin decir de dónde venía.
+    const { data: previo } = await supabase
+      .from("maintenance_requests")
+      .select("status")
+      .eq("id", requestId)
+      .eq("organization_id", profile.organization_id)
+      .maybeSingle();
+
+    if (!previo) return { error: "Reporte no encontrado" };
+
+    const motivo = (note ?? "").trim();
+    if (status === "cancelled" && motivo.length < 5) {
+      return { error: "Explica en una línea por qué lo descartas." };
+    }
+
     const updates: Record<string, unknown> = { status };
     if (assignedTo !== undefined) updates.assigned_to = assignedTo || null;
-    if (status === "resolved") updates.resolved_at = new Date().toISOString();
+    updates.resolved_at =
+      status === "resolved" ? new Date().toISOString() : null;
 
     // .select() para saber a quién avisarle: sin esto el residente reportaba
     // una fuga y no volvía a saber nada nunca más.
@@ -158,8 +214,10 @@ export async function updateRequestStatus(
 
     await supabase.from("maintenance_status_log").insert({
       request_id: requestId,
+      old_status: previo.status,
       new_status: status,
       changed_by: profile.id,
+      note: motivo || null,
     });
 
     // No se le avisa a quien hizo el propio cambio.
@@ -173,6 +231,7 @@ export async function updateRequestStatus(
           condominio,
           titulo: (actualizado.title as string) ?? "tu reporte",
           estado: MAINTENANCE_STATUS_LABELS[status] ?? status,
+          nota: motivo || null,
         });
         await enviarEmail({
           para,

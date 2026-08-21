@@ -191,15 +191,21 @@ export function mantenimientoActualizado(p: {
   condominio: string;
   titulo: string;
   estado: string;
+  /** Lo que escribió el administrador al cambiar el estado, si escribió algo. */
+  nota?: string | null;
 }) {
+  const descartado = p.estado.toLowerCase().startsWith("cancel");
   return {
-    asunto: `Tu reporte "${p.titulo}" pasó a ${p.estado.toLowerCase()}`,
+    asunto: descartado
+      ? `Tu reporte "${p.titulo}" fue descartado`
+      : `Tu reporte "${p.titulo}" pasó a ${p.estado.toLowerCase()}`,
     html: layout({
       condominio: p.condominio,
       eyebrow: "Mantenimiento",
-      titulo: "Tu reporte avanzó",
+      titulo: descartado ? "Tu reporte fue descartado" : "Tu reporte avanzó",
       parrafos: [
         `El reporte que hiciste ("${p.titulo}") cambió de estado.`,
+        ...(p.nota ? [`Nota de la administración: "${p.nota}"`] : []),
         "Puedes ver el detalle y el historial completo desde la app.",
       ],
       destacado: { etiqueta: "Nuevo estado", valor: p.estado },

@@ -98,13 +98,14 @@ export function Sidebar({ isAdmin = false }: { isAdmin?: boolean }) {
         />
       </div>
 
-      <nav className="flex-1 space-y-0.5 px-3 pb-6">
+      <nav aria-label="Secciones" className="flex-1 space-y-0.5 px-3 pb-6">
         {navItems.map((item) => {
           const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
           return (
             <Link
               key={item.href}
               href={item.href}
+              aria-current={isActive ? 'page' : undefined}
               className={`flex items-center gap-3 rounded-lg px-3 py-2 text-[13.5px] font-medium transition-colors ${
                 isActive
                   ? "bg-sidebar-primary text-sidebar-primary-foreground"
@@ -128,6 +129,7 @@ export function Sidebar({ isAdmin = false }: { isAdmin?: boolean }) {
                 <Link
                   key={item.href}
                   href={item.href}
+                  aria-current={isActive ? 'page' : undefined}
                   className={`flex items-center gap-3 rounded-lg px-3 py-2 text-[13.5px] font-medium transition-colors ${
                     isActive
                       ? "bg-sidebar-primary text-sidebar-primary-foreground"

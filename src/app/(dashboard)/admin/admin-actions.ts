@@ -51,6 +51,24 @@ export async function updateExchangeRate(rate: number) {
  * - flat_amount | base_amount | manual_amounts (según mode)
  * - amount: legacy compat — se trata como flat_amount con mode='flat'
  */
+/**
+ * Compara dos descripciones con la misma regla que el índice único de la
+ * migration 037: `lower(btrim(...))`.
+ *
+ * POR QUÉ NO SE USA `.ilike`
+ *
+ * PostgREST traduce `*` a `%` dentro de un patrón `ilike`, y esa traducción es
+ * incondicional: no hay forma documentada de escapar un asterisco literal. Una
+ * derrama llamada "Pintura *fachada*" se convertía en el patrón
+ * `Pintura %fachada%` y hacía match con cuotas de OTROS conceptos del mismo mes
+ * — que, en `voidInvoiceRun`, terminaba anulando cobros que nadie pidió anular.
+ * Traer las filas del período y comparar en JS es exacto y no depende de cómo
+ * PostgREST interprete el patrón.
+ */
+function mismaDescripcion(a: string | null, b: string): boolean {
+  return (a ?? "").trim().toLowerCase() === b.trim().toLowerCase();
+}
+
 export async function generateMonthlyInvoices(formData: FormData) {
   const profile = await getCurrentProfile();
   const guard = requireAdmin(profile);
@@ -183,26 +201,52 @@ export async function generateMonthlyInvoices(formData: FormData) {
   }
 
   // Pre-check de duplicados (mejor mensaje que el 23505 de Postgres)
-  const { data: existing } = await supabase
+  // Case-insensitive: el `.eq("description", ...)` original dejó pasar la misma
+  // derrama dos veces con 89 segundos de diferencia — "Reparacion..." y
+  // "reparacion..." — y costó $700 en Costa de Plata. El índice único de la
+  // migration 037 lo sostiene ahora en la base; esto solo da mejor mensaje.
+  const { data: delPeriodo } = await supabase
     .from("invoices")
-    .select("id")
+    .select("id, unit_id, description, status")
     .eq("organization_id", profile!.organization_id!)
     .eq("due_date", dueDate)
     .eq("kind", kind)
-    .eq("description", description)
-    .limit(1);
+    .neq("status", "cancelled");
 
-  if (existing && existing.length > 0) {
+  // Vivas de ESTA misma descripción, indexadas por unidad.
+  const yaEmitidasPorUnidad = new Set(
+    (delPeriodo ?? [])
+      .filter((i) => mismaDescripcion(i.description as string | null, description))
+      .map((i) => i.unit_id as string),
+  );
+
+  // El chequeo es POR UNIDAD, no por tanda.
+  //
+  // Antes bastaba una sola cuota sobreviviente para abortar la emisión entera.
+  // Eso creaba un callejón sin salida real: si emitías el mes con el monto
+  // equivocado, tres vecinos pagaban y anulabas la tanda, `voidInvoiceRun`
+  // dejaba en pie esas tres pagadas (correcto) — y desde ese momento no había
+  // forma de re-emitirle a las once unidades restantes. Ni cambiando la
+  // descripción, porque en las cuotas mensuales la genera la app y no hay campo
+  // para editarla.
+  const aEmitir = result.invoices.filter(
+    (i) => !yaEmitidasPorUnidad.has(i.unit_id as string),
+  );
+
+  if (aEmitir.length === 0) {
     return {
-      error: `Ya existen cuotas para "${description}" el ${dueDate}. Cancela las anteriores antes de regenerar.`,
+      error: `Todas las unidades ya tienen "${description}" para el ${dueDate}. Anula esa tanda antes de regenerar.`,
     };
   }
 
-  const { error } = await supabase.from("invoices").insert(result.invoices);
+  const omitidas = result.invoices.length - aEmitir.length;
+
+  const { error } = await supabase.from("invoices").insert(aEmitir);
   if (error) {
     if ((error as { code?: string }).code === "23505") {
       return {
-        error: "Ya existen cuotas con esa fecha y descripción. Cancela las previas antes de regenerar.",
+        error:
+          "Ya existen cuotas con esa fecha y descripción (sin importar mayúsculas). Anúlalas desde el panel antes de regenerar.",
       };
     }
     return { error: error.message };
@@ -216,7 +260,9 @@ export async function generateMonthlyInvoices(formData: FormData) {
   //  - si el envío falla, las cuotas ya están emitidas igual
   try {
     const condominio = await nombreDeOrg(profile!.organization_id!);
-    const conMonto = result.invoices.filter((inv) => Number(inv.amount) > 0);
+    // `aEmitir`, no `result.invoices`: si una parte de la tanda ya existía, esas
+    // unidades no recibieron cuota nueva y no tienen por qué recibir el aviso.
+    const conMonto = aEmitir.filter((inv) => Number(inv.amount) > 0);
 
     const vencimiento = new Date(`${dueDate}T12:00:00Z`).toLocaleDateString("es", {
       day: "numeric",
@@ -258,8 +304,13 @@ export async function generateMonthlyInvoices(formData: FormData) {
   revalidatePath("/dashboard");
   return {
     success: true as const,
-    count: result.invoices.length,
-    warnings: result.warnings,
+    count: aEmitir.length,
+    warnings: omitidas > 0
+      ? [
+          ...result.warnings,
+          `${omitidas} unidad${omitidas !== 1 ? "es" : ""} ya tenía esta cuota emitida y se omitió.`,
+        ]
+      : result.warnings,
   };
 }
 
@@ -309,4 +360,116 @@ export async function addUnit(formData: FormData) {
   revalidatePath("/admin/units");
   revalidatePath("/dashboard");
   return { success: true, unit: data };
+}
+
+
+/**
+ * Anula una tanda de cuotas completa.
+ *
+ * Desde siempre, generateMonthlyInvoices decía "Anúlalas antes de regenerar" y
+ * NO existía ninguna forma de anular: `status='cancelled'` no lo escribía nadie
+ * en toda la app. Una tanda mal emitida —el monto equivocado, el mes
+ * equivocado— era irreversible, y la única salida era editar la base a mano
+ * (que es exactamente lo que hubo que hacer con la derrama duplicada de $700).
+ *
+ * Se anula el LOTE entero (organización + fecha + tipo + descripción), porque
+ * así es como se emite. Las cuotas ya pagadas NO se tocan: anular algo que
+ * alguien pagó rompería su historial y su constancia.
+ */
+export async function voidInvoiceRun(params: {
+  dueDate: string;
+  kind: string;
+  description: string;
+  reason: string;
+}) {
+  const profile = await getCurrentProfile();
+  if (!profile?.organization_id) return { error: "Sin organización" };
+  if (!isAdminRole(profile)) return { error: "Solo administradores" };
+
+  const motivo = (params.reason ?? "").replace(/\s+/g, " ").trim().slice(0, 200);
+  if (motivo.length < 10) {
+    return {
+      error:
+        "Escribe por qué anulas estas cuotas (mínimo 10 caracteres). Los residentes van a ver desaparecer una deuda.",
+    };
+  }
+
+  const supabase = createAdminClient();
+
+  const { data: delPeriodo } = await supabase
+    .from("invoices")
+    .select("id, status, amount, description")
+    .eq("organization_id", profile.organization_id)
+    .eq("due_date", params.dueDate)
+    .eq("kind", params.kind);
+
+  // Igualdad exacta en JS, no un patrón `ilike`: una descripción con `*` se
+  // convertía en comodín y esta acción anula cuotas de verdad.
+  const filas = (delPeriodo ?? []).filter((i) =>
+    mismaDescripcion(i.description as string | null, params.description),
+  );
+  if (filas.length === 0) return { error: "No encontramos esas cuotas." };
+
+  const pagadas = filas.filter((i) => i.status === "paid");
+  const anulables = filas.filter((i) => i.status !== "paid" && i.status !== "cancelled");
+
+  if (anulables.length === 0) {
+    return {
+      error:
+        pagadas.length > 0
+          ? "Todas las cuotas de esa tanda ya fueron pagadas: no se pueden anular."
+          : "Esa tanda ya estaba anulada.",
+    };
+  }
+
+  const { error } = await supabase
+    .from("invoices")
+    .update({ status: "cancelled", updated_at: new Date().toISOString() })
+    .in(
+      "id",
+      anulables.map((i) => i.id),
+    )
+    .eq("organization_id", profile.organization_id);
+
+  if (error) return { error: error.message };
+
+  // Los comprobantes en revisión de esas cuotas quedarían huérfanos.
+  await supabase
+    .from("transactions")
+    .update({
+      status: "rejected",
+      rejection_reason: `Cuota anulada por la administración: ${motivo}`,
+      reviewed_at: new Date().toISOString(),
+      reviewed_by: profile.id,
+    })
+    .in(
+      "invoice_id",
+      anulables.map((i) => i.id),
+    )
+    .eq("status", "pending");
+
+  await supabase.from("auth_events").insert({
+    organization_id: profile.organization_id,
+    actor_id: profile.id,
+    event: "invoice_run_voided",
+    payload: {
+      reason: motivo,
+      due_date: params.dueDate,
+      kind: params.kind,
+      description: params.description,
+      anuladas: anulables.length,
+      pagadas_intactas: pagadas.length,
+      monto_anulado: anulables.reduce((s, i) => s + Number(i.amount), 0),
+    },
+  });
+
+  revalidatePath("/admin");
+  revalidatePath("/pagos");
+  revalidatePath("/dashboard");
+
+  return {
+    success: true as const,
+    anuladas: anulables.length,
+    pagadasIntactas: pagadas.length,
+  };
 }

@@ -76,3 +76,97 @@ export function describeDueDate(
   })
   return { label: `Vence el ${fecha}`, tone: "normal" }
 }
+
+/**
+ * Minutos de desfase de una zona horaria en un instante dado.
+ *
+ * Se calcula formateando el instante en esa zona y volviéndolo a leer como si
+ * fuera UTC: la diferencia entre ambos es el desfase. Es la única forma de
+ * obtenerlo sin una librería, y respeta el horario de verano de países que lo
+ * usan (Chile, México), no solo el UTC-4 fijo de Venezuela.
+ */
+function tzOffsetMinutes(instant: Date, timeZone: string): number {
+  const partes = new Intl.DateTimeFormat("en-US", {
+    timeZone,
+    hour12: false,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+  })
+    .formatToParts(instant)
+    .reduce<Record<string, string>>((acc, p) => {
+      acc[p.type] = p.value
+      return acc
+    }, {})
+
+  const comoUTC = Date.UTC(
+    Number(partes.year),
+    Number(partes.month) - 1,
+    Number(partes.day),
+    Number(partes.hour) % 24,
+    Number(partes.minute),
+    Number(partes.second),
+  )
+  return (comoUTC - instant.getTime()) / 60_000
+}
+
+/**
+ * Convierte una fecha y hora locales del condominio en un instante absoluto.
+ *
+ * Las reservas se guardaban como `2026-08-22T14:00:00`, sin desfase. Postgres
+ * lee eso en UTC, así que "de 2 a 4 de la tarde" quedaba grabado como 14:00 UTC
+ * = 10:00 de la mañana en Venezuela. Cuatro horas de corrimiento en cada reserva,
+ * y `min_advance_hours` rechazaba reservas legítimas porque las creía en el
+ * pasado.
+ *
+ * @param fecha `YYYY-MM-DD` tal como la eligió el residente
+ * @param hora  `HH:MM` en la hora del condominio
+ */
+export function zonedToISO(
+  fecha: string,
+  hora: string,
+  timeZone: string = DEFAULT_TIME_ZONE,
+): string {
+  const comoSiFueraUTC = Date.parse(`${fecha}T${hora}:00Z`)
+  if (Number.isNaN(comoSiFueraUTC)) {
+    throw new Error(`Fecha u hora inválida: ${fecha} ${hora}`)
+  }
+  const desfase = tzOffsetMinutes(new Date(comoSiFueraUTC), timeZone)
+  let instante = comoSiFueraUTC - desfase * 60_000
+  // Segunda pasada: si la fecha cae justo en un cambio de horario, el desfase
+  // que aplicamos no era el que rige en el instante resultante.
+  const desfaseReal = tzOffsetMinutes(new Date(instante), timeZone)
+  if (desfaseReal !== desfase) {
+    instante = comoSiFueraUTC - desfaseReal * 60_000
+  }
+  return new Date(instante).toISOString()
+}
+
+/** Hora del día (`2:00 p. m.`) en la zona del condominio. */
+export function formatTimeInZone(
+  iso: string,
+  timeZone: string = DEFAULT_TIME_ZONE,
+): string {
+  return new Intl.DateTimeFormat("es", {
+    timeZone,
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: true,
+  }).format(new Date(iso))
+}
+
+/** Día (`sáb, 22 ago`) en la zona del condominio. */
+export function formatDateInZone(
+  iso: string,
+  timeZone: string = DEFAULT_TIME_ZONE,
+): string {
+  return new Intl.DateTimeFormat("es", {
+    timeZone,
+    weekday: "short",
+    day: "numeric",
+    month: "short",
+  }).format(new Date(iso))
+}

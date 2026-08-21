@@ -65,21 +65,44 @@ export async function saveBudget(formData: FormData) {
     }
   }
 
-  // Upsert items
+  // Reemplazo atómico de las partidas.
+  //
+  // Antes eran dos llamadas: DELETE de todo el año y después INSERT. Si el
+  // INSERT fallaba —una categoría borrada mientras el admin editaba, un monto
+  // fuera de rango, un corte de red— el DELETE ya había pasado y el
+  // presupuesto del año entero quedaba vacío. El editor no recarga en el
+  // camino de error, así que el admin seguía viendo en pantalla partidas que
+  // en la base ya no existían.
+  // Las categorías vienen del JSON del formulario. `expense_categories` no
+  // tiene columna de organización en su FK, así que un category_id de otro
+  // condominio pasaba el FK sin problema y quedaba escrito en este presupuesto:
+  // la partida no se renderiza en /admin/budget (el editor arma las filas desde
+  // las categorías propias) pero sí suma en /finanzas como "Sin categoría".
+  // Su hermano `createExpense` ya valida esto; acá faltaba.
+  const { data: categoriasPropias } = await supabase
+    .from("expense_categories")
+    .select("id")
+    .eq("organization_id", profile.organization_id);
+
+  const idsValidos = new Set((categoriasPropias ?? []).map((c) => c.id as string));
+  const ajena = items.find((it) => !idsValidos.has(it.category_id));
+  if (ajena) {
+    return { error: "Una de las categorías no pertenece a este condominio." };
+  }
+
   const itemRows = items.map((it) => ({
-    budget_id: budgetId,
     category_id: it.category_id,
     monthly_amount: Number(it.monthly_amount) || 0,
     monthly_overrides: it.monthly_overrides ?? null,
     notes: it.notes ?? null,
   }));
 
-  // Borrar y reinsertar (más simple que upsert por composite)
-  await supabase.from("org_budget_items").delete().eq("budget_id", budgetId);
-  if (itemRows.length > 0) {
-    const { error: iErr } = await supabase.from("org_budget_items").insert(itemRows);
-    if (iErr) return { error: iErr.message };
-  }
+  const { error: iErr } = await supabase.rpc("replace_budget_items", {
+    p_org: profile.organization_id,
+    p_budget_id: budgetId,
+    p_items: itemRows,
+  });
+  if (iErr) return { error: iErr.message };
 
   revalidatePath("/admin/budget");
   revalidatePath("/finanzas");

@@ -14,6 +14,7 @@ import { RequestManager } from "./request-manager";
 import { PaymentReviewer } from "./payment-reviewer";
 import { RateUpdater } from "./rate-updater";
 import { GenerateInvoicesDialog } from "./generate-invoices-dialog";
+import { VoidInvoiceRunDialog, type InvoiceRun } from "./void-invoice-run-dialog";
 import { AddUnitDialog } from "./add-unit-dialog";
 import { AnimatedCounter } from "@/components/ui/animated-counter";
 import type { FeeTypeAmount, Organization } from "@/types/database";
@@ -41,10 +42,9 @@ export default async function AdminPage() {
       .order("paid_at", { ascending: false }),
     supabase
       .from("invoices")
-      .select("unit_id, amount, status, due_date, units(unit_number)")
+      .select("unit_id, amount, status, due_date, currency, kind, description, units(unit_number)")
       .eq("organization_id", profile.organization_id)
-      .in("status", ["pending", "overdue"])
-      .order("due_date", { ascending: true }),
+      .order("due_date", { ascending: false }),
     supabase
       .from("organizations")
       .select("*")
@@ -92,16 +92,52 @@ export default async function AdminPage() {
   // todas las impagas porque también alimenta el detalle; el corte por fecha va
   // acá, con la zona horaria del condominio.
   const hoy = todayInTimeZone(org?.timezone ?? undefined);
+  // Tandas de cuotas, para poder anular una mal emitida. Se agrupa por
+  // (fecha, tipo, descripción normalizada), que es como se emiten.
+  const runsMap = new Map<string, InvoiceRun>();
+  for (const inv of overdueInvoices) {
+    const desc = (inv.description as string) ?? "";
+    const clave = `${inv.due_date}|${inv.kind}|${desc.trim().toLocaleLowerCase("es")}`;
+    const actual = runsMap.get(clave) ?? {
+      dueDate: inv.due_date as string,
+      kind: (inv.kind as string) ?? "monthly",
+      description: desc,
+      total: 0,
+      currency: (inv.currency as string) ?? "USD",
+      cuotas: 0,
+      pagadas: 0,
+      anuladas: 0,
+    };
+    actual.cuotas += 1;
+    actual.total += Number(inv.amount);
+    if (inv.status === "paid") actual.pagadas += 1;
+    if (inv.status === "cancelled") actual.anuladas += 1;
+    runsMap.set(clave, actual);
+  }
+  const invoiceRuns = [...runsMap.values()].slice(0, 24);
+
   const morosMap: Record<string, { unit: string; total: number; count: number; oldest: string }> = {};
   for (const inv of overdueInvoices) {
+    // La consulta ahora trae TODAS las cuotas (para agrupar tandas), así que la
+    // morosidad tiene que descartar explícitamente pagadas y anuladas.
+    if (inv.status === "paid" || inv.status === "cancelled") continue;
     if (!isInvoiceOverdue({ status: inv.status as string, due_date: inv.due_date as string }, hoy)) {
       continue;
     }
     const key = inv.unit_id;
     const unitData = Array.isArray(inv.units) ? inv.units[0] : inv.units;
     const unitNum = unitData?.unit_number ?? "?";
+    // `oldest` como mínimo real, no como "la primera fila que vi".
+    //
+    // La consulta pasó a ordenar por due_date DESCENDENTE para agrupar las
+    // tandas; con la versión anterior, la primera fila de cada unidad era la
+    // cuota MÁS NUEVA y la tarjeta de morosos decía "3 CUOTAS · DESDE AGO 2026"
+    // cuando la deuda venía desde enero. El total y el conteo estaban bien; lo
+    // único falso era la antigüedad, que es justo lo que decide a quién llamar.
     if (!morosMap[key]) {
-      morosMap[key] = { unit: unitNum, total: 0, count: 0, oldest: inv.due_date };
+      morosMap[key] = { unit: unitNum, total: 0, count: 0, oldest: inv.due_date as string };
+    } else if ((inv.due_date as string) < morosMap[key].oldest) {
+      morosMap[key].oldest = inv.due_date as string;
     }
     morosMap[key].total += Number(inv.amount);
     morosMap[key].count += 1;
@@ -172,12 +208,15 @@ export default async function AdminPage() {
             </p>
           </div>
           {org && (
-            <GenerateInvoicesDialog
-              org={org}
-              units={units}
-              feeTypeAmounts={feeTypeAmounts as FeeTypeAmount[]}
-              exchangeRate={Number(rateData.rate) || null}
-            />
+            <div className="flex flex-wrap gap-2">
+              <GenerateInvoicesDialog
+                org={org}
+                units={units}
+                feeTypeAmounts={feeTypeAmounts as FeeTypeAmount[]}
+                exchangeRate={Number(rateData.rate) || null}
+              />
+              <VoidInvoiceRunDialog runs={invoiceRuns} />
+            </div>
           )}
         </div>
         <div className="rounded-2xl bg-card border border-border p-5 flex flex-col justify-between gap-4">
