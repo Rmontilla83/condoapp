@@ -30,6 +30,8 @@ interface Props {
     achieved_pct: number;
     required_pct: number | null;
     met: boolean;
+    /** False si el universo está incompleto: no hay porcentaje que mostrar. */
+    reliable: boolean;
   };
 }
 
@@ -216,13 +218,24 @@ export function DecisionCard({ decision, questions, userId, isAdmin, quorumStats
         )}
       </div>
 
+      {/* Sin universo completo no hay porcentaje que mostrar: la lista decía
+          "100.0%" donde el detalle decía "no confiable", y la lista es la que
+          se mira primero. */}
+      {quorumStats && quorumStats.required_pct !== null && !quorumStats.reliable && (
+        <div className="mb-4">
+          <span className="font-meta text-ember-ink">
+            QUÓRUM NO CONFIABLE · FALTAN ALÍCUOTAS POR CARGAR
+          </span>
+        </div>
+      )}
+
       {/* Quorum bar */}
-      {quorumStats && quorumStats.required_pct !== null && (
+      {quorumStats && quorumStats.required_pct !== null && quorumStats.reliable && (
         <div className="mb-4">
           <div className="flex items-center justify-between text-sm mb-1">
             <span className="font-meta text-mute">QUÓRUM</span>
             <span className="font-meta text-marine-deep">
-              {quorumStats.achieved_pct.toFixed(1)}% · REQUIERE {quorumStats.required_pct.toFixed(0)}%
+              {Math.min(quorumStats.achieved_pct, 100).toFixed(1)}% · REQUIERE {quorumStats.required_pct.toFixed(0)}%
               {quorumStats.met && " ✓"}
             </span>
           </div>

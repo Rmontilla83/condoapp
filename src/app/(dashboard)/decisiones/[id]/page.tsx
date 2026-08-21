@@ -2,9 +2,14 @@ import { redirect, notFound } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentProfile, getEffectiveRole } from "@/lib/queries";
-import { computeQuorum, getOrgQuorumUniverse } from "@/lib/decisions";
+import {
+  computeQuorum,
+  getOrgQuorumUniverse,
+  normalizeOptions,
+  getVoterAliquot,
+} from "@/lib/decisions";
 import { QuestionVoter } from "./question-voter";
-import { Button } from "@/components/ui/button";
+import { CloseDecisionButton } from "./close-decision-button";
 import { Badge } from "@/components/ui/badge";
 import type { Decision, DecisionStatus } from "@/types/database";
 
@@ -24,18 +29,6 @@ interface DecisionWithQuestions extends Decision {
   decision_questions: QuestionWithResponses[];
 }
 
-function normalizeOptions(options: unknown): string[] {
-  if (Array.isArray(options)) return options as string[];
-  if (typeof options === "string") {
-    try {
-      const parsed = JSON.parse(options);
-      return Array.isArray(parsed) ? parsed : [];
-    } catch {
-      return [];
-    }
-  }
-  return [];
-}
 
 const statusBadge: Record<DecisionStatus, { label: string; className: string }> = {
   draft: { label: "BORRADOR", className: "border-gray-300 text-gray-700 bg-gray-50" },
@@ -75,6 +68,13 @@ export default async function DecisionDetailPage({ params }: { params: Promise<{
   const status = statusBadge[decision.status];
   const isOpen = decision.status === "open";
   const isExpired = !!(decision.closes_at && new Date(decision.closes_at) <= new Date());
+
+  // Cuánto pesa el voto de quien está mirando. Se calcula igual que lo hace
+  // voteDecision al registrar, para que lo que se anuncia y lo que se computa
+  // sean el mismo número.
+  const miPeso = decision.weighted_by_aliquot
+    ? await getVoterAliquot(profile.id, decision.organization_id as string)
+    : 0;
 
   // Quorum stats si aplica
   let quorumStats = null;
@@ -210,6 +210,8 @@ export default async function DecisionDetailPage({ params }: { params: Promise<{
               showResults={showResults}
               canVote={isOpen && !isExpired && !hasVoted}
               questionNumber={idx + 1}
+              weighted={decision.weighted_by_aliquot}
+              myWeight={miPeso}
             />
           );
         })}
@@ -218,11 +220,7 @@ export default async function DecisionDetailPage({ params }: { params: Promise<{
       {isAdmin && isOpen && (
         <div className="rounded-2xl bg-card border border-border p-5">
           <p className="font-meta text-mute mb-3">ACCIONES ADMIN</p>
-          <div className="flex gap-2">
-            <Link href={`/decisiones?action=close&id=${decision.id}`}>
-              <Button size="sm" variant="outline">Cerrar asamblea</Button>
-            </Link>
-          </div>
+          <CloseDecisionButton decisionId={decision.id} />
           <p className="mt-3 text-[12px] text-mute">
             Cerrar la asamblea evita más votos. Los resultados quedan registrados.
           </p>

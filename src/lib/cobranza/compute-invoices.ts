@@ -20,7 +20,12 @@ export interface InvoiceInsert {
 export interface ComputeUnit {
   id: string;
   type: string;
-  aliquot: number; // 0–100
+  /**
+   * 0–100. NULL = sin configurar, que NO es lo mismo que 0 (exenta por
+   * decisión). Colapsar los dos a 0 facturaba $0 en silencio a una unidad que
+   * simplemente nadie había cargado.
+   */
+  aliquot: number | null;
 }
 
 export interface ComputeInput {
@@ -169,17 +174,31 @@ export function computeInvoiceAmounts(input: ComputeInput): ComputeResult {
         errors.push("Modo por alícuota requiere monto base > 0.");
         return { invoices: [], warnings, errors };
       }
-      const sumAliquot = input.units.reduce((s, u) => s + u.aliquot, 0);
+      const sumAliquot = input.units.reduce((s, u) => s + (u.aliquot ?? 0), 0);
       if (sumAliquot <= 0) {
         errors.push(
-          "Todas las unidades tienen alícuota 0. Configura las alícuotas antes de cobrar por alícuota.",
+          "Ninguna unidad tiene alícuota cargada. Cárgalas en Unidades → Alícuotas antes de cobrar por alícuota.",
         );
         return { invoices: [], warnings, errors };
       }
-      const zeroAliquotUnits = input.units.filter((u) => u.aliquot <= 0);
-      if (zeroAliquotUnits.length > 0) {
+
+      // Sin configurar = error, no warning: facturarle $0 a una unidad porque
+      // nadie cargó su alícuota es un error de cobranza silencioso, y ahora hay
+      // una pantalla donde arreglarlo.
+      const sinConfigurar = input.units.filter((u) => u.aliquot === null);
+      if (sinConfigurar.length > 0) {
+        errors.push(
+          `${sinConfigurar.length} unidad(es) no tienen alícuota cargada y recibirían cuota de $0. ` +
+            "Complétalas en Unidades → Alícuotas, o ponles 0 si están exentas a propósito.",
+        );
+        return { invoices: [], warnings, errors };
+      }
+
+      // Exentas a propósito: solo se avisa.
+      const exentas = input.units.filter((u) => u.aliquot === 0);
+      if (exentas.length > 0) {
         warnings.push(
-          `${zeroAliquotUnits.length} unidad(es) tienen alícuota 0 y recibirán cuota de $0. Verifica antes de continuar.`,
+          `${exentas.length} unidad(es) están exentas (alícuota 0) y recibirán cuota de $0.`,
         );
       }
       if (Math.abs(sumAliquot - 100) >= 0.01) {
@@ -190,7 +209,7 @@ export function computeInvoiceAmounts(input: ComputeInput): ComputeResult {
       // Reparto proporcional a la alícuota: Σ montos = base exacto.
       perUnit = distributeExact(
         base,
-        input.units.map((u) => ({ id: u.id, w: u.aliquot })),
+        input.units.map((u) => ({ id: u.id, w: u.aliquot ?? 0 })),
       );
       break;
     }

@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentProfile, getEffectiveRole } from "@/lib/queries";
-import { computeQuorum, getOrgQuorumUniverse } from "@/lib/decisions";
+import { computeQuorum, getOrgQuorumUniverse, normalizeOptions } from "@/lib/decisions";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DecisionCard } from "./decision-card";
 import { NewDecisionDialog } from "./new-decision-dialog";
@@ -26,18 +26,6 @@ interface DecisionWithQuestions extends Decision {
 // Defensa contra filas legacy donde options se grabó como string JSON.
 // Migration 023 ya arregló los datos en DB; esto evita que un nuevo
 // registro corrupto rompa la página.
-function normalizeOptions(options: unknown): string[] {
-  if (Array.isArray(options)) return options as string[];
-  if (typeof options === "string") {
-    try {
-      const parsed = JSON.parse(options);
-      return Array.isArray(parsed) ? parsed : [];
-    } catch {
-      return [];
-    }
-  }
-  return [];
-}
 
 export default async function DecisionesPage() {
   const profile = await getCurrentProfile();
@@ -66,7 +54,7 @@ export default async function DecisionesPage() {
   const closedDecisions = decisions.filter((d) => d.status === "closed" || d.status === "cancelled");
 
   // Pre-compute quorum stats para formal_assembly weighted
-  const quorumByDecision: Record<string, { achieved_pct: number; required_pct: number | null; met: boolean }> = {};
+  const quorumByDecision: Record<string, { achieved_pct: number; required_pct: number | null; met: boolean; reliable: boolean }> = {};
   for (const d of decisions) {
     if (d.kind !== "formal_assembly" || d.quorum_pct === null) continue;
     const universo = await getOrgQuorumUniverse(d.organization_id, d.weighted_by_aliquot);
@@ -82,6 +70,7 @@ export default async function DecisionesPage() {
       achieved_pct: stats.achieved_pct,
       required_pct: stats.required_pct,
       met: stats.met,
+          reliable: stats.reliable,
     };
   }
 

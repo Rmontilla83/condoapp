@@ -4,7 +4,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentProfile } from "@/lib/queries";
 import { isAdminRole, canTenantAct } from "@/lib/permissions";
-import { getVoterAliquot, getAliquotCoverage } from "@/lib/decisions";
+import { getVoterAliquot, getAliquotCoverage, normalizeOptions } from "@/lib/decisions";
 import { revalidatePath } from "next/cache";
 import type { DecisionKind } from "@/types/database";
 
@@ -247,6 +247,9 @@ export async function voteDecision(questionId: string, option: string, decisionI
     .single();
 
   if (!decision) return { error: "Decisión no encontrada" };
+  if (decision.organization_id !== profile.organization_id) {
+    return { error: "Decisión no encontrada" };
+  }
   if (decision.status !== "open") return { error: "Decisión cerrada" };
   if (decision.closes_at && new Date(decision.closes_at) <= new Date()) {
     return { error: "Decisión vencida" };
@@ -259,12 +262,33 @@ export async function voteDecision(questionId: string, option: string, decisionI
     // Si el user es tenant (sin owner active) en este org, weight=0 pero el voto se registra
   }
 
-  // El insert va por el admin client. La policy de RLS (migration 029) solo
-  // admite weight = 1.0 sobre decisiones abiertas y vigentes, justamente para
-  // que nadie pueda inyectar un voto ponderado desde el cliente. El peso real
-  // por alícuota lo calcula el servidor, arriba, tras validar permisos, estado
-  // de la decisión y vencimiento.
-  const { error } = await createAdminClient().from("decision_responses").insert({
+  // La pregunta TIENE que colgar de la decisión que ya validamos.
+  //
+  // Antes esto lo garantizaba la RLS: la policy de INSERT sobre
+  // decision_responses ataba question_id a una decisión de la organización del
+  // votante. Al mover el insert al admin client (para poder escribir un weight
+  // distinto de 1.0) esa red desapareció, y la acción validaba `decisionId`
+  // pero insertaba con `questionId` sin comprobar que fueran de la misma
+  // decisión: bastaba mandar el id de una decisión propia con el id de una
+  // pregunta de OTRO condominio para votar ahí.
+  const admin = createAdminClient();
+  const { data: pregunta } = await admin
+    .from("decision_questions")
+    .select("id, decision_id, options")
+    .eq("id", questionId)
+    .maybeSingle();
+
+  if (!pregunta || pregunta.decision_id !== decisionId) {
+    return { error: "Pregunta no encontrada en esta decisión" };
+  }
+
+  // Y la opción elegida tiene que ser una de las ofrecidas, no texto libre.
+  const opciones = normalizeOptions(pregunta.options);
+  if (opciones.length > 0 && !opciones.includes(option)) {
+    return { error: "Opción inválida" };
+  }
+
+  const { error } = await admin.from("decision_responses").insert({
     question_id: questionId,
     voter_id: profile.id,
     selected_option: option,

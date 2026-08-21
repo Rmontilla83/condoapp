@@ -65,7 +65,7 @@ export default async function AdminPage() {
     unit_number: u.unit_number as string,
     block: (u.block as string | null) ?? null,
     type: (u.type as string) ?? "apartment",
-    aliquot: Number(u.aliquot ?? 0),
+    aliquot: u.aliquot === null || u.aliquot === undefined ? null : Number(u.aliquot),
   }));
 
   const pendingPaymentsRaw = pendingPaymentsRes.data ?? [];

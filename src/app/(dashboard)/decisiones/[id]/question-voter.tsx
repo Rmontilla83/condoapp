@@ -21,9 +21,21 @@ interface Props {
   showResults: boolean;
   canVote: boolean;
   questionNumber: number;
+  /** True si esta decisión pondera por alícuota. */
+  weighted?: boolean;
+  /** Cuánto pesa el voto de quien mira, en puntos de alícuota. */
+  myWeight?: number;
 }
 
-export function QuestionVoter({ decisionId, question, showResults, canVote, questionNumber }: Props) {
+export function QuestionVoter({
+  decisionId,
+  question,
+  showResults,
+  canVote,
+  questionNumber,
+  weighted = false,
+  myWeight = 0,
+}: Props) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -57,6 +69,35 @@ export function QuestionVoter({ decisionId, question, showResults, canVote, ques
         {question.question}
       </h3>
 
+      {/* El voto ponderado por alícuota es el diferenciador del producto y era
+          invisible: el propietario votaba sin saber que su voto pesa distinto
+          al del vecino, ni cuánto. */}
+      {weighted && canVote && (
+        <div
+          className={`mb-4 rounded-lg border p-3 ${
+            myWeight > 0 ? "border-cyan/40 bg-cyan/5" : "border-ember/40 bg-ember/5"
+          }`}
+        >
+          {myWeight > 0 ? (
+            <p className="text-[13px] text-marine-deep">
+              Esta votación es <strong>ponderada por alícuota</strong>: tu voto pesa{" "}
+              <strong className="font-mono tabular-nums">
+                {myWeight.toLocaleString("es", { minimumFractionDigits: 2, maximumFractionDigits: 4 })}%
+              </strong>{" "}
+              del condominio, no un voto por cabeza.
+            </p>
+          ) : (
+            <p className="text-[13px] text-marine-deep">
+              Esta votación es <strong>ponderada por alícuota</strong> y tu voto pesa{" "}
+              <strong>0%</strong>: queda registrado, pero no suma al cómputo.{" "}
+              <span className="text-mute">
+                Pasa si eres inquilino, o si tu unidad todavía no tiene la alícuota cargada.
+              </span>
+            </p>
+          )}
+        </div>
+      )}
+
       <div className="space-y-2">
         {question.options.map((option) => {
           const s = stats[option] ?? { count: 0, weight: 0 };
@@ -69,6 +110,7 @@ export function QuestionVoter({ decisionId, question, showResults, canVote, ques
                   <span className="font-medium">{option}</span>
                   <span className="font-meta text-mute">
                     {s.count} VOTO{s.count !== 1 ? "S" : ""} · {pct.toFixed(0)}%
+                    {weighted ? " DE ALÍCUOTA" : ""}
                   </span>
                 </div>
                 <div className="h-2 rounded-full bg-cloud overflow-hidden">

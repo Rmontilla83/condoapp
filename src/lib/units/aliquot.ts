@@ -49,11 +49,20 @@ export function parseAliquotInput(raw: string | null | undefined): ParseResult {
   const texto = (raw ?? "").trim().replace(/\s/g, "").replace(/%$/, "");
   if (texto === "") return { ok: true, value: null };
 
-  // Coma decimal -> punto. Si vienen las dos, asumimos que la coma es separador
-  // de miles y la descartamos (una alícuota nunca llega a 1.000).
-  const normalizado = texto.includes(",") && texto.includes(".")
-    ? texto.replace(/,/g, "")
-    : texto.replace(",", ".");
+  // Coma decimal -> punto. Si vienen los dos separadores, el que aparece
+  // ÚLTIMO es el decimal y el otro es de miles: "1.234,56" son mil doscientos
+  // treinta y cuatro con 56, no 1,23456. (Ese valor va a caer igual por pasarse
+  // de 100, pero con el mensaje correcto en vez de uno sobre decimales.)
+  const ultimaComa = texto.lastIndexOf(",");
+  const ultimoPunto = texto.lastIndexOf(".");
+  let normalizado: string;
+  if (ultimaComa >= 0 && ultimoPunto >= 0) {
+    const decimal = ultimaComa > ultimoPunto ? "," : ".";
+    const miles = decimal === "," ? "." : ",";
+    normalizado = texto.split(miles).join("").replace(decimal, ".");
+  } else {
+    normalizado = texto.replace(",", ".");
+  }
 
   if (!/^\d*\.?\d*$/.test(normalizado)) {
     return { ok: false, error: "Solo números (por ejemplo 6,5 o 6.5)" };
@@ -190,8 +199,19 @@ export function seedScaleTo100(rows: AliquotRow[]): Map<string, number> {
   );
 }
 
-/** Formatea para mostrar, con coma decimal y sin ceros de más. */
+/**
+ * Formatea para mostrar, con coma decimal.
+ *
+ * Muestra entre 2 y 4 decimales: con `toFixed(2)` fijo, una alícuota de
+ * 4,7619% —exactamente la que produce la semilla de partes iguales con 21
+ * unidades— se veía como 4,76% y el admin creía que el sistema le había
+ * truncado el valor.
+ */
 export function formatAliquot(value: number | null): string {
   if (value === null) return "—";
-  return `${value.toFixed(2).replace(".", ",")}%`;
+  const texto = new Intl.NumberFormat("es", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: ALIQUOT_MAX_DECIMALS,
+  }).format(value);
+  return `${texto}%`;
 }

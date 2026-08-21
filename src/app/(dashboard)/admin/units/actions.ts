@@ -526,6 +526,11 @@ export async function setUnitAliquots(formData: FormData) {
   if (!Array.isArray(crudo) || crudo.length === 0) {
     return { error: "No hay alícuotas que guardar." };
   }
+  // Red de seguridad: no hay condominio con 5000 unidades, y sin cota un envío
+  // inflado se convierte en decenas de miles de escrituras.
+  if (crudo.length > 5000) {
+    return { error: "Envío demasiado grande." };
+  }
 
   // 1) Parseo y validación de cada fila ANTES de tocar la base.
   const parsed: Array<{ id: string; value: number | null }> = [];
@@ -539,6 +544,13 @@ export async function setUnitAliquots(formData: FormData) {
     );
     if (!r.ok) return { error: `Unidad ${row.id.slice(0, 8)}: ${r.error}` };
     parsed.push({ id: row.id, value: r.value });
+  }
+
+  // Dos valores distintos para la misma unidad harían que el resultado dependa
+  // del orden de escritura, y ensuciarían el registro de auditoría.
+  const unicos = new Map(parsed.map((p) => [p.id, p]));
+  if (unicos.size !== parsed.length) {
+    return { error: "Se enviaron valores repetidos para la misma unidad." };
   }
 
   const admin = createAdminClient();
@@ -582,13 +594,32 @@ export async function setUnitAliquots(formData: FormData) {
   });
 
   if (conVotos.length > 0) {
-    const nombres = conVotos.map((d) => `"${d.title}"`).join(", ");
-    return {
-      error:
-        `No puedes cambiar las alícuotas mientras ${conVotos.length === 1 ? "la asamblea" : "las asambleas"} ` +
-        `${nombres} ${conVotos.length === 1 ? "está" : "están"} en curso y con votos emitidos: los votos ya ` +
-        `contados quedaron con el peso anterior. Ciérrala en Decisiones y vuelve.`,
-    };
+    // Grano fino a propósito. Completar una unidad que estaba SIN CONFIGURAR
+    // (NULL -> valor) no altera ningún `decision_responses.weight` ya
+    // congelado: solo completa el universo del quórum, que es justo lo que hay
+    // que poder arreglar. Bloquear eso dejaba una trampa sin salida — agregar
+    // una unidad durante una asamblea abierta volvía el quórum "no confiable" y
+    // la hoja se negaba a repararlo, sin más salida que cerrar la asamblea.
+    //
+    // Lo que sí se bloquea es MODIFICAR un valor existente: ahí los votos ya
+    // contados quedaron con el peso viejo mientras el quórum se recalcula en
+    // vivo, y el cómputo en curso se corrompe.
+    const modificaExistentes = parsed.some((p) => {
+      const actual = porId.get(p.id)?.aliquot;
+      const valorActual = actual === null || actual === undefined ? null : Number(actual);
+      return valorActual !== null && valorActual !== p.value;
+    });
+
+    if (modificaExistentes) {
+      const nombres = conVotos.map((d) => `"${d.title}"`).join(", ");
+      return {
+        error:
+          `No puedes cambiar alícuotas ya cargadas mientras ${conVotos.length === 1 ? "la asamblea" : "las asambleas"} ` +
+          `${nombres} ${conVotos.length === 1 ? "está" : "están"} en curso y con votos emitidos: los votos ya ` +
+          `contados quedaron con el peso anterior. Sí puedes completar las unidades que todavía no tienen ` +
+          `alícuota. Para el resto, cierra la asamblea desde Decisiones y vuelve.`,
+      };
+    }
   }
 
   // 4) Escritura. Solo las que efectivamente cambian.
@@ -596,12 +627,26 @@ export async function setUnitAliquots(formData: FormData) {
     (propias ?? []).map((u) => ({ aliquot: u.aliquot === null ? null : Number(u.aliquot) })),
   );
 
-  const cambios: Record<string, [number | null, number | null]> = {};
+  // Indexado por id y no por unit_number: en producción hay dos unidades
+  // llamadas "PH5" en el mismo condominio, así que un Record por número
+  // perdería uno de los dos cambios.
+  const cambios: Array<{
+    unit_id: string;
+    unit_number: string;
+    antes: number | null;
+    despues: number | null;
+  }> = [];
   const aEscribir = parsed.filter((p) => {
-    const actual = porId.get(p.id)!.aliquot;
-    const valorActual = actual === null ? null : Number(actual);
+    const fila = porId.get(p.id)!;
+    const actual = fila.aliquot;
+    const valorActual = actual === null || actual === undefined ? null : Number(actual);
     if (valorActual === p.value) return false;
-    cambios[porId.get(p.id)!.unit_number as string] = [valorActual, p.value];
+    cambios.push({
+      unit_id: p.id,
+      unit_number: fila.unit_number as string,
+      antes: valorActual,
+      despues: p.value,
+    });
     return true;
   });
 
@@ -609,25 +654,23 @@ export async function setUnitAliquots(formData: FormData) {
     return { success: true, changed: 0, sum: antes };
   }
 
-  const resultados = await Promise.all(
-    aEscribir.map((p) =>
-      admin
-        .from("units")
-        .update({ aliquot: p.value })
-        .eq("id", p.id)
-        .eq("organization_id", orgId),
-    ),
-  );
+  // Un solo statement dentro de la transacción implícita de Postgres
+  // (migration 035): o entran todas o no entra ninguna. Con N updates sueltos,
+  // un fallo a mitad del lote dejaba la mitad escrita y la acción devolvía
+  // error, así que la base quedaba con un reparto que nadie decidió.
+  const { error: rpcError } = await admin.rpc("set_unit_aliquots", {
+    p_org: orgId,
+    p_items: aEscribir.map((p) => ({ id: p.id, aliquot: p.value })),
+  });
 
-  const fallo = resultados.find((r) => r.error);
-  if (fallo?.error) {
+  if (rpcError) {
     await logAuthEvent({
       organization_id: orgId,
       actor_id: profile.id,
       event: "aliquots_update_failed",
-      payload: { error: fallo.error.message, intentadas: aEscribir.length },
+      payload: { error: rpcError.message, intentadas: aEscribir.length },
     });
-    return { error: `No se pudieron guardar todas las alícuotas: ${fallo.error.message}` };
+    return { error: `No se pudieron guardar las alícuotas: ${rpcError.message}` };
   }
 
   const despues = sumAliquots(parsed.map((p) => ({ aliquot: p.value })));

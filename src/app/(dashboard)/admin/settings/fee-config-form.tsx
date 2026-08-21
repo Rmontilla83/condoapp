@@ -232,7 +232,13 @@ export function FeeConfigForm({
               }
             />
             <p className="text-[12px] text-mute">
-              Cada unidad pagará: <code>base × alícuota / 100</code>. Si las alícuotas no suman 100%, lo verás reflejado en la suma.
+              Se reparte proporcional a la alícuota de cada unidad:{" "}
+              <code>base × alícuota ÷ suma de alícuotas</code>. El total cobrado siempre da
+              exacto, sumen 100% o no. Cárgalas en{" "}
+              <a href="/admin/units/alicuotas" className="text-cyan-ink hover:text-marine-deep">
+                Unidades → Alícuotas
+              </a>
+              .
             </p>
           </div>
         )}

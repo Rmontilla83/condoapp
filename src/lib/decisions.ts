@@ -1,6 +1,28 @@
 import { createClient } from "@/lib/supabase/server";
 
 /**
+ * `decision_questions.options` es JSONB y en producción llegó a tener una fila
+ * con el array doble-codificado como string (la reparó la migration 023). Esta
+ * defensa se queda: un JSONB mal formado no puede tumbar la página, y ahora
+ * además la usa voteDecision para validar que la opción elegida sea una de las
+ * ofrecidas y no texto libre.
+ *
+ * Estaba duplicada en decisiones/page.tsx y decisiones/[id]/page.tsx.
+ */
+export function normalizeOptions(options: unknown): string[] {
+  if (Array.isArray(options)) return options as string[];
+  if (typeof options === "string") {
+    try {
+      const parsed = JSON.parse(options);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
+  }
+  return [];
+}
+
+/**
  * Calcula la alícuota efectiva del votante para una org.
  * Snapshot al momento del voto: SUM(units.aliquot) de unit_members
  * activos como owner del usuario en esa org.

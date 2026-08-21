@@ -880,7 +880,7 @@ function PreviewStep({
                     {u ? (UNIT_TYPE_LABELS[u.type] ?? u.type) : "—"}
                   </td>
                   <td className="px-3 py-1.5 text-right text-mute">
-                    {u ? `${u.aliquot.toFixed(2)}%` : "—"}
+                    {u && u.aliquot !== null ? `${u.aliquot.toFixed(2)}%` : "—"}
                   </td>
                   <td className="px-3 py-1.5 text-right font-mono">
                     ${inv.amount.toFixed(2)}

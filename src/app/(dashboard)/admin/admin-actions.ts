@@ -153,7 +153,7 @@ export async function generateMonthlyInvoices(formData: FormData) {
   const units: ComputeUnit[] = rawUnits.map((u) => ({
     id: u.id as string,
     type: u.type as string,
-    aliquot: Number(u.aliquot ?? 0),
+    aliquot: u.aliquot === null || u.aliquot === undefined ? null : Number(u.aliquot),
   }));
 
   const rateData = await getCurrentRate(profile!.organization_id!);

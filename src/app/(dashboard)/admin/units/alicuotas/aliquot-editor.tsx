@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { setUnitAliquots } from "../actions";
@@ -111,14 +110,42 @@ export function AliquotEditor({
     return ((base * valor) / cobertura.sum).toFixed(2);
   }
 
-  function aplicarSemilla(map: Map<string, number>) {
+  function aplicarSemilla(map: Map<string, number>, etiqueta: string) {
     if (map.size === 0) return;
+
+    // Pisar 21 números transcritos del documento de condominio sin preguntar es
+    // destruir media hora de trabajo con un clic.
+    const pisaCargados = units.filter(
+      (u) => (drafts[u.id] ?? "").trim() !== "" && map.has(u.id),
+    ).length;
+    if (pisaCargados > 0) {
+      const ok = window.confirm(
+        `"${etiqueta}" va a reemplazar ${pisaCargados} valor${pisaCargados !== 1 ? "es" : ""} ` +
+          `que ya tienes cargado${pisaCargados !== 1 ? "s" : ""}.
+
+` +
+          "Nada se guarda hasta que toques Guardar, y puedes deshacer con «Restaurar lo guardado».",
+      );
+      if (!ok) return;
+    }
+
     setDrafts((prev) => {
       const next = { ...prev };
       for (const [id, v] of map) next[id] = String(v).replace(".", ",");
       return next;
     });
     setError("");
+    setConfirmando(false);
+  }
+
+  function restaurarGuardado() {
+    const map: Record<string, string> = {};
+    for (const u of units) {
+      map[u.id] = u.aliquot === null ? "" : String(u.aliquot).replace(".", ",");
+    }
+    setDrafts(map);
+    setError("");
+    setConfirmando(false);
   }
 
   async function guardar() {
@@ -181,7 +208,9 @@ export function AliquotEditor({
             type="button"
             variant="outline"
             size="sm"
-            onClick={() => aplicarSemilla(seedEqual(units.map((u) => u.id)))}
+            onClick={() =>
+              aplicarSemilla(seedEqual(units.map((u) => u.id)), "Repartir en partes iguales")
+            }
             disabled={loading}
           >
             Repartir en partes iguales
@@ -193,12 +222,24 @@ export function AliquotEditor({
             onClick={() =>
               aplicarSemilla(
                 seedScaleTo100(parsed.map((p) => ({ ...p.unit, aliquot: p.value }))),
+                "Escalar lo cargado a 100%",
               )
             }
             disabled={loading || cobertura.sum <= 0}
           >
             Escalar lo cargado a 100%
           </Button>
+          {sucio && (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={restaurarGuardado}
+              disabled={loading}
+            >
+              Restaurar lo guardado
+            </Button>
+          )}
           <span className="self-center font-meta text-mute">
             LLENAN LA HOJA · NO GUARDAN NADA
           </span>
@@ -269,6 +310,8 @@ export function AliquotEditor({
                     onChange={(e) => {
                       setDrafts((prev) => ({ ...prev, [unit.id]: e.target.value }));
                       if (error) setError("");
+                      // Si sigue editando, la confirmación anterior ya no aplica.
+                      if (confirmando) setConfirmando(false);
                     }}
                     inputMode="decimal"
                     placeholder="—"
@@ -353,11 +396,24 @@ export function AliquotEditor({
                 ? "Sí, guardar igual"
                 : "Guardar alícuotas"}
           </Button>
-          <Link href="/admin/units">
-            <Button type="button" variant="outline" disabled={loading}>
-              Volver a unidades
-            </Button>
-          </Link>
+          {/* beforeunload no cubre la navegación client-side de Next: sin esto,
+              un clic acá se llevaba los 21 números sin preguntar. */}
+          <Button
+            type="button"
+            variant="outline"
+            disabled={loading}
+            onClick={() => {
+              if (
+                sucio &&
+                !window.confirm("Tienes cambios sin guardar. ¿Salir y perderlos?")
+              ) {
+                return;
+              }
+              window.location.href = "/admin/units";
+            }}
+          >
+            Volver a unidades
+          </Button>
         </div>
 
         {!sucio && (
