@@ -56,6 +56,11 @@ export interface Organization {
   fee_base_amount: number | null;
   bank_accounts: BankAccount[];
   late_fee_pct: number | null;
+  // Contacto y notas para el conserje (migration 042). NULL = sin cargar.
+  contact_phone: string | null;
+  contact_email: string | null;
+  office_hours: string | null;
+  concierge_notes: string | null;
   created_at: string;
 }
 

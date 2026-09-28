@@ -11,6 +11,7 @@ import { OrgPoliciesForm } from "./org-policies-form";
 import { BankAccountsForm } from "./bank-accounts-form";
 import { FeeConfigForm } from "./fee-config-form";
 import { CommonAreasManager } from "./common-areas-manager";
+import { ContactForm } from "./contact-form";
 import type {
   BankAccount,
   CommonArea,
@@ -65,6 +66,23 @@ export default async function AdminSettingsPage() {
           Datos bancarios, cómo se cobra, qué puede hacer un inquilino y qué áreas comunes
           se pueden reservar.
         </p>
+      </div>
+
+      <div className="rounded-2xl bg-card border border-border p-6 md:p-7">
+        <p className="font-meta text-mute mb-2">CONTACTO DE LA ADMINISTRACIÓN</p>
+        <p className="text-[14px] text-marine-deep/80 leading-relaxed mb-6">
+          El conserje virtual responde con estos datos cuando un residente pregunta cómo
+          contactarlos. Las notas son para lo que no tiene sección propia: horarios, normas,
+          dónde se deja la basura.
+        </p>
+        <ContactForm
+          initial={{
+            contact_phone: org.contact_phone ?? "",
+            contact_email: org.contact_email ?? "",
+            office_hours: org.office_hours ?? "",
+            concierge_notes: org.concierge_notes ?? "",
+          }}
+        />
       </div>
 
       <div className="rounded-2xl bg-card border border-border p-6 md:p-7">

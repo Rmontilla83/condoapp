@@ -450,3 +450,38 @@ export async function setCommonAreaActive(
   revalidatePath("/reservas");
   return { success: true };
 }
+
+/**
+ * Contacto de la administración y notas de la junta. Lo lee el conserje: es la
+ * respuesta a "¿cuál es el teléfono de la administración?".
+ */
+export async function updateOrgContact(formData: FormData): Promise<ActionResult> {
+  const profile = await getCurrentProfile();
+  const guard = requireAdmin(profile);
+  if (guard) return guard;
+
+  const campo = (k: string, max: number) => {
+    const v = formData.get(k);
+    const t = typeof v === "string" ? v.trim() : "";
+    return t ? t.slice(0, max) : null;
+  };
+  const contact_email = campo("contact_email", 200);
+  if (contact_email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contact_email)) {
+    return { error: "El correo no tiene un formato válido" };
+  }
+
+  const supabase = createAdminClient();
+  const { error } = await supabase
+    .from("organizations")
+    .update({
+      contact_phone: campo("contact_phone", 60),
+      contact_email,
+      office_hours: campo("office_hours", 300),
+      concierge_notes: campo("concierge_notes", 4000),
+    })
+    .eq("id", profile!.organization_id!);
+
+  if (error) return { error: error.message };
+  revalidatePath("/admin/settings");
+  return { success: true };
+}
