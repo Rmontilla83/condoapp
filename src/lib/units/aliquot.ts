@@ -16,8 +16,15 @@
 
 import { distributeExact } from "@/lib/cobranza/compute-invoices";
 
-/** La columna es NUMERIC(7,4): más decimales los truncaría Postgres en silencio. */
-export const ALIQUOT_MAX_DECIMALS = 4;
+/**
+ * La columna es NUMERIC(12,8) (migration 041): más decimales los truncaría
+ * Postgres en silencio.
+ *
+ * Eran 4. Con 4, 46 de los 103 recibos de Costa de Plata salían un centavo
+ * distintos al Excel de la junta: sus alícuotas traen hasta 12 decimales, y
+ * truncarlas mueve el reparto. Con 6 ya cuadran los 103; 8 deja margen.
+ */
+export const ALIQUOT_MAX_DECIMALS = 8;
 
 /** Tolerancia para considerar que "cuadra en 100". */
 export const ALIQUOT_SUM_EPSILON = 0.01;
@@ -202,7 +209,7 @@ export function seedScaleTo100(rows: AliquotRow[]): Map<string, number> {
 /**
  * Formatea para mostrar, con coma decimal.
  *
- * Muestra entre 2 y 4 decimales: con `toFixed(2)` fijo, una alícuota de
+ * Muestra entre 2 y 8 decimales —los que tenga—: con `toFixed(2)` fijo, una alícuota de
  * 4,7619% —exactamente la que produce la semilla de partes iguales con 21
  * unidades— se veía como 4,76% y el admin creía que el sistema le había
  * truncado el valor.
