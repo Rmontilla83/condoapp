@@ -43,9 +43,9 @@ export default async function SuperAdminPage() {
     <div className="mx-auto max-w-7xl px-5 md:px-8 py-10 space-y-10">
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
-          <span className="font-meta-loose text-cyan">VISTA GLOBAL · Q2 2026</span>
+          <span className="font-meta-loose text-cyan">VISTA GLOBAL · {`T${Math.floor(new Date().getMonth() / 3) + 1} ${new Date().getFullYear()}`}</span>
           <h1 className="mt-4 font-display text-[clamp(2rem,4.5vw,3.5rem)] leading-[1.05] tracking-[-0.035em] text-marine-deep">
-            {orgs.length} condominios ·{" "}
+            {orgs.length} condominio{orgs.length !== 1 ? "s" : ""} ·{" "}
             <em className="font-editorial">{totalUnits} unidades</em>
           </h1>
         </div>
@@ -68,7 +68,7 @@ export default async function SuperAdminPage() {
             <div>
               <p className="font-meta text-mute">CONDOMINIOS</p>
               <p className="mt-2 text-[15px] font-medium text-marine-deep">
-                {orgs.length} registrados
+                {orgs.length} registrado{orgs.length !== 1 ? "s" : ""}
               </p>
             </div>
           </div>

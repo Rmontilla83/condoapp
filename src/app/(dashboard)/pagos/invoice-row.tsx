@@ -107,7 +107,9 @@ export function InvoiceRow({ invoice, rate = 0, selected, onToggle, onPayClick, 
             )}
           </div>
           <p className="text-xs text-muted-foreground">
-            Vence: {new Date(invoice.due_date).toLocaleDateString("es")}
+            {/* due_date es una fecha sin hora ("2026-09-30"). `new Date()` la lee
+                como medianoche UTC y en Venezuela (UTC-4) se mostraba el día anterior. */}
+            Vence: {new Date(`${invoice.due_date}T12:00:00Z`).toLocaleDateString("es", { timeZone: "UTC" })}
           </p>
         </div>
       </div>

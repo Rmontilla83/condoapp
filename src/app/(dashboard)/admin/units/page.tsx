@@ -5,6 +5,7 @@ import { getCurrentProfile, getEffectiveRole } from "@/lib/queries";
 import { UnitManagerDialog } from "./unit-manager-dialog";
 import { aliquotStatus, computeCoverage, formatAliquot } from "@/lib/units/aliquot";
 import type { OwnershipMode } from "@/types/database";
+import { UNIT_TYPE_LABELS } from "@/lib/labels";
 
 const MODE_LABEL: Record<OwnershipMode, string> = {
   owner_occupied: "PROPIETARIO",
@@ -147,11 +148,12 @@ export default async function AdminUnitsPage() {
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <p className="font-meta text-mute">
-                      {unit.type.toUpperCase()}
+                      {/* Mostraba "APARTMENT": el valor crudo de la base, en inglés. */}
+                      {(unit.type === "apartment" ? "Apartamento" : UNIT_TYPE_LABELS[unit.type] ?? unit.type).toUpperCase()}
                       {unit.floor != null && ` · PISO ${unit.floor}`}
                     </p>
                     <h2 className="mt-2 font-display text-[22px] leading-tight text-marine-deep">
-                      Apto {unit.unit_number}
+                      {unit.type === "penthouse" ? "" : "Apto "}{unit.unit_number}
                       {unit.block && <span className="text-mute"> · {unit.block}</span>}
                     </h2>
                   </div>

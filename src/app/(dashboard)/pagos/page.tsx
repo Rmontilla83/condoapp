@@ -177,7 +177,7 @@ export default async function PagosPage() {
           {nextDue ? (
             <>
               <p className="mt-3 font-display text-[28px] leading-none tracking-[-0.02em] text-marine-deep">
-                {new Date(nextDue.due_date).toLocaleDateString("es", { day: "numeric", month: "long" })}
+                {new Date(`${nextDue.due_date}T12:00:00Z`).toLocaleDateString("es", { day: "numeric", month: "long", timeZone: "UTC" })}
               </p>
               <p className="mt-2 text-[13px] text-mute">
                 ${Number(nextDue.amount).toFixed(2)}

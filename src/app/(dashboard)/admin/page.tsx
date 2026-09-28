@@ -37,12 +37,12 @@ export default async function AdminPage() {
     getOrgMaintenance(profile.organization_id),
     supabase
       .from("transactions")
-      .select("*, invoices(description, units(unit_number))")
+      .select("*, invoices(description, units(unit_number, block))")
       .eq("status", "pending")
       .order("paid_at", { ascending: false }),
     supabase
       .from("invoices")
-      .select("unit_id, amount, status, due_date, currency, kind, description, units(unit_number)")
+      .select("unit_id, amount, status, due_date, currency, kind, description, units(unit_number, block)")
       .eq("organization_id", profile.organization_id)
       .order("due_date", { ascending: false }),
     supabase
@@ -116,7 +116,7 @@ export default async function AdminPage() {
   }
   const invoiceRuns = [...runsMap.values()].slice(0, 24);
 
-  const morosMap: Record<string, { unit: string; total: number; count: number; oldest: string }> = {};
+  const morosMap: Record<string, { id: string; unit: string; total: number; count: number; oldest: string }> = {};
   for (const inv of overdueInvoices) {
     // La consulta ahora trae TODAS las cuotas (para agrupar tandas), así que la
     // morosidad tiene que descartar explícitamente pagadas y anuladas.
@@ -126,7 +126,11 @@ export default async function AdminPage() {
     }
     const key = inv.unit_id;
     const unitData = Array.isArray(inv.units) ? inv.units[0] : inv.units;
-    const unitNum = unitData?.unit_number ?? "?";
+    // Con la torre: en Costa de Plata "5-3" existe en dos torres y la lista
+    // mostraba dos "Apto 5-3" con montos distintos, sin forma de saber cuál era cuál.
+    const unitNum = unitData?.unit_number
+      ? `${unitData.unit_number}${unitData.block ? ` · ${unitData.block}` : ""}`
+      : "?";
     // `oldest` como mínimo real, no como "la primera fila que vi".
     //
     // La consulta pasó a ordenar por due_date DESCENDENTE para agrupar las
@@ -135,7 +139,7 @@ export default async function AdminPage() {
     // cuando la deuda venía desde enero. El total y el conteo estaban bien; lo
     // único falso era la antigüedad, que es justo lo que decide a quién llamar.
     if (!morosMap[key]) {
-      morosMap[key] = { unit: unitNum, total: 0, count: 0, oldest: inv.due_date as string };
+      morosMap[key] = { id: key as string, unit: unitNum, total: 0, count: 0, oldest: inv.due_date as string };
     } else if ((inv.due_date as string) < morosMap[key].oldest) {
       morosMap[key].oldest = inv.due_date as string;
     }
@@ -161,7 +165,7 @@ export default async function AdminPage() {
           Vista <em className="font-editorial text-cyan">general</em>
         </h1>
         <p className="mt-3 text-[15px] text-mute">
-          {stats.totalUnits} unidades · {stats.paymentRate}% de cobranza · {stats.openRequests} solicitudes de mantenimiento abiertas
+          {stats.totalUnits} unidades · {stats.paymentRate}% de cobranza · {stats.openRequests} solicitud{stats.openRequests !== 1 ? "es" : ""} de mantenimiento abierta{stats.openRequests !== 1 ? "s" : ""}
         </p>
       </div>
 
@@ -264,7 +268,7 @@ export default async function AdminPage() {
             <div className="space-y-0">
               {morosos.map((m) => (
                 <div
-                  key={m.unit}
+                  key={m.id}
                   className="flex items-center justify-between py-3.5 border-b border-border last:border-0 gap-3"
                 >
                   <div className="min-w-0">

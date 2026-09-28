@@ -19,7 +19,7 @@ interface PendingPayment {
   receipt_url: string | null;
   paid_at: string;
   status: string;
-  invoices: { description: string; units: { unit_number: string } | null } | null;
+  invoices: { description: string; units: { unit_number: string; block: string | null } | null } | null;
 }
 
 
@@ -89,6 +89,7 @@ export function PaymentReviewer({ payments }: { payments: PendingPayment[] }) {
               <div className="min-w-0">
                 <p className="text-sm font-semibold">
                   {p.invoices?.description ?? "Pago"} — Apto {p.invoices?.units?.unit_number ?? "?"}
+                  {p.invoices?.units?.block ? ` · ${p.invoices.units.block}` : ""}
                 </p>
                 <p className="text-xs text-muted-foreground">
                   {PAYMENT_METHOD_LABELS[p.payment_method] ?? p.payment_method}
