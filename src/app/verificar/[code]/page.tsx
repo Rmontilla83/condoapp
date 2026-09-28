@@ -28,7 +28,7 @@ export default async function VerificarPage({
 
   const { data: pass } = await supabase
     .from("access_passes")
-    .select("*, profiles:created_by(full_name), units:unit_id(unit_number)")
+    .select("*, profiles:created_by(full_name), units:unit_id(unit_number, block)")
     .eq("qr_code", code)
     .single();
 
@@ -66,7 +66,11 @@ export default async function VerificarPage({
           <div className="rounded-xl bg-cloud/40 border border-border p-4">
             <p className="font-meta text-mute">DESTINO</p>
             <p className="mt-2 text-[15px] font-medium text-marine-deep">
-              {pass.units?.unit_number ? `Apto ${pass.units.unit_number}` : "Área común / sin asignar"}
+              {/* Con la torre: en Costa de Plata "PB-1" existe en las tres, y el
+                  vigilante mandaba al visitante a la torre equivocada. */}
+              {pass.units?.unit_number
+                ? `Apto ${pass.units.unit_number}${pass.units.block ? ` · ${pass.units.block}` : ""}`
+                : "Área común / sin asignar"}
             </p>
           </div>
           <div className="rounded-xl bg-cloud/40 border border-border p-4">

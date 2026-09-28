@@ -3,6 +3,12 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { getUnitIdsWithFeeAccess } from "@/lib/queries";
 import { DEFAULT_TIME_ZONE, todayInTimeZone } from "@/lib/utils";
 import { herramientasDelConserje, type ConserjeContexto } from "./herramientas";
+import { responderDemo } from "./demo";
+
+/** Sin clave de Anthropic, el conserje responde con reglas (demo.ts). */
+export function modoDelConserje(): "ia" | "demo" {
+  return process.env.ANTHROPIC_API_KEY && process.env.CONSERJE_MODO !== "demo" ? "ia" : "demo";
+}
 
 const MODELO = "claude-opus-5-5";
 
@@ -15,7 +21,7 @@ const SISTEMA = `Eres el conserje virtual de un condominio en Venezuela, dentro 
 
 Responde en español, cálido y breve: dos a cinco frases, o una lista corta si hay datos (cuentas, cuotas). Tutea salvo que la persona use "usted".
 
-Todo dato concreto sale de tus herramientas: montos, fechas, cuentas bancarias, horarios, teléfonos. Si una herramienta no lo trae, dilo y sugiere escribir a la administración; no lo supongas. Los montos van con su moneda, y los bolívares al lado de los dólares cuando la herramienta trae la tasa.
+Todo dato concreto sale de tus herramientas: montos, fechas, cuentas bancarias, horarios, teléfonos, alícuotas. Si la persona tiene saldo a favor, menciónalo: se descuenta solo de sus próximas cuotas. Si una herramienta no lo trae, dilo y sugiere escribir a la administración; no lo supongas. Los montos van con su moneda, y los bolívares al lado de los dólares cuando la herramienta trae la tasa.
 
 Solo tienes acceso a la información de la persona que te escribe. Si pregunta por la deuda, los pagos o los datos de otro vecino u otra unidad, explícale que eso no lo puedes consultar.
 
@@ -82,6 +88,29 @@ export async function responder(
   ctx: ConserjeContexto,
   nombre: string,
   historial: Turno[],
+): Promise<{ texto: string; modo: "ia" | "demo" }> {
+  if (modoDelConserje() === "demo") {
+    const r = await responderDemo(ctx, nombre, historial);
+    await registrar(ctx, 0, 0, ["demo"]);
+    return { ...r, modo: "demo" };
+  }
+  return { ...(await responderConClaude(ctx, nombre, historial)), modo: "ia" };
+}
+
+async function registrar(ctx: ConserjeContexto, entrada: number, salida: number, usadas: string[]) {
+  await createAdminClient().from("concierge_messages").insert({
+    organization_id: ctx.orgId,
+    profile_id: ctx.profileId,
+    input_tokens: entrada,
+    output_tokens: salida,
+    tools_used: usadas,
+  });
+}
+
+async function responderConClaude(
+  ctx: ConserjeContexto,
+  nombre: string,
+  historial: Turno[],
 ): Promise<{ texto: string }> {
   const client = new Anthropic();
 
@@ -130,13 +159,7 @@ export async function responder(
   }
 
   // Se registra aunque la respuesta falle después: el costo ya ocurrió.
-  await createAdminClient().from("concierge_messages").insert({
-    organization_id: ctx.orgId,
-    profile_id: ctx.profileId,
-    input_tokens: entrada,
-    output_tokens: salida,
-    tools_used: usadas,
-  });
+  await registrar(ctx, entrada, salida, usadas);
 
   if (!ultimo || ultimo.stop_reason === "refusal") {
     return { texto: "No puedo ayudarte con eso. Si es un tema del condominio, escríbele a la administración." };

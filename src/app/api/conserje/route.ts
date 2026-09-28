@@ -14,6 +14,8 @@ import { armarContexto, LIMITE_DIARIO, preguntasDeHoy, responder } from "@/lib/c
 // fabricar turnos "assistant". No importa para la privacidad — los datos solo
 // salen de las herramientas, y las herramientas están atadas a la sesión — pero
 // sí se acota el tamaño para que no se use como proxy barato a la API.
+//
+// Sin ANTHROPIC_API_KEY responde en modo demo (reglas, sin IA): ver demo.ts.
 
 export const maxDuration = 60;
 
@@ -41,13 +43,6 @@ export async function POST(request: NextRequest) {
   if (!profile.organization_id) {
     return NextResponse.json({ error: "Sin condominio asignado" }, { status: 403 });
   }
-  if (!process.env.ANTHROPIC_API_KEY) {
-    return NextResponse.json(
-      { error: "El conserje todavía no está activado en este servidor." },
-      { status: 503 },
-    );
-  }
-
   let cuerpo: z.infer<typeof Cuerpo>;
   try {
     const parsed = Cuerpo.safeParse(await request.json());
@@ -68,8 +63,8 @@ export async function POST(request: NextRequest) {
 
   try {
     const ctx = await armarContexto({ id: profile.id, organization_id: profile.organization_id });
-    const { texto } = await responder(ctx, profile.full_name ?? "", cuerpo.mensajes);
-    return NextResponse.json({ respuesta: texto });
+    const { texto, modo } = await responder(ctx, profile.full_name ?? "", cuerpo.mensajes);
+    return NextResponse.json({ respuesta: texto, modo });
   } catch (e) {
     if (e instanceof Anthropic.RateLimitError) {
       return NextResponse.json(

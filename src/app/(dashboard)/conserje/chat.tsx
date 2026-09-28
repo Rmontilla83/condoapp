@@ -7,7 +7,8 @@ type Turno = { role: "user" | "assistant"; content: string };
 const SUGERENCIAS = [
   "¿Cuánto debo este mes?",
   "¿Cómo pago?",
-  "¿Está libre la piscina el sábado?",
+  "¿Está libre el caney el sábado?",
+  "¿Tengo saldo a favor?",
   "¿Cuál es el teléfono de la administración?",
 ];
 
@@ -19,7 +20,7 @@ function recortar(historial: Turno[]): Turno[] {
   return h;
 }
 
-export function Chat({ primerNombre }: { primerNombre: string }) {
+export function Chat({ primerNombre, modo }: { primerNombre: string; modo: "ia" | "demo" }) {
   const [turnos, setTurnos] = useState<Turno[]>([]);
   const [texto, setTexto] = useState("");
   const [pensando, setPensando] = useState(false);
@@ -65,6 +66,13 @@ export function Chat({ primerNombre }: { primerNombre: string }) {
 
   return (
     <div className="rounded-2xl bg-card border border-border flex flex-col min-h-[60vh] max-h-[75vh]">
+      {modo === "demo" && (
+        <p className="border-b border-border px-4 py-2 text-[12px] text-mute">
+          <span className="font-meta text-ember mr-2">MODO DEMO</span>
+          Responde con tus datos reales, pero entiende preguntas sencillas. La versión con IA
+          conversa con libertad.
+        </p>
+      )}
       <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4" aria-live="polite">
         {turnos.length === 0 && (
           <div className="space-y-4">

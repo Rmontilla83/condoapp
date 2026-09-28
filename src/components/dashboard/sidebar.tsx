@@ -20,6 +20,7 @@ const adminItems = [
   { href: "/admin", label: "Panel admin", icon: "admin" },
   { href: "/admin/units", label: "Unidades", icon: "units" },
   { href: "/admin/budget", label: "Presupuesto", icon: "finanzas" },
+  { href: "/admin/saldos", label: "Saldos a favor", icon: "payments" },
   { href: "/admin/settings", label: "Configuración", icon: "settings" },
 ];
 

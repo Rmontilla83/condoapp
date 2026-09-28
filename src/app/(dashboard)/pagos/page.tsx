@@ -12,6 +12,8 @@ import {
 } from "@/lib/queries";
 import { todayInTimeZone } from "@/lib/utils";
 import { signStorageRefs } from "@/lib/storage";
+import { createClient } from "@/lib/supabase/server";
+import { saldosPorUnidad } from "@/lib/saldos";
 import { InvoiceRow } from "./invoice-row";
 import { PendingInvoices } from "./pending-invoices";
 import { PaymentMethods } from "./payment-methods";
@@ -57,12 +59,14 @@ export default async function PagosPage() {
       </div>
     );
   }
-  const [invoices, feeBreakdown, rateData, orgRaw] = await Promise.all([
+  const [invoices, feeBreakdown, rateData, orgRaw, saldos] = await Promise.all([
     getInvoicesForUser(unitIds),
     getFeeBreakdown(profile.organization_id),
     getCurrentRate(profile.organization_id),
     getOrganization(profile.organization_id),
+    createClient().then((db) => saldosPorUnidad(db, unitIds)),
   ]);
+  const saldoAFavor = [...saldos.values()].reduce((s, v) => s + Math.max(v, 0), 0);
 
   const org = orgRaw as Organization | null;
   const hoy = todayInTimeZone(org?.timezone ?? undefined);
@@ -147,6 +151,12 @@ export default async function PagosPage() {
           )}
           {pendingTotal === 0 && (
             <p className="mt-2 font-meta text-cyan-ink">AL DÍA</p>
+          )}
+          {saldoAFavor > 0 && (
+            <p className="mt-3 rounded-lg bg-cyan/10 px-2.5 py-1.5 text-[13px] text-cyan-ink">
+              Tienes <strong>${saldoAFavor.toFixed(2)}</strong> de saldo a favor. Se descuenta
+              solo de tus próximas cuotas.
+            </p>
           )}
         </div>
         <div className="rounded-2xl bg-card border border-border p-5">

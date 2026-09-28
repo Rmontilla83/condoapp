@@ -47,6 +47,7 @@ export const PAYMENT_METHOD_LABELS: Record<string, string> = {
   paypal: "PayPal",
   binance: "Binance",
   cash: "Efectivo",
+  credit: "Saldo a favor",
   other: "Otro",
 };
 

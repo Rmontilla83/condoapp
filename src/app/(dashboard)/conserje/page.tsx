@@ -1,4 +1,5 @@
 import { getCurrentProfile } from "@/lib/queries";
+import { modoDelConserje } from "@/lib/conserje/conserje";
 import { Chat } from "./chat";
 
 export default async function ConserjePage() {
@@ -19,7 +20,7 @@ export default async function ConserjePage() {
           Solo ve la información de tus unidades.
         </p>
       </div>
-      <Chat primerNombre={primerNombre} />
+      <Chat primerNombre={primerNombre} modo={modoDelConserje()} />
     </div>
   );
 }

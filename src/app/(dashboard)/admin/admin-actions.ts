@@ -8,6 +8,7 @@ import { enviarLote } from "@/lib/email/send";
 import { cuotaEmitida } from "@/lib/email/templates";
 import { emailsPorUnidad, nombreDeOrg } from "@/lib/email/recipients";
 import { computeInvoiceAmounts } from "@/lib/cobranza/compute-invoices";
+import { aplicarSaldos } from "@/lib/saldos";
 import type { ComputeUnit } from "@/lib/cobranza/compute-invoices";
 import type { FeeMode, InvoiceKind, Organization } from "@/types/database";
 
@@ -241,7 +242,10 @@ export async function generateMonthlyInvoices(formData: FormData) {
 
   const omitidas = result.invoices.length - aEmitir.length;
 
-  const { error } = await supabase.from("invoices").insert(aEmitir);
+  const { data: insertadas, error } = await supabase
+    .from("invoices")
+    .insert(aEmitir)
+    .select("id, unit_id");
   if (error) {
     if ((error as { code?: string }).code === "23505") {
       return {
@@ -250,6 +254,26 @@ export async function generateMonthlyInvoices(formData: FormData) {
       };
     }
     return { error: error.message };
+  }
+
+  // Saldo a favor: se descuenta de la cuota recién emitida, como la columna
+  // CRÉDITO del recibo en Excel. Va ANTES del aviso por correo, para que el
+  // correo diga lo que de verdad queda por pagar.
+  const idsInsertados = (insertadas ?? []).map((i) => i.id as string);
+  const conSaldo = await aplicarSaldos(
+    supabase,
+    [...new Set((insertadas ?? []).map((i) => i.unit_id as string))],
+    profile!.id,
+  );
+  let aAvisar = aEmitir;
+  if (conSaldo > 0 && idsInsertados.length) {
+    const { data: actuales } = await supabase
+      .from("invoices")
+      .select("unit_id, description, currency, amount, amount_bs, status")
+      .in("id", idsInsertados);
+    aAvisar = (actuales ?? [])
+      .filter((i) => i.status === "pending")
+      .map((i) => ({ ...aEmitir[0], ...i })) as typeof aEmitir;
   }
 
   // Aviso de cuota nueva. Es el evento de MÁS volumen (una por unidad), así que
@@ -262,7 +286,7 @@ export async function generateMonthlyInvoices(formData: FormData) {
     const condominio = await nombreDeOrg(profile!.organization_id!);
     // `aEmitir`, no `result.invoices`: si una parte de la tanda ya existía, esas
     // unidades no recibieron cuota nueva y no tienen por qué recibir el aviso.
-    const conMonto = aEmitir.filter((inv) => Number(inv.amount) > 0);
+    const conMonto = aAvisar.filter((inv) => Number(inv.amount) > 0);
 
     const vencimiento = new Date(`${dueDate}T12:00:00Z`).toLocaleDateString("es", {
       day: "numeric",
@@ -305,12 +329,15 @@ export async function generateMonthlyInvoices(formData: FormData) {
   return {
     success: true as const,
     count: aEmitir.length,
-    warnings: omitidas > 0
-      ? [
-          ...result.warnings,
-          `${omitidas} unidad${omitidas !== 1 ? "es" : ""} ya tenía esta cuota emitida y se omitió.`,
-        ]
-      : result.warnings,
+    warnings: [
+      ...result.warnings,
+      ...(omitidas > 0
+        ? [`${omitidas} unidad${omitidas !== 1 ? "es" : ""} ya tenía esta cuota emitida y se omitió.`]
+        : []),
+      ...(conSaldo > 0
+        ? [`Se aplicó saldo a favor en ${conSaldo} cuota${conSaldo !== 1 ? "s" : ""}.`]
+        : []),
+    ],
   };
 }
 
@@ -405,13 +432,32 @@ export async function voidInvoiceRun(params: {
 
   // Igualdad exacta en JS, no un patrón `ilike`: una descripción con `*` se
   // convertía en comodín y esta acción anula cuotas de verdad.
-  const filas = (delPeriodo ?? []).filter((i) =>
-    mismaDescripcion(i.description as string | null, params.description),
+  // Con la hermana que crea el saldo a favor parcial (migration 043): anular la
+  // tanda anula el cargo entero, no solo el resto.
+  const filas = (delPeriodo ?? []).filter(
+    (i) =>
+      mismaDescripcion(i.description as string | null, params.description) ||
+      mismaDescripcion(i.description as string | null, `${params.description} · saldo a favor`),
   );
   if (filas.length === 0) return { error: "No encontramos esas cuotas." };
 
-  const pagadas = filas.filter((i) => i.status === "paid");
-  const anulables = filas.filter((i) => i.status !== "paid" && i.status !== "cancelled");
+  // Una cuota pagada SOLO con saldo a favor sí se anula: el saldo vuelve a la
+  // unidad. Una pagada con dinero de verdad no se toca.
+  const idsPagadas = filas.filter((i) => i.status === "paid").map((i) => i.id as string);
+  const { data: txPagadas } = idsPagadas.length
+    ? await supabase
+        .from("transactions")
+        .select("invoice_id, payment_method")
+        .in("invoice_id", idsPagadas)
+        .eq("status", "approved")
+    : { data: [] };
+  const conDinero = new Set(
+    (txPagadas ?? []).filter((t) => t.payment_method !== "credit").map((t) => t.invoice_id as string),
+  );
+  const pagadas = filas.filter((i) => i.status === "paid" && conDinero.has(i.id as string));
+  const anulables = filas.filter(
+    (i) => i.status !== "cancelled" && !(i.status === "paid" && conDinero.has(i.id as string)),
+  );
 
   if (anulables.length === 0) {
     return {
@@ -421,6 +467,12 @@ export async function voidInvoiceRun(params: {
           : "Esa tanda ya estaba anulada.",
     };
   }
+
+  const { data: devuelto, error: devError } = await supabase.rpc("devolver_saldo_de_cuotas", {
+    p_invoices: anulables.map((i) => i.id),
+    p_actor: profile.id,
+  });
+  if (devError) return { error: `No se pudo devolver el saldo a favor: ${devError.message}` };
 
   const { error } = await supabase
     .from("invoices")
@@ -460,6 +512,7 @@ export async function voidInvoiceRun(params: {
       anuladas: anulables.length,
       pagadas_intactas: pagadas.length,
       monto_anulado: anulables.reduce((s, i) => s + Number(i.amount), 0),
+      saldo_devuelto: Number(devuelto) || 0,
     },
   });
 
