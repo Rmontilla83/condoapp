@@ -1,3 +1,4 @@
+import { ESTADOS_ABIERTOS, estaAbierta, pendienteDe } from "@/lib/cuotas";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { isInvoiceOverdue, todayInTimeZone, zonedToISO } from "@/lib/utils";
 import { saldosPorUnidad } from "@/lib/saldos";
@@ -60,10 +61,10 @@ export function consultasDelConserje(ctx: ConserjeContexto) {
     const [{ data: cuotas }, tasa, saldos, { data: movSaldo }] = await Promise.all([
       db
         .from("invoices")
-        .select("id, unit_id, description, amount, currency, due_date, status")
+        .select("id, unit_id, description, amount, paid_amount, currency, due_date, status")
         .eq("organization_id", ctx.orgId)
         .in("unit_id", ctx.unidadesConCuotas)
-        .in("status", ["pending", "overdue"])
+        .in("status", [...ESTADOS_ABIERTOS])
         .order("due_date"),
       tasaBcv(),
       saldosPorUnidad(db, ctx.unidadesConCuotas),
@@ -89,7 +90,7 @@ export function consultasDelConserje(ctx: ConserjeContexto) {
     const lista = (cuotas ?? []).map((c) => ({
       unidad: etiqueta.get(c.unit_id as string) ?? "",
       concepto: c.description as string,
-      monto: Number(c.amount),
+      monto: pendienteDe(c),
       moneda: c.currency as string,
       vence: c.due_date as string,
       vencida: isInvoiceOverdue({ status: c.status as string, due_date: c.due_date as string }, hoy),
@@ -224,14 +225,14 @@ export function consultasDelConserje(ctx: ConserjeContexto) {
     if (ids.length === 0) return null;
     const { data } = await db
       .from("invoices")
-      .select("amount, transactions(status)")
+      .select("amount, paid_amount, transactions(status)")
       .in("unit_id", ids)
-      .in("status", ["pending", "overdue"])
+      .in("status", [...ESTADOS_ABIERTOS])
       .lt("due_date", todayInTimeZone(ctx.timezone));
     const vencidas = (data ?? []).filter(
       (c) => !((c.transactions ?? []) as { status: string }[]).some((t) => t.status === "pending"),
     );
-    return vencidas.length ? { cuotas: vencidas.length, monto: r2(vencidas.reduce((s, c) => s + Number(c.amount), 0)) } : null;
+    return vencidas.length ? { cuotas: vencidas.length, monto: r2(vencidas.reduce((s, c) => s + pendienteDe(c), 0)) } : null;
   }
 
   async function disponibilidad(area: string, fecha: string) {

@@ -5,16 +5,19 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { isInvoiceOverdue } from "@/lib/utils";
 import type { Invoice } from "@/types/database";
+import { estaAbierta, numeroRecibo } from "@/lib/cuotas";
 
 const statusConfig = {
   pending: { label: "Pendiente", className: "border-amber-300 text-amber-700 bg-amber-50" },
+  partial: { label: "Abonada", className: "border-cyan-300 text-cyan-800 bg-cyan-50" },
   paid: { label: "Pagado", className: "border-emerald-300 text-emerald-700 bg-emerald-50" },
   overdue: { label: "Vencido", className: "border-red-300 text-red-700 bg-red-50" },
   cancelled: { label: "Cancelado", className: "border-gray-300 text-gray-700 bg-gray-50" },
 };
 
 interface Props {
-  invoice: Invoice;
+  /** Con `monto_original` y `abonado` si viene de comoPendiente (cuota abonada en parte). */
+  invoice: Invoice & { monto_original?: number; abonado?: number };
   rate?: number;
   /** Si se pasa, la fila muestra checkbox y permite seleccionar. */
   selected?: boolean;
@@ -51,7 +54,7 @@ export function InvoiceRow({ invoice, rate = 0, selected, onToggle, onPayClick, 
   const isOverdue = today
     ? isInvoiceOverdue({ status: invoice.status, due_date: invoice.due_date }, today)
     : false;
-  const isPending = invoice.status === "pending" || invoice.status === "overdue";
+  const isPending = estaAbierta(invoice.status);
   const config = isOverdue
     ? statusConfig.overdue
     : statusConfig[invoice.status as keyof typeof statusConfig] ?? statusConfig.pending;
@@ -110,6 +113,7 @@ export function InvoiceRow({ invoice, rate = 0, selected, onToggle, onPayClick, 
           <p className="text-xs text-muted-foreground">
             {/* due_date es una fecha sin hora ("2026-09-30"). `new Date()` la lee
                 como medianoche UTC y en Venezuela (UTC-4) se mostraba el día anterior. */}
+            {invoice.receipt_number != null && <>Recibo {numeroRecibo(invoice.receipt_number)} · </>}
             Vence: {new Date(`${invoice.due_date}T12:00:00Z`).toLocaleDateString("es", { timeZone: "UTC" })}
           </p>
         </div>
@@ -117,6 +121,11 @@ export function InvoiceRow({ invoice, rate = 0, selected, onToggle, onPayClick, 
       <div className="flex items-center gap-3 shrink-0">
         <div className="text-right">
           <p className="text-sm font-bold">{usd(Number(invoice.amount))}</p>
+          {invoice.abonado != null && invoice.abonado > 0 && invoice.monto_original != null && (
+            <p className="text-[11px] text-cyan-ink">
+              Resta de {usd(invoice.monto_original)} · abonado {usd(invoice.abonado)}
+            </p>
+          )}
           {/* En una cuota YA PAGADA no se muestra la conversión a la tasa de
               hoy: al lado va el monto en bolívares congelado del pago, y dos
               cifras distintas en la misma tarjeta solo generan dudas. */}

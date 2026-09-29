@@ -1,3 +1,4 @@
+import { pendienteDe } from "@/lib/cuotas";
 import { usd } from "@/lib/format";
 import { redirect } from "next/navigation";
 import {
@@ -45,7 +46,7 @@ export default async function AdminPage() {
       .order("paid_at", { ascending: false }),
     supabase
       .from("invoices")
-      .select("unit_id, amount, status, due_date, currency, kind, description, units(unit_number, block)")
+      .select("unit_id, amount, paid_amount, status, due_date, currency, kind, description, units(unit_number, block)")
       .eq("organization_id", profile.organization_id)
       .order("due_date", { ascending: false }),
     supabase
@@ -161,7 +162,7 @@ export default async function AdminPage() {
     } else if ((inv.due_date as string) < morosMap[key].oldest) {
       morosMap[key].oldest = inv.due_date as string;
     }
-    morosMap[key].total += Number(inv.amount);
+    morosMap[key].total += pendienteDe(inv);
     morosMap[key].count += 1;
   }
   const morosos = Object.values(morosMap).sort((a, b) => b.total - a.total);

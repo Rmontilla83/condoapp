@@ -1,5 +1,6 @@
 "use server";
 
+import { estaAbierta, pendienteDe } from "@/lib/cuotas";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import {
@@ -73,7 +74,7 @@ export async function submitPaymentForMultipleInvoices(formData: FormData) {
   // Validar todas las invoices existen y están pending/overdue
   const { data: invoices } = await supabase
     .from("invoices")
-    .select("id, amount, currency, status, unit_id")
+    .select("id, amount, paid_amount, currency, status, unit_id")
     .in("id", invoiceIds);
 
   if (!invoices || invoices.length !== invoiceIds.length) {
@@ -87,11 +88,20 @@ export async function submitPaymentForMultipleInvoices(formData: FormData) {
     return { error: "Hay cuotas que no corresponden a tu unidad." };
   }
 
-  const allPayable = invoices.every(
-    (i) => i.status === "pending" || i.status === "overdue",
-  );
+  const allPayable = invoices.every((i) => estaAbierta(i.status as string) && pendienteDe(i) > 0);
   if (!allPayable) {
     return { error: "Hay cuotas que ya no están pendientes" };
+  }
+
+  // Abono: solo sobre UNA cuota, mayor que cero y menor que lo que falta.
+  const abonoRaw = formData.get("amount");
+  let abono: number | null = null;
+  if (typeof abonoRaw === "string" && abonoRaw.trim() !== "") {
+    abono = Math.round(Number(abonoRaw.replace(",", ".")) * 100) / 100;
+    if (invoices.length !== 1) return { error: "Un abono se hace sobre una sola cuota." };
+    if (!(abono > 0) || abono >= pendienteDe(invoices[0])) {
+      return { error: `El abono tiene que ser mayor que cero y menor que ${pendienteDe(invoices[0]).toFixed(2)}.` };
+    }
   }
 
   // Currency mismatch
@@ -130,7 +140,9 @@ export async function submitPaymentForMultipleInvoices(formData: FormData) {
 
   const txInserts = invoices.map((inv) => ({
     invoice_id: inv.id as string,
-    amount: Number(inv.amount),
+    // Lo que falta de la cuota, o el abono. Nunca el monto emitido: una cuota
+    // ya abonada en parte se cobraría dos veces.
+    amount: abono ?? pendienteDe(inv),
     currency: inv.currency as string,
     payment_method: method,
     reference: reference || null,
@@ -142,7 +154,7 @@ export async function submitPaymentForMultipleInvoices(formData: FormData) {
     // afirmación de en qué moneda pagó: el diálogo no lo pregunta y adivinarlo
     // por el método (transferencia = bolívares) sería falso en un condominio de
     // Colombia o México. `currency_paid` queda en la moneda de la cuota.
-    amount_bs: tasa > 0 ? Math.round(Number(inv.amount) * tasa * 100) / 100 : null,
+    amount_bs: tasa > 0 ? Math.round((abono ?? pendienteDe(inv)) * tasa * 100) / 100 : null,
     currency_paid: inv.currency as string,
     exchange_rate: tasa > 0 ? tasa : null,
   }));
@@ -210,12 +222,8 @@ export async function approvePayment(transactionId: string) {
 
   if (txError) return { error: txError.message };
 
-  const { error: invError } = await supabase
-    .from("invoices")
-    .update({ status: "paid" })
-    .eq("id", tx.invoice_id);
-
-  if (invError) return { error: invError.message };
+  // El estado de la cuota (pagada o abonada) lo recalcula la base con el
+  // trigger de la migration 052 a partir de los pagos aprobados.
 
   // El propietario subía el comprobante y no se enteraba nunca de nada. El
   // correo va después de escribir: si falla, el pago igual quedó aprobado.

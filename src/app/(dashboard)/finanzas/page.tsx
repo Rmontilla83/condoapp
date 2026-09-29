@@ -1,3 +1,4 @@
+import { ESTADOS_ABIERTOS, estaAbierta, pendienteDe } from "@/lib/cuotas";
 import { IconoCategoria } from "@/components/ui/icono";
 import { usd } from "@/lib/format";
 import {
@@ -43,7 +44,7 @@ export default async function FinanzasPage() {
   const [invoicesRes, expensesRes, transactionsRes, categoriesData, currentBudgetData] = await Promise.all([
     supabase
       .from("invoices")
-      .select("amount, status")
+      .select("amount, paid_amount, status")
       .eq("organization_id", profile.organization_id),
     supabase
       .from("expense_records")
@@ -80,8 +81,8 @@ export default async function FinanzasPage() {
   const totalExpenses = expenses.reduce((s, e) => s + Number(e.amount), 0);
   const balance = totalIncome - totalExpenses;
   const totalPending = invoices
-    .filter((i) => i.status === "pending" || i.status === "overdue")
-    .reduce((s, i) => s + Number(i.amount), 0);
+    .filter((i) => estaAbierta(i.status as string))
+    .reduce((s, i) => s + pendienteDe(i), 0);
 
   // Aggregate por category_id usando la tabla normalizada
   const byCategoryId: Record<string, number> = {};

@@ -37,6 +37,9 @@ export function MultiPayDialog({ target, rate, onClose, bankAccounts = [] }: Pro
   const [success, setSuccess] = useState(false);
   const [receiptName, setReceiptName] = useState("");
   const [reference, setReference] = useState("");
+  // Abono: pagar solo una parte de UNA cuota (el resto queda pendiente).
+  const [abono, setAbono] = useState(false);
+  const [montoAbono, setMontoAbono] = useState("");
 
   useEffect(() => {
     if (target) {
@@ -64,7 +67,11 @@ export function MultiPayDialog({ target, rate, onClose, bankAccounts = [] }: Pro
 
   if (!target) return null;
 
-  const total = target.invoices.reduce((s, i) => s + Number(i.amount), 0);
+  const totalCuotas = target.invoices.reduce((s, i) => s + Number(i.amount), 0);
+  const unaSola = target.invoices.length === 1;
+  const abonoNum = Number(montoAbono.replace(",", "."));
+  const abonoValido = abono && unaSola && abonoNum > 0 && abonoNum < totalCuotas;
+  const total = abonoValido ? Math.round(abonoNum * 100) / 100 : totalCuotas;
   const currency = target.invoices[0]?.currency ?? "USD";
   const mixedCurrency = new Set(target.invoices.map((i) => i.currency)).size > 1;
   const totalBs = rate > 0 ? total * rate : 0;
@@ -86,12 +93,18 @@ export function MultiPayDialog({ target, rate, onClose, bankAccounts = [] }: Pro
       return;
     }
 
+    if (abono && !abonoValido) {
+      setError(`El abono tiene que ser mayor que cero y menor que ${usd(totalCuotas)}. Si pagas todo, desmarca «Pagar solo una parte».`);
+      return;
+    }
+
     setLoading(true);
     setError("");
 
     const formEl = e.currentTarget;
     const formData = new FormData(formEl);
     formData.set("invoice_ids", JSON.stringify(target!.invoices.map((i) => i.id)));
+    if (abonoValido) formData.set("amount", String(total));
 
     const photo = formData.get("receipt") as File | null;
     if (photo && photo.size > MAX_RECEIPT_BYTES) {
@@ -166,6 +179,37 @@ export function MultiPayDialog({ target, rate, onClose, bankAccounts = [] }: Pro
               <p className="text-sm text-destructive border border-destructive/30 bg-destructive/5 rounded p-2">
                 Has seleccionado cuotas en distintas monedas. Sepáralas para pagar con comprobantes distintos.
               </p>
+            )}
+
+            {unaSola && (
+              <div className="space-y-2 rounded-lg border border-border p-3">
+                <label className="flex items-center gap-2 text-[14px] text-marine-deep">
+                  <input
+                    type="checkbox"
+                    checked={abono}
+                    onChange={(e) => {
+                      setAbono(e.target.checked);
+                      if (error) setError("");
+                    }}
+                    className="h-4 w-4"
+                  />
+                  Pagar solo una parte (abono)
+                </label>
+                {abono && (
+                  <div className="space-y-1">
+                    <Input
+                      inputMode="decimal"
+                      placeholder={`Monto en ${currency}, menos de ${usd(totalCuotas)}`}
+                      value={montoAbono}
+                      onChange={(e) => setMontoAbono(e.target.value)}
+                      aria-label="Monto del abono"
+                    />
+                    <p className="text-[12px] text-mute">
+                      El resto ({abonoValido ? usd(Math.round((totalCuotas - total) * 100) / 100) : "lo que falte"}) queda pendiente en la misma cuota.
+                    </p>
+                  </div>
+                )}
+              </div>
             )}
 
             <PayToBlock

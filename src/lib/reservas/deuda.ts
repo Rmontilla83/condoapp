@@ -1,3 +1,4 @@
+import { ESTADOS_ABIERTOS, estaAbierta, pendienteDe } from "@/lib/cuotas";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { todayInTimeZone, DEFAULT_TIME_ZONE } from "@/lib/utils";
 import { getEffectiveRole } from "@/lib/queries";
@@ -43,16 +44,16 @@ export async function deudaQueImpideReservar(
   const hoy = todayInTimeZone((org?.timezone as string) || DEFAULT_TIME_ZONE);
   const { data: cuotas } = await db
     .from("invoices")
-    .select("id, amount, transactions(status)")
+    .select("id, amount, paid_amount, transactions(status)")
     .in("unit_id", unidades)
-    .in("status", ["pending", "overdue"])
+    .in("status", [...ESTADOS_ABIERTOS])
     .lt("due_date", hoy);
 
   const vencidas = (cuotas ?? []).filter(
     (c) => !((c.transactions ?? []) as { status: string }[]).some((t) => t.status === "pending"),
   );
   if (vencidas.length === 0) return null;
-  return { cuotas: vencidas.length, monto: vencidas.reduce((s, c) => s + Number(c.amount), 0) };
+  return { cuotas: vencidas.length, monto: vencidas.reduce((s, c) => s + pendienteDe(c), 0) };
 }
 
 /** El mensaje, en un tono amable: se lee justo cuando el vecino quería reservar. */

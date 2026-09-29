@@ -1,5 +1,6 @@
 "use server";
 
+import { ESTADOS_ABIERTOS, estaAbierta, pendienteDe } from "@/lib/cuotas";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getCurrentProfile, getCurrentRate } from "@/lib/queries";
 import { isAdminRole, requireAdmin } from "@/lib/permissions";
@@ -290,11 +291,16 @@ export async function generateMonthlyInvoices(formData: FormData) {
   if (conSaldo > 0 && idsInsertados.length) {
     const { data: actuales } = await supabase
       .from("invoices")
-      .select("unit_id, description, currency, amount, amount_bs, status")
+      .select("unit_id, description, currency, amount, paid_amount, amount_bs, exchange_rate, status")
       .in("id", idsInsertados);
+    // Las cubiertas del todo con saldo no se avisan; las abonadas, por lo que falta.
     aAvisar = (actuales ?? [])
-      .filter((i) => i.status === "pending")
-      .map((i) => ({ ...aEmitir[0], ...i })) as typeof aEmitir;
+      .filter((i) => estaAbierta(i.status as string) && pendienteDe(i) > 0)
+      .map((i) => {
+        const falta = pendienteDe(i);
+        const tasa = Number(i.exchange_rate ?? 0);
+        return { ...aEmitir[0], ...i, amount: falta, amount_bs: tasa > 0 ? Math.round(falta * tasa * 100) / 100 : i.amount_bs };
+      }) as typeof aEmitir;
   }
 
   // Aviso de cuota nueva. Es el evento de MÁS volumen (una por unidad), así que
@@ -489,37 +495,17 @@ export async function voidInvoiceRun(params: {
     };
   }
 
-  const { data: devuelto, error: devError } = await supabase.rpc("devolver_saldo_de_cuotas", {
+  // Anular es emitir una NOTA DE CRÉDITO por cada recibo (LPH art. 14): el
+  // recibo queda con su número y estado «anulado», nunca se borra. La función
+  // devuelve el saldo a favor abonado y rechaza los comprobantes en revisión.
+  const { data: resultado, error } = await supabase.rpc("anular_recibos", {
     p_invoices: anulables.map((i) => i.id),
     p_actor: profile.id,
+    p_motivo: motivo,
   });
-  if (devError) return { error: `No se pudo devolver el saldo a favor: ${devError.message}` };
-
-  const { error } = await supabase
-    .from("invoices")
-    .update({ status: "cancelled", updated_at: new Date().toISOString() })
-    .in(
-      "id",
-      anulables.map((i) => i.id),
-    )
-    .eq("organization_id", profile.organization_id);
-
-  if (error) return { error: error.message };
-
-  // Los comprobantes en revisión de esas cuotas quedarían huérfanos.
-  await supabase
-    .from("transactions")
-    .update({
-      status: "rejected",
-      rejection_reason: `Cuota anulada por la administración: ${motivo}`,
-      reviewed_at: new Date().toISOString(),
-      reviewed_by: profile.id,
-    })
-    .in(
-      "invoice_id",
-      anulables.map((i) => i.id),
-    )
-    .eq("status", "pending");
+  if (error) return { error: `No se pudo anular: ${error.message}` };
+  const r = (resultado ?? {}) as { anuladas?: number; saltadas?: number; devuelto?: number };
+  const devuelto = r.devuelto ?? 0;
 
   await supabase.from("auth_events").insert({
     organization_id: profile.organization_id,
@@ -530,7 +516,7 @@ export async function voidInvoiceRun(params: {
       due_date: params.dueDate,
       kind: params.kind,
       description: params.description,
-      anuladas: anulables.length,
+      anuladas: r.anuladas ?? 0,
       pagadas_intactas: pagadas.length,
       monto_anulado: anulables.reduce((s, i) => s + Number(i.amount), 0),
       saldo_devuelto: Number(devuelto) || 0,
@@ -543,7 +529,7 @@ export async function voidInvoiceRun(params: {
 
   return {
     success: true as const,
-    anuladas: anulables.length,
+    anuladas: r.anuladas ?? 0,
     pagadasIntactas: pagadas.length,
   };
 }

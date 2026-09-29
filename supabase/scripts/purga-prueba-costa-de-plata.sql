@@ -30,6 +30,9 @@ DECLARE
 BEGIN
   SELECT id INTO v_org FROM organizations WHERE name = 'Costa de Plata';
   IF v_org IS NULL THEN RAISE EXCEPTION 'No está Costa de Plata'; END IF;
+  -- Los recibos son inmutables desde la migration 052; esta limpieza de datos
+  -- de PRUEBA es la excepción controlada, solo dentro de esta transacción.
+  PERFORM set_config('atryum.mantenimiento', 'on', true);
   SELECT id INTO v_actor FROM profiles WHERE email = 'rafaelmontilla8@gmail.com';
 
   -- ── 1. Deshacer los saldos aplicados sobre cuotas que se quedan ───────────
@@ -62,6 +65,8 @@ BEGIN
   END LOOP;
 
   -- ── 2. Julio y agosto: cuotas inventadas con todo lo que cuelga ───────────
+  DELETE FROM credit_notes WHERE organization_id = v_org
+     AND invoice_id IN (SELECT id FROM invoices WHERE organization_id = v_org AND due_date < '2026-09-01');
   DELETE FROM unit_credits WHERE organization_id = v_org
      AND invoice_id IN (SELECT id FROM invoices WHERE organization_id = v_org AND due_date < '2026-09-01');
   DELETE FROM invoices WHERE organization_id = v_org AND due_date < '2026-09-01';
@@ -116,6 +121,19 @@ BEGIN
      FROM units u WHERE u.organization_id = v_org
       AND EXISTS (SELECT 1 FROM unit_credits c WHERE c.unit_id = u.id);
 
+  -- ── 6. Numeración limpia ──────────────────────────────────────────────────
+  -- Los recibos de prueba se llevaron sus números. Ningún recibo se entregó
+  -- todavía a un propietario, así que la serie real arranca en 1, sin huecos.
+  WITH n AS (
+    SELECT id, row_number() OVER (ORDER BY due_date, created_at, id) AS k
+      FROM invoices WHERE organization_id = v_org AND kind <> 'opening'
+  )
+  UPDATE invoices i SET receipt_number = -n.k FROM n WHERE n.id = i.id;
+  UPDATE invoices SET receipt_number = -receipt_number WHERE organization_id = v_org AND receipt_number < 0;
+  UPDATE organizations SET receipt_seq = COALESCE((SELECT max(receipt_number) FROM invoices WHERE organization_id = v_org), 0),
+                           credit_note_seq = COALESCE((SELECT max(number) FROM credit_notes WHERE organization_id = v_org), 0)
+   WHERE id = v_org;
+
   -- ── Verificación ──────────────────────────────────────────────────────────
   IF EXISTS (SELECT 1 FROM invoices WHERE organization_id = v_org AND description LIKE '%saldo a favor%'
               AND unit_id NOT IN (SELECT unit_id FROM unit_credits WHERE organization_id = v_org)) THEN
@@ -129,7 +147,8 @@ BEGIN
     'marina_total', (SELECT sum(amount) FROM invoices WHERE organization_id = v_org AND description LIKE 'Marina 09/2026%'),
     'pagadas', (SELECT count(*) FROM invoices WHERE organization_id = v_org AND status = 'paid'),
     'transacciones', (SELECT count(*) FROM transactions t JOIN invoices i ON i.id = t.invoice_id WHERE i.organization_id = v_org),
-    'saldo_neto', (SELECT sum(amount) FROM unit_credits WHERE organization_id = v_org));
+    'saldo_neto', (SELECT sum(amount) FROM unit_credits WHERE organization_id = v_org),
+    'ultimo_recibo', (SELECT receipt_seq FROM organizations WHERE id = v_org));
 
   IF v_modo = 'ensayo' THEN
     RAISE EXCEPTION 'ENSAYO OK (nada se guardó): %', v_n;

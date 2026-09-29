@@ -1,6 +1,7 @@
 import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
 import { todayInTimeZone, isInvoiceOverdue } from "@/lib/utils";
+import { ESTADOS_ABIERTOS, comoPendiente } from "@/lib/cuotas";
 import type {
   BankAccount,
   Profile,
@@ -622,10 +623,11 @@ export async function getPendingInvoicesForFAB(profileId: string): Promise<{
     .from("invoices")
     .select("*")
     .in("unit_id", unitIds)
-    .in("status", ["pending", "overdue"])
+    .in("status", [...ESTADOS_ABIERTOS])
     .order("due_date", { ascending: true });
 
-  const all = (pending ?? []) as Invoice[];
+  // Lo que falta por pagar, no lo emitido: una cuota abonada en parte cobra el resto.
+  const all = ((pending ?? []) as Invoice[]).map(comoPendiente).filter((i) => i.amount > 0);
   const inReviewIds = await getInvoiceIdsWithPendingTransactions(all.map((i) => i.id));
 
   return {
@@ -751,7 +753,7 @@ export async function getDashboardContext(
           .from("invoices")
           .select("*")
           .in("unit_id", unitIds)
-          .in("status", ["pending", "overdue"])
+          .in("status", [...ESTADOS_ABIERTOS])
           .order("due_date", { ascending: true })
       : Promise.resolve({ data: [] as Invoice[] }),
     supabase
@@ -790,7 +792,7 @@ export async function getDashboardContext(
       .limit(3),
   ]);
 
-  const pendingInvoices = (invoicesRes.data ?? []) as Invoice[];
+  const pendingInvoices = ((invoicesRes.data ?? []) as Invoice[]).map(comoPendiente).filter((i) => i.amount > 0);
   const inReviewInvoiceIds = await getInvoiceIdsWithPendingTransactions(
     pendingInvoices.map((i) => i.id),
   );

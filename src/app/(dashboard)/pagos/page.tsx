@@ -1,3 +1,4 @@
+import { comoPendiente, estaAbierta } from "@/lib/cuotas";
 import { usd, bs } from "@/lib/format";
 import {
   getCurrentProfile,
@@ -74,8 +75,11 @@ export default async function PagosPage() {
   const bankAccounts: BankAccount[] = org && Array.isArray(org.bank_accounts) ? org.bank_accounts : [];
 
   const rate = Number(rateData.rate);
+  // Las abiertas, con `amount` = lo que falta (una cuota abonada cobra el resto).
   const pendingInvoices = invoices
-    .filter((i) => i.status === "pending" || i.status === "overdue")
+    .filter((i) => estaAbierta(i.status))
+    .map(comoPendiente)
+    .filter((i) => i.amount > 0)
     .sort((a, b) => new Date(a.due_date).getTime() - new Date(b.due_date).getTime());
   const paidInvoices = invoices.filter((i) => i.status === "paid");
 

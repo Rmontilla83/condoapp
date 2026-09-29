@@ -1,3 +1,4 @@
+import { ESTADOS_ABIERTOS, estaAbierta, pendienteDe } from "@/lib/cuotas";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { notificar, perfilesDeUnidad } from "@/lib/notificaciones";
 import { usd } from "@/lib/format";
@@ -27,9 +28,9 @@ export async function recordarMorosidad(orgId: string, soloUnidad?: string): Pro
 
   let q = db
     .from("invoices")
-    .select("unit_id, amount, due_date, status, units(unit_number, block)")
+    .select("unit_id, amount, paid_amount, due_date, status, units(unit_number, block)")
     .eq("organization_id", orgId)
-    .in("status", ["pending", "overdue"]);
+    .in("status", [...ESTADOS_ABIERTOS]);
   if (soloUnidad) q = q.eq("unit_id", soloUnidad);
   const { data: cuotas } = await q;
 
@@ -39,7 +40,7 @@ export async function recordarMorosidad(orgId: string, soloUnidad?: string): Pro
     const u = (Array.isArray(c.units) ? c.units[0] : c.units) as { unit_number: string; block: string | null } | null;
     const k = c.unit_id as string;
     const v = porUnidad.get(k) ?? { total: 0, n: 0, etiqueta: u ? `${u.unit_number}${u.block ? ` · ${u.block}` : ""}` : "" };
-    v.total += Number(c.amount);
+    v.total += pendienteDe(c);
     v.n += 1;
     porUnidad.set(k, v);
   }
@@ -74,9 +75,9 @@ export async function recordatoriosAutomaticos(): Promise<{ avisos: number }> {
     };
     const { data: cuotas } = await db
       .from("invoices")
-      .select("id, unit_id, amount, due_date, description")
+      .select("id, unit_id, amount, paid_amount, due_date, description")
       .eq("organization_id", org.id)
-      .in("status", ["pending", "overdue"])
+      .in("status", [...ESTADOS_ABIERTOS])
       .in("due_date", [d(3), d(-1)]);
 
     // Las que ya tienen un comprobante en revisión no se recuerdan: ya pagaron.
@@ -97,11 +98,11 @@ export async function recordatoriosAutomaticos(): Promise<{ avisos: number }> {
       const r = await notificar(org.id as string, await perfilesDeUnidad(c.unit_id as string), {
         tipo: "recordatorio_pago",
         titulo: vence
-          ? `Tu cuota vence el ${fecha}: ${usd(c.amount as number)}`
-          : `Tu cuota venció ayer: ${usd(c.amount as number)}`,
+          ? `Tu cuota vence el ${fecha}: ${usd(pendienteDe(c))}`
+          : `Tu cuota venció ayer: ${usd(pendienteDe(c))}`,
         cuerpo: `${c.description as string}. Puedes pagarla y reportar el comprobante en Atryum.`,
         enlace: "/pagos",
-        destacado: { etiqueta: c.description as string, valor: usd(c.amount as number), tono: vence ? "neutro" : "alerta" },
+        destacado: { etiqueta: c.description as string, valor: usd(pendienteDe(c)), tono: vence ? "neutro" : "alerta" },
         claveUnica: `${vence ? "vence" : "vencida"}:${c.id as string}`,
       });
       avisos += r.avisados;

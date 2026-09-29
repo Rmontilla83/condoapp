@@ -9,12 +9,12 @@ export type MaintenanceStatus =
   | "resolved"
   | "cancelled";
 
-export type PaymentStatus = "pending" | "paid" | "overdue" | "cancelled";
+export type PaymentStatus = "pending" | "partial" | "paid" | "overdue" | "cancelled";
 export type TransactionStatus = "pending" | "approved" | "rejected";
 
 // by_group: solo al emitir (grupos de prorrateo, migration 047); no es modo por defecto del condominio.
 export type FeeMode = "flat" | "divide_total" | "by_aliquot" | "by_type" | "manual" | "by_group";
-export type InvoiceKind = "monthly" | "extraordinary";
+export type InvoiceKind = "monthly" | "extraordinary" | "opening" | "interest";
 export type BankAccountKind =
   | "transfer"
   | "mobile_payment"
@@ -186,6 +186,10 @@ export interface Invoice {
   exchange_rate: number | null;
   amount_bs: number | null;
   created_at: string;
+  /** Correlativo por condominio (migration 052). null en saldos de apertura. */
+  receipt_number?: number | null;
+  /** Lo abonado con pagos aprobados; lo mantiene la base. */
+  paid_amount?: number;
 }
 
 export interface Transaction {

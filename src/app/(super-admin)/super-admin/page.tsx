@@ -1,3 +1,4 @@
+import { ESTADOS_ABIERTOS, estaAbierta, pendienteDe } from "@/lib/cuotas";
 import { redirect } from "next/navigation";
 import { getCurrentProfile } from "@/lib/queries";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -22,7 +23,7 @@ export default async function SuperAdminPage() {
     supabase.from("organizations").select("id, name, city, invite_code, is_active, created_at").order("created_at", { ascending: false }),
     supabase.from("profiles").select("id", { count: "exact", head: true }),
     supabase.from("units").select("id", { count: "exact", head: true }),
-    supabase.from("invoices").select("amount, status"),
+    supabase.from("invoices").select("amount, paid_amount, status"),
     supabase.from("admin_invitations").select("*, organizations(name)").order("created_at", { ascending: false }).limit(10),
   ]);
 
@@ -33,11 +34,10 @@ export default async function SuperAdminPage() {
   const invitations = invitationsRes.data ?? [];
 
   const totalRevenue = invoices
-    .filter((i) => i.status === "paid")
-    .reduce((s, i) => s + Number(i.amount), 0);
+    .reduce((s, i) => s + Number(i.paid_amount ?? 0), 0);
   const totalPending = invoices
-    .filter((i) => i.status === "pending" || i.status === "overdue")
-    .reduce((s, i) => s + Number(i.amount), 0);
+    .filter((i) => estaAbierta(i.status as string))
+    .reduce((s, i) => s + pendienteDe(i), 0);
 
   return (
     <div className="mx-auto max-w-7xl px-5 md:px-8 py-10 space-y-10">

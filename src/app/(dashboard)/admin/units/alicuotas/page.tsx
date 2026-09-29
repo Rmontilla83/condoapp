@@ -1,3 +1,4 @@
+import { ESTADOS_ABIERTOS, estaAbierta, pendienteDe } from "@/lib/cuotas";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { getCurrentProfile, getEffectiveRole } from "@/lib/queries";
@@ -39,7 +40,7 @@ export default async function AlicuotasPage() {
       .from("invoices")
       .select("id", { count: "exact", head: true })
       .eq("organization_id", profile.organization_id)
-      .in("status", ["pending", "overdue"]),
+      .in("status", [...ESTADOS_ABIERTOS]),
   ]);
 
   const org = orgRes.data;
