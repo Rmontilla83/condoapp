@@ -214,9 +214,10 @@ async function responderIntencion(
       for (const s of d.servicios.slice(0, 4)) {
         const wa = enlaceWhatsApp(s.whatsapp);
         lineas.push(
-          `• ${s.nombre}${cat ? "" : ` (${s.categoria})`}${s.detalle ? ` — ${s.detalle.replace(/[.\s]+$/, "")}` : ""}. ${s.telefono ?? s.whatsapp ?? ""}${wa ? ` · WhatsApp: ${wa}` : ""}`,
+          `• ${s.nombre}${cat ? "" : ` (${s.categoria})`}${s.detalle ? ` — ${s.detalle.replace(/[.\s]+$/, "")}` : ""}. ${s.telefono ?? s.whatsapp ?? ""}${wa ? " (también por WhatsApp)" : ""}`,
         );
       }
+      lineas.push("En la sección Servicios tienes el botón para escribirles por WhatsApp.");
       lineas.push(d.aviso);
       if (cat === "plomeria" || cat === "electricidad" || cat === "albanileria") {
         lineas.push("Si el daño viene de un área común (bajante, tablero o pared del pasillo), repórtalo también en Mantenimiento.");
