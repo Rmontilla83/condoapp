@@ -2,6 +2,7 @@ import { todayInTimeZone } from "@/lib/utils";
 import { consultasDelConserje, type ConserjeContexto } from "./consultas";
 import { PALABRAS_SERVICIO, NOMBRE_CATEGORIA, enlaceWhatsApp, type CategoriaServicio } from "@/lib/servicios";
 import type { Turno } from "./conserje";
+import { sugerirAveria, type PropuestaAveria } from "./averia";
 
 /**
  * Modo demo del conserje: responde SIN la API de Anthropic.
@@ -153,7 +154,7 @@ export async function responderDemo(
   ctx: ConserjeContexto,
   nombre: string,
   historial: Turno[],
-): Promise<{ texto: string }> {
+): Promise<{ texto: string; accion?: PropuestaAveria }> {
   const q = consultasDelConserje(ctx);
   const ultima = historial[historial.length - 1]?.content ?? "";
   let intenciones = detectar(ultima);
@@ -173,7 +174,10 @@ export async function responderDemo(
 
   const partes: string[] = [];
   for (const i of intenciones) partes.push(await responderIntencion(i, q, ctx, nombre, ultima, historial, hoy));
-  return { texto: partes.filter(Boolean).join("\n\n") };
+  return {
+    texto: partes.filter(Boolean).join("\n\n"),
+    accion: intenciones.includes("mantenimiento") ? sugerirAveria(ultima) : undefined,
+  };
 }
 
 async function responderIntencion(
@@ -414,7 +418,7 @@ async function responderIntencion(
 
     case "mantenimiento": {
       const m = await q.misSolicitudes();
-      const lineas = ["Para reportar un problema, entra en la sección Mantenimiento: título, descripción y fotos."];
+      const lineas = ["Lo reporto por ti a la administración: revisa el formulario de abajo, agrega una foto si puedes y toca «Enviar reporte»."];
       if (m.solicitudes.length) {
         lineas.push("Tus solicitudes:");
         for (const s of m.solicitudes.slice(0, 4)) lineas.push(`• ${s.titulo}: ${s.estado}`);

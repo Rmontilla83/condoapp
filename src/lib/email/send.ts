@@ -27,6 +27,17 @@ function getResend(): Resend | null {
   return cliente;
 }
 
+/**
+ * Dominios reservados por la RFC 2606/6761: nunca existen. Los propietarios de
+ * Costa de Plata se cargaron con correos `@costadeplata.test` hasta que la junta
+ * pase los reales; mandarles correo es un rebote seguro, y un rebote masivo
+ * castiga la reputación de atryum.net en Resend.
+ */
+export function esCorreoEntregable(correo: string): boolean {
+  const dominio = correo.split("@")[1]?.toLowerCase() ?? "";
+  return !/\.(test|example|invalid|localhost)$/.test(dominio) && !["example.com", "example.org", "example.net"].includes(dominio);
+}
+
 export function emailHabilitado(): boolean {
   return Boolean(process.env.RESEND_API_KEY);
 }
@@ -54,7 +65,8 @@ export async function enviarEmail(params: {
     ...new Set(
       params.para
         .filter((e): e is string => Boolean(e && e.includes("@")))
-        .map((e) => e.trim().toLowerCase()),
+        .map((e) => e.trim().toLowerCase())
+        .filter(esCorreoEntregable),
     ),
   ];
 
@@ -123,7 +135,7 @@ export async function enviarLote(
   mensajes: Array<{ para: string; asunto: string; html: string }>,
   evento: string,
 ): Promise<EnvioResultado> {
-  const validos = mensajes.filter((m) => m.para && m.para.includes("@"));
+  const validos = mensajes.filter((m) => m.para && m.para.includes("@") && esCorreoEntregable(m.para));
   if (validos.length === 0) return { enviados: 0, omitidos: 0 };
 
   const resend = getResend();

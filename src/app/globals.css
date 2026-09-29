@@ -434,3 +434,18 @@
     margin: 1.5cm;
   }
 }
+
+/* Atri, el conserje: parpadeo cada ~5 s. transform-box para que escale desde
+   el centro de cada ojo y no desde el origen del SVG. */
+@keyframes atri-parpadeo {
+  0%, 92%, 100% { transform: scaleY(1); }
+  95% { transform: scaleY(0.1); }
+}
+.atri-ojos {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: atri-parpadeo 5.2s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .atri-ojos { animation: none; }
+}

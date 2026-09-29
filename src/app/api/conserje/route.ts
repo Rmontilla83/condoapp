@@ -63,8 +63,8 @@ export async function POST(request: NextRequest) {
 
   try {
     const ctx = await armarContexto({ id: profile.id, organization_id: profile.organization_id });
-    const { texto, modo } = await responder(ctx, profile.full_name ?? "", cuerpo.mensajes);
-    return NextResponse.json({ respuesta: texto, modo });
+    const { texto, modo, accion } = await responder(ctx, profile.full_name ?? "", cuerpo.mensajes);
+    return NextResponse.json({ respuesta: texto, modo, accion: accion ?? null });
   } catch (e) {
     if (e instanceof Anthropic.RateLimitError) {
       return NextResponse.json(

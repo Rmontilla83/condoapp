@@ -1,6 +1,7 @@
 import { betaZodTool } from "@anthropic-ai/sdk/helpers/beta/zod";
 import { z } from "zod";
 import { consultasDelConserje, type ConserjeContexto } from "./consultas";
+import type { PropuestaAveria } from "./averia";
 
 export type { ConserjeContexto } from "./consultas";
 
@@ -8,7 +9,10 @@ export type { ConserjeContexto } from "./consultas";
  * Las consultas del conserje envueltas como herramientas para Claude. La lógica
  * y el filtro de privacidad viven en consultas.ts, compartidos con el modo demo.
  */
-export function herramientasDelConserje(ctx: ConserjeContexto) {
+export function herramientasDelConserje(
+  ctx: ConserjeContexto,
+  opciones: { alProponerAveria?: (p: PropuestaAveria) => void } = {},
+) {
   const q = consultasDelConserje(ctx);
   const sinArgs = z.object({});
   const json = (x: unknown) => JSON.stringify(x);
@@ -83,6 +87,21 @@ export function herramientasDelConserje(ctx: ConserjeContexto) {
           .describe("Categoría; omítela para ver todo el directorio"),
       }),
       run: async ({ categoria }) => json(await q.directorioDeServicios(categoria ?? null)),
+    }),
+    betaZodTool({
+      name: "proponer_reporte_de_averia",
+      description:
+        "Prepara un reporte de avería para que la persona lo revise y lo envíe. NO lo envía: ella ve un formulario ya llenado debajo de tu respuesta y confirma. Úsala cuando cuente un daño: fuga, ascensor parado, luz del pasillo, portón dañado, filtración.",
+      inputSchema: z.object({
+        titulo: z.string().min(3).max(80).describe("Título corto: 'Fuga en el baño', 'Ascensor de la Torre B parado'"),
+        descripcion: z.string().min(3).max(1000).describe("Qué pasa, con las palabras de la persona"),
+        categoria: z.enum(["plumbing", "electrical", "structural", "elevator", "security", "cleaning", "access", "hvac", "common_area", "other"]),
+        lugar: z.enum(["unidad", "area_comun"]).describe("unidad = dentro de su apartamento; area_comun = pasillo, ascensor, piscina, etc."),
+      }),
+      run: async (p) => {
+        opciones.alProponerAveria?.({ tipo: "reportar_averia", ...p });
+        return "Listo: la persona ve el formulario para confirmar el reporte.";
+      },
     }),
     betaZodTool({
       name: "mis_solicitudes_de_mantenimiento",

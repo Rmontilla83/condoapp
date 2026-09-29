@@ -13,6 +13,8 @@ import { Header } from "@/components/dashboard/header";
 import { LiveStatusBar } from "@/components/dashboard/live-status-bar";
 import { Onboarding } from "@/components/onboarding";
 import { PendingPayFab } from "@/components/dashboard/pending-pay-fab";
+import { ConserjeFlotante } from "@/components/conserje/conserje-flotante";
+import { modoDelConserje } from "@/lib/conserje/conserje";
 
 export default async function DashboardLayout({
   children,
@@ -96,6 +98,14 @@ export default async function DashboardLayout({
           bankAccounts={fabData.bankAccounts}
         />
       )}
+      <ConserjeFlotante
+        primerNombre={(profile.full_name ?? "").trim().split(/\s+/)[0] ?? ""}
+        modo={modoDelConserje()}
+        condominio={(org?.name as string) ?? "tu condominio"}
+        fabDePago={Boolean(
+          fabData?.canSeeFee && (fabData.actionable.length > 0 || fabData.inReview.length > 0),
+        )}
+      />
       <BottomNav isAdmin={isAdmin} />
     </div>
   );

@@ -37,8 +37,13 @@ export async function createMaintenanceRequest(
     const explicitUnitId = (formData.get("unit_id") as string | null)?.trim() || null;
     const commonAreaId = (formData.get("common_area_id") as string | null)?.trim() || null;
 
+    // "general": un área común que no es reservable (ascensor, pasillo, bomba).
+    // Sin esto caía en la primera unidad del vecino y el reporte del ascensor
+    // quedaba a nombre de su apartamento.
+    const general = formData.get("general") === "1";
+
     let unitId: string | null = explicitUnitId;
-    if (!unitId && !commonAreaId) {
+    if (!unitId && !commonAreaId && !general) {
       const unitIds = await getUserUnitIds(profile.id);
       unitId = unitIds[0] ?? null;
     }

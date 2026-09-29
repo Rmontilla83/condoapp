@@ -19,6 +19,7 @@ import { UpcomingReservationCard } from "@/components/dashboard/upcoming-reserva
 import { PendingDecisionCard } from "@/components/dashboard/pending-decision-card";
 import { RecentAnnouncementsLink } from "@/components/dashboard/recent-announcements-link";
 import { SmartPayButton } from "./smart-pay-button";
+import { CaraConserje, NOMBRE_CONSERJE } from "@/components/conserje/cara";
 import type { BankAccount } from "@/types/database";
 
 const statusLabels: Record<string, string> = {
@@ -218,8 +219,13 @@ export default async function DashboardPage() {
       {/* Conserje: la pregunta que el vecino le haría al conserje de carne y
           hueso, a un toque. Cada sugerencia abre el chat con la pregunta hecha. */}
       <div className="rounded-2xl bg-marine-deep text-frost p-5 md:p-6">
-        <p className="font-meta text-cyan">CONSERJE VIRTUAL</p>
-        <p className="mt-2 text-[16px] font-medium">¿Tienes una pregunta del edificio?</p>
+        <div className="flex items-center gap-3">
+          <CaraConserje tam={52} className="shrink-0" />
+          <div>
+            <p className="text-[16px] font-semibold">{NOMBRE_CONSERJE}, tu conserje</p>
+            <p className="text-[14px] text-frost/75">Pregúntale lo que necesites, o cuéntale si algo se dañó.</p>
+          </div>
+        </div>
         <div className="mt-4 flex flex-wrap gap-2">
           {[
             "¿Cuánto debo?",

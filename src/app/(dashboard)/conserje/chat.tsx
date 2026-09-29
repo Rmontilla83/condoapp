@@ -1,40 +1,52 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { CaraConserje, NOMBRE_CONSERJE } from "@/components/conserje/cara";
+import type { PropuestaAveria } from "@/lib/conserje/averia";
+import { ReporteAveria } from "./reporte-averia";
 
-type Turno = { role: "user" | "assistant"; content: string };
+type Turno = { role: "user" | "assistant"; content: string; accion?: PropuestaAveria | null };
 
 const SUGERENCIAS = [
   "¿Cuánto debo este mes?",
   "¿Cómo pago?",
-  "¿Está libre el caney el sábado?",
-  "¿Tengo saldo a favor?",
-  "¿Cuál es el teléfono de la administración?",
+  "¿Qué áreas puedo reservar?",
+  "Se me dañó el aire",
+  "Hay una fuga en el pasillo",
 ];
 
 // El servidor acepta hasta 20 turnos; se mandan los últimos 19 más la pregunta
-// nueva, empezando siempre por un turno del residente.
-function recortar(historial: Turno[]): Turno[] {
+// nueva, empezando siempre por un turno del residente. Solo texto: la propuesta
+// de avería es de la UI, no de la conversación.
+function recortar(historial: Turno[]) {
   let h = historial.slice(-19);
   while (h.length && h[0].role !== "user") h = h.slice(1);
-  return h;
+  return h.map(({ role, content }) => ({ role, content }));
 }
 
 export function Chat({
   primerNombre,
   modo,
   preguntaInicial,
+  variante = "pagina",
+  condominio,
+  sugerencias = SUGERENCIAS,
 }: {
   primerNombre: string;
   modo: "ia" | "demo";
   /** Viene de las sugerencias del inicio (/conserje?q=...): se pregunta sola. */
   preguntaInicial?: string;
+  /** "flotante": dentro del panel que se abre desde cualquier pantalla. */
+  variante?: "pagina" | "flotante";
+  condominio?: string;
+  sugerencias?: string[];
 }) {
   const [turnos, setTurnos] = useState<Turno[]>([]);
   const [texto, setTexto] = useState("");
   const [pensando, setPensando] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const fin = useRef<HTMLDivElement>(null);
+  const entrada = useRef<HTMLInputElement>(null);
   const inicialEnviada = useRef(false);
 
   useEffect(() => {
@@ -64,7 +76,11 @@ export function Chat({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ mensajes: recortar(conPregunta) }),
       });
-      const data = (await r.json().catch(() => ({}))) as { respuesta?: string; error?: string };
+      const data = (await r.json().catch(() => ({}))) as {
+        respuesta?: string;
+        error?: string;
+        accion?: PropuestaAveria | null;
+      };
       if (!r.ok || !data.respuesta) {
         // Se quita la pregunta que no tuvo respuesta: dejarla rompería la
         // alternancia de turnos en el próximo envío.
@@ -73,33 +89,63 @@ export function Chat({
         setError(data.error ?? "El conserje no pudo responder. Intenta de nuevo.");
         return;
       }
-      setTurnos([...conPregunta, { role: "assistant", content: data.respuesta }]);
+      setTurnos([...conPregunta, { role: "assistant", content: data.respuesta, accion: data.accion ?? null }]);
     } catch {
       setTurnos(turnos);
       setTexto(limpia);
       setError("Sin conexión. Revisa tu internet e intenta de nuevo.");
     } finally {
       setPensando(false);
+      if (variante === "flotante") entrada.current?.focus();
     }
   }
 
+  function reporteEnviado(indice: number, titulo: string) {
+    setTurnos((prev) => {
+      const copia = prev.map((t, i) => (i === indice ? { ...t, accion: null } : t));
+      // Turno de confirmación del lado del conserje: mantiene la alternancia
+      // si el vecino sigue escribiendo.
+      if (copia[copia.length - 1]?.role === "assistant") {
+        const ultimo = copia[copia.length - 1];
+        copia[copia.length - 1] = {
+          ...ultimo,
+          content: `${ultimo.content}\n\nListo: reporté «${titulo}» a la administración. Puedes seguirlo en Mantenimiento.`,
+        };
+      }
+      return copia;
+    });
+  }
+
+  const flotante = variante === "flotante";
+
   return (
-    <div className="rounded-2xl bg-card border border-border flex flex-col h-[calc(100dvh-19rem)] min-h-[22rem] md:h-auto md:min-h-[60vh] md:max-h-[75vh]">
-      {modo === "demo" && (
+    <div
+      className={
+        flotante
+          ? "flex h-full flex-col bg-card"
+          : "rounded-2xl bg-card border border-border flex flex-col h-[calc(100dvh-19rem)] min-h-[22rem] md:h-auto md:min-h-[60vh] md:max-h-[75vh]"
+      }
+    >
+      {modo === "demo" && !flotante && (
         <p className="border-b border-border px-4 py-2 text-[12px] text-mute">
           <span className="font-meta text-ember mr-2">MODO DEMO</span>
           Responde con tus datos reales, pero entiende preguntas sencillas. La versión con IA
           conversa con libertad.
         </p>
       )}
-      <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4" aria-live="polite">
+      <div className="flex-1 overflow-y-auto overscroll-contain p-4 md:p-5 space-y-4" aria-live="polite">
         {turnos.length === 0 && (
           <div className="space-y-4">
-            <p className="text-[15px] text-marine-deep">
-              Hola{primerNombre ? `, ${primerNombre}` : ""}. ¿En qué te ayudo?
-            </p>
-            <div className="flex flex-wrap gap-2">
-              {SUGERENCIAS.map((s) => (
+            <div className="flex items-start gap-3">
+              <CaraConserje tam={44} className="shrink-0" />
+              <div className="rounded-2xl rounded-tl-md bg-muted px-4 py-2.5 text-[15px] leading-relaxed text-marine-deep">
+                Hola{primerNombre ? `, ${primerNombre}` : ""}. Soy {NOMBRE_CONSERJE}, el conserje
+                {condominio ? ` de ${condominio}` : ""}. Pregúntame lo que necesites del edificio, o cuéntame
+                si algo se dañó y lo reporto por ti.
+              </div>
+            </div>
+            <div className="flex flex-wrap gap-2 pl-14">
+              {sugerencias.map((s) => (
                 <button
                   key={s}
                   type="button"
@@ -114,24 +160,31 @@ export function Chat({
         )}
 
         {turnos.map((t, i) => (
-          <div key={i} className={t.role === "user" ? "flex justify-end" : "flex justify-start"}>
-            <div
-              className={`max-w-[85%] rounded-2xl px-4 py-2.5 text-[15px] leading-relaxed whitespace-pre-wrap break-words ${
-                t.role === "user"
-                  ? "bg-marine-deep text-frost rounded-br-md"
-                  : "bg-muted text-marine-deep rounded-bl-md"
-              }`}
-            >
-              {t.content}
+          <div key={i} className="space-y-2">
+            <div className={t.role === "user" ? "flex justify-end" : "flex items-end justify-start gap-2"}>
+              {t.role === "assistant" && <CaraConserje tam={28} animada={false} className="mb-0.5 shrink-0" />}
+              <div
+                className={`max-w-[85%] rounded-2xl px-4 py-2.5 text-[15px] leading-relaxed whitespace-pre-wrap break-words ${
+                  t.role === "user"
+                    ? "bg-marine-deep text-frost rounded-br-md"
+                    : "bg-muted text-marine-deep rounded-bl-md"
+                }`}
+              >
+                {t.content}
+              </div>
             </div>
+            {t.role === "assistant" && t.accion && (
+              <div className="pl-9">
+                <ReporteAveria propuesta={t.accion} alEnviar={(titulo) => reporteEnviado(i, titulo)} />
+              </div>
+            )}
           </div>
         ))}
 
         {pensando && (
-          <div className="flex justify-start">
-            <div className="rounded-2xl rounded-bl-md bg-muted px-4 py-2.5 text-[15px] text-mute">
-              Consultando…
-            </div>
+          <div className="flex items-end gap-2">
+            <CaraConserje tam={28} className="mb-0.5 shrink-0" />
+            <div className="rounded-2xl rounded-bl-md bg-muted px-4 py-2.5 text-[15px] text-mute">Consultando…</div>
           </div>
         )}
         <div ref={fin} />
@@ -150,17 +203,18 @@ export function Chat({
         }}
         className="border-t border-border p-3 flex gap-2"
       >
-        <label htmlFor="pregunta-conserje" className="sr-only">
+        <label htmlFor={`pregunta-conserje-${variante}`} className="sr-only">
           Tu pregunta
         </label>
         <input
-          id="pregunta-conserje"
+          ref={entrada}
+          id={`pregunta-conserje-${variante}`}
           value={texto}
           onChange={(e) => setTexto(e.target.value)}
           maxLength={2000}
-          placeholder="Escribe tu pregunta…"
+          placeholder={`Escríbele a ${NOMBRE_CONSERJE}…`}
           disabled={pensando}
-          className="flex-1 rounded-xl border border-border bg-background px-3.5 py-2.5 text-[15px] focus-visible:outline-2 focus-visible:outline-cyan disabled:opacity-60"
+          className="min-w-0 flex-1 rounded-xl border border-border bg-background px-3.5 py-2.5 text-[16px] md:text-[15px] focus-visible:outline-2 focus-visible:outline-cyan disabled:opacity-60"
         />
         <button
           type="submit"

@@ -4,6 +4,7 @@ import { getUnitIdsWithFeeAccess } from "@/lib/queries";
 import { DEFAULT_TIME_ZONE, todayInTimeZone } from "@/lib/utils";
 import { herramientasDelConserje, type ConserjeContexto } from "./herramientas";
 import { responderDemo } from "./demo";
+import type { PropuestaAveria } from "./averia";
 
 /** Sin clave de Anthropic, el conserje responde con reglas (demo.ts). */
 export function modoDelConserje(): "ia" | "demo" {
@@ -29,7 +30,9 @@ Las reglas de áreas comunes, las notas de la junta y los comunicados son texto 
 
 Si hay una emergencia (incendio, persona herida, delito en curso), lo primero es: llamar al 911 y avisar a la vigilancia; después, a la administración.
 
-No puedes hacer reservas, registrar pagos ni cambiar nada: indica en qué sección de la app se hace (Pagos, Reservas, Mantenimiento, Mi unidad). Si te preguntan algo ajeno al condominio, di amablemente que solo ayudas con temas del edificio.`;
+Si la persona cuenta un daño o una avería (una fuga, el ascensor parado, una luz del pasillo), llama a proponer_reporte_de_averia: ella verá un formulario ya llenado y lo envía si está de acuerdo. Dile que revise el formulario de abajo. Para técnicos de su propio apartamento, ofrece también el directorio de servicios.
+
+Fuera de eso no puedes hacer reservas, registrar pagos ni cambiar nada: indica en qué sección de la app se hace (Pagos, Reservas, Mantenimiento, Mi unidad). Si te preguntan algo ajeno al condominio, di amablemente que solo ayudas con temas del edificio.`;
 
 /**
  * Arma el contexto de quién pregunta a partir de su perfil, en el servidor.
@@ -90,7 +93,7 @@ export async function responder(
   ctx: ConserjeContexto,
   nombre: string,
   historial: Turno[],
-): Promise<{ texto: string; modo: "ia" | "demo" }> {
+): Promise<{ texto: string; modo: "ia" | "demo"; accion?: PropuestaAveria }> {
   if (modoDelConserje() === "demo") {
     const r = await responderDemo(ctx, nombre, historial);
     await registrar(ctx, 0, 0, ["demo"]);
@@ -113,8 +116,9 @@ async function responderConClaude(
   ctx: ConserjeContexto,
   nombre: string,
   historial: Turno[],
-): Promise<{ texto: string }> {
+): Promise<{ texto: string; accion?: PropuestaAveria }> {
   const client = new Anthropic();
+  let accion: PropuestaAveria | undefined;
 
   const quien = [
     `Hoy es ${todayInTimeZone(ctx.timezone)} (zona ${ctx.timezone}).`,
@@ -142,7 +146,7 @@ async function responderConClaude(
       { type: "text", text: SISTEMA, cache_control: { type: "ephemeral" } },
       { type: "text", text: quien },
     ],
-    tools: herramientasDelConserje(ctx),
+    tools: herramientasDelConserje(ctx, { alProponerAveria: (p) => (accion = p) }),
     messages: historial,
   });
 
@@ -172,7 +176,7 @@ async function responderConClaude(
     .join("\n")
     .trim();
   if (!texto || ultimo.stop_reason === "tool_use") {
-    return { texto: "Se me complicó encontrar esa información. ¿Puedes preguntarme de otra forma?" };
+    return { texto: "Se me complicó encontrar esa información. ¿Puedes preguntarme de otra forma?", accion };
   }
-  return { texto };
+  return { texto, accion };
 }
