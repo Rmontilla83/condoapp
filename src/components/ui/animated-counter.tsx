@@ -11,6 +11,13 @@ interface AnimatedCounterProps {
   className?: string;
   // Si el valor es una etiqueta no numérica, la mostramos tal cual sin animar.
   fallback?: string;
+  /**
+   * false = muestra el valor real desde el primer render. Para las pantallas de
+   * trabajo (inicio, panel admin): contar desde 0 hacía que durante un segundo
+   * el saldo dijera "$9,76" en vez de "$402,03", y una captura o una mirada
+   * rápida se quedaba con el número falso. La animación queda para la landing.
+   */
+  animate?: boolean;
 }
 
 /**
@@ -25,13 +32,18 @@ export function AnimatedCounter({
   suffix = "",
   className,
   fallback,
+  animate = true,
 }: AnimatedCounterProps) {
-  const [current, setCurrent] = useState(0);
+  const [current, setCurrent] = useState(animate ? 0 : value);
   const nodeRef = useRef<HTMLSpanElement>(null);
   const started = useRef(false);
 
   useEffect(() => {
     const node = nodeRef.current;
+    if (!animate) {
+      setCurrent(value);
+      return;
+    }
     if (!node || started.current) return;
 
     if (
@@ -51,7 +63,9 @@ export function AnimatedCounter({
         const start = performance.now();
         let raf = 0;
         const tick = (now: number) => {
-          const p = Math.min((now - start) / duration, 1);
+          // El primer frame de rAF puede traer un timestamp ANTERIOR a `start`:
+          // p negativo daba un easing negativo y el contador mostraba "-1".
+          const p = Math.min(Math.max((now - start) / duration, 0), 1);
           const eased = 1 - Math.pow(1 - p, 4);
           setCurrent(value * eased);
           if (p < 1) raf = requestAnimationFrame(tick);
@@ -64,7 +78,7 @@ export function AnimatedCounter({
     );
     io.observe(node);
     return () => io.disconnect();
-  }, [value, duration]);
+  }, [value, duration, animate]);
 
   if (fallback !== undefined) {
     return <span className={className}>{fallback}</span>;

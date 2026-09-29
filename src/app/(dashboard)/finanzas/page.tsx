@@ -1,3 +1,4 @@
+import { usd } from "@/lib/format";
 import {
   getCurrentProfile,
   getEffectiveRole,
@@ -147,13 +148,13 @@ export default async function FinanzasPage() {
         <div className="rounded-2xl bg-card border border-border p-5">
           <p className="font-meta text-mute">RECAUDADO</p>
           <p className="mt-3 font-display text-[28px] leading-none tracking-[-0.02em] text-cyan">
-            ${totalIncome.toFixed(2)}
+            {usd(totalIncome)}
           </p>
         </div>
         <div className="rounded-2xl bg-card border border-border p-5">
           <p className="font-meta text-mute">GASTOS</p>
           <p className="mt-3 font-display text-[28px] leading-none tracking-[-0.02em] text-marine-deep">
-            ${totalExpenses.toFixed(2)}
+            {usd(totalExpenses)}
           </p>
         </div>
         <div className="rounded-2xl bg-card border border-border p-5">
@@ -163,13 +164,13 @@ export default async function FinanzasPage() {
               balance >= 0 ? "text-marine-deep" : "text-destructive"
             }`}
           >
-            ${balance.toFixed(2)}
+            {usd(balance)}
           </p>
         </div>
         <div className="rounded-2xl bg-card border border-border p-5">
           <p className="font-meta text-mute">POR COBRAR</p>
           <p className="mt-3 font-display text-[28px] leading-none tracking-[-0.02em] text-ember">
-            ${totalPending.toFixed(2)}
+            {usd(totalPending)}
           </p>
         </div>
       </div>
@@ -205,7 +206,7 @@ export default async function FinanzasPage() {
                       {label}
                     </span>
                     <div>
-                      <span className="text-[14px] font-medium text-marine-deep">${amount.toFixed(2)}</span>
+                      <span className="text-[14px] font-medium text-marine-deep">{usd(amount)}</span>
                       <span className="font-meta text-mute ml-3">{pct.toFixed(0)}%</span>
                     </div>
                   </div>
@@ -290,7 +291,7 @@ export default async function FinanzasPage() {
                       </a>
                     )}
                     <span className={`text-[14px] font-medium text-marine-deep ${voided ? "line-through" : ""}`}>
-                      −${Number(expense.amount).toFixed(2)}
+                      −{usd(Number(expense.amount))}
                     </span>
                     {isAdmin && !voided && (
                       <VoidExpenseDialog

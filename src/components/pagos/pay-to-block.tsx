@@ -1,5 +1,6 @@
 "use client";
 
+import { usd, bs } from "@/lib/format";
 import { useState } from "react";
 import { BankAccountCard } from "./bank-account-card";
 import type { BankAccount } from "@/types/database";
@@ -85,18 +86,18 @@ export function PayToBlock({
             type="button"
             onClick={() => copiarMonto("usd", totalUsd.toFixed(2))}
             className="min-h-11 rounded-md border border-border px-2.5 py-1 font-mono text-[13px] text-marine-deep tabular-nums hover:bg-cloud/60 transition"
-            aria-label={`Copiar monto en ${currency}: ${totalUsd.toFixed(2)}`}
+            aria-label={`Copiar monto en ${currency}: ${usd(totalUsd)}`}
           >
-            {copiado === "usd" ? "✓ Copiado" : `$${totalUsd.toFixed(2)}`}
+            {copiado === "usd" ? "✓ Copiado" : `${usd(totalUsd)}`}
           </button>
           {totalBs > 0 && (
             <button
               type="button"
               onClick={() => copiarMonto("bs", totalBs.toFixed(2))}
               className="min-h-11 rounded-md border border-border px-2.5 py-1 font-mono text-[13px] text-marine-deep tabular-nums hover:bg-cloud/60 transition"
-              aria-label={`Copiar monto en bolívares: ${totalBs.toFixed(2)}`}
+              aria-label={`Copiar monto en bolívares: ${bs(totalBs)}`}
             >
-              {copiado === "bs" ? "✓ Copiado" : `Bs ${totalBs.toFixed(2)}`}
+              {copiado === "bs" ? "✓ Copiado" : bs(totalBs)}
             </button>
           )}
         </div>

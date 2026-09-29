@@ -1,8 +1,10 @@
+import { usd } from "@/lib/format";
 import { redirect } from "next/navigation";
 import { getCurrentProfile } from "@/lib/queries";
 import { isAdminRole } from "@/lib/permissions";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { SaldoForm } from "./saldo-form";
+import { compararUnidades } from "@/lib/units/orden";
 
 const TIPO: Record<string, string> = {
   deposit: "Saldo registrado",
@@ -66,7 +68,14 @@ export default async function SaldosPage() {
         <div className="rounded-2xl bg-card border border-border p-6">
           <p className="font-meta text-mute mb-4">REGISTRAR</p>
           <SaldoForm
-            unidades={(unidades ?? []).map((u) => ({
+            unidades={[...(unidades ?? [])]
+              .sort((a, b) =>
+                compararUnidades(
+                  { unit_number: a.unit_number as string, block: a.block as string | null },
+                  { unit_number: b.unit_number as string, block: b.block as string | null },
+                ),
+              )
+              .map((u) => ({
               id: u.id as string,
               etiqueta: etiqueta.get(u.id as string)!,
             }))}
@@ -76,7 +85,7 @@ export default async function SaldosPage() {
         <div className="rounded-2xl bg-card border border-border p-6">
           <div className="flex items-baseline justify-between mb-4">
             <p className="font-meta text-mute">DISPONIBLE POR UNIDAD</p>
-            <p className="font-display text-[20px] text-marine-deep tabular-nums">${total.toFixed(2)}</p>
+            <p className="font-display text-[20px] text-marine-deep tabular-nums">{usd(total)}</p>
           </div>
           {conSaldo.length === 0 ? (
             <p className="text-[14px] text-mute">
@@ -88,7 +97,7 @@ export default async function SaldosPage() {
               {conSaldo.map(([id, s]) => (
                 <li key={id} className="flex justify-between py-2 text-[14px]">
                   <span className="text-marine-deep">{etiqueta.get(id)}</span>
-                  <span className="tabular-nums text-cyan-ink font-medium">${s.toFixed(2)}</span>
+                  <span className="tabular-nums text-cyan-ink font-medium">{usd(s)}</span>
                 </li>
               ))}
             </ul>
@@ -126,7 +135,7 @@ export default async function SaldosPage() {
                         Number(m.amount) > 0 ? "text-cyan-ink" : "text-marine-deep"
                       }`}
                     >
-                      {Number(m.amount) > 0 ? "+" : "−"}${Math.abs(Number(m.amount)).toFixed(2)}
+                      {Number(m.amount) > 0 ? "+" : "−"}{usd(Math.abs(Number(m.amount)))}
                     </td>
                   </tr>
                 ))}

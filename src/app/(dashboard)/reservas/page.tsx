@@ -35,6 +35,20 @@ function AreaIcon({ name, className }: { name: string; className?: string }) {
       </svg>
     );
   }
+  if (normalized.includes("playa") || normalized.includes("muelle") || normalized.includes("marina")) {
+    return (
+      <svg className={common} fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v1.5M5.636 5.636l1.06 1.06M3 12h1.5m14.304-5.304l1.06-1.06M19.5 12H21M8.25 12a3.75 3.75 0 017.5 0M2.25 16.5c1.5 0 1.5-1 3-1s1.5 1 3 1 1.5-1 3-1 1.5 1 3 1 1.5-1 3-1 1.5 1 3 1M2.25 20.25c1.5 0 1.5-1 3-1s1.5 1 3 1 1.5-1 3-1 1.5 1 3 1 1.5-1 3-1 1.5 1 3 1" />
+      </svg>
+    );
+  }
+  if (normalized.includes("caney") || normalized.includes("kiosko") || normalized.includes("quiosco") || normalized.includes("churuata")) {
+    return (
+      <svg className={common} fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 11.25L12 3.75l9.75 7.5M4.5 10.5v.75M19.5 10.5v.75M6 11.25V21m12-9.75V21M3 21h18M9 16.5h6" />
+      </svg>
+    );
+  }
   // Default — salón / coworking / cancha
   return (
     <svg className={common} fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
@@ -81,6 +95,16 @@ export default async function ReservasPage() {
   const primerDiaReservable = manana.toISOString().slice(0, 10);
 
   const areas = areasRes.data ?? [];
+  // Los próximos 7 días en la hora del condominio, para la tira de disponibilidad.
+  const semana = Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(`${hoy}T12:00:00Z`);
+    d.setUTCDate(d.getUTCDate() + i);
+    return {
+      iso: d.toISOString().slice(0, 10),
+      corto: d.toLocaleDateString("es-VE", { weekday: "short", timeZone: "UTC" }).replace(".", "").toUpperCase(),
+      numero: d.getUTCDate(),
+    };
+  });
   const reservations = reservationsRes.data ?? [];
 
   const myReservations = reservations.filter((r) => r.reserved_by === profile.id);
@@ -125,17 +149,52 @@ export default async function ReservasPage() {
         </div>
       ) : (
       <div>
-        <p className="font-meta text-mute mb-3">ESPACIOS DISPONIBLES</p>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <p className="font-meta text-mute mb-3">DISPONIBILIDAD · PRÓXIMOS 7 DÍAS</p>
+        {/* Antes eran tarjetas con nombre y capacidad: para saber si el caney
+            estaba libre el sábado había que abrir el formulario y probar. */}
+        <div className="space-y-3">
           {areas.map((area) => (
-            <div key={area.id} className="rounded-2xl bg-card border border-border p-5">
-              <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-marine-deep text-frost mb-4">
-                <AreaIcon name={area.name} />
-              </span>
-              <p className="text-[14px] font-medium text-marine-deep">{area.name}</p>
-              {area.capacity && (
-                <p className="mt-1 font-meta text-mute">CAP. {area.capacity} PERSONAS</p>
-              )}
+            <div key={area.id} className="rounded-2xl bg-card border border-border p-4 md:p-5">
+              <div className="flex items-start gap-3">
+                <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-marine-deep text-frost shrink-0">
+                  <AreaIcon name={area.name} />
+                </span>
+                <div className="min-w-0 flex-1">
+                  <p className="text-[15px] font-medium text-marine-deep">{area.name}</p>
+                  <p className="font-meta text-mute">
+                    {[
+                      area.capacity ? `HASTA ${area.capacity} PERSONAS` : null,
+                      area.max_duration_hours ? `MÁX. ${area.max_duration_hours} H` : null,
+                      area.min_advance_hours ? `${area.min_advance_hours} H DE ANTICIPACIÓN` : null,
+                    ]
+                      .filter(Boolean)
+                      .join(" · ")}
+                  </p>
+                  {area.rules && <p className="mt-1 text-[13px] text-mute line-clamp-2">{area.rules}</p>}
+                </div>
+              </div>
+              <ul className="mt-3 grid grid-cols-7 gap-1" aria-label={`Ocupación de ${area.name} en los próximos 7 días`}>
+                {semana.map((dia) => {
+                  const ocupadas = reservations.filter(
+                    (r) =>
+                      r.common_area_id === area.id &&
+                      new Intl.DateTimeFormat("en-CA", { timeZone: zona }).format(new Date(r.start_time)) === dia.iso,
+                  ).length;
+                  return (
+                    <li
+                      key={dia.iso}
+                      className={`rounded-lg px-1 py-1.5 text-center ${
+                        ocupadas ? "bg-ember/10 text-ember-ink" : "bg-cyan/10 text-cyan-ink"
+                      }`}
+                      title={ocupadas ? `${ocupadas} reserva${ocupadas !== 1 ? "s" : ""}` : "Libre"}
+                    >
+                      <span className="block font-meta">{dia.corto}</span>
+                      <span className="block text-[14px] font-semibold tabular-nums">{dia.numero}</span>
+                      <span className="block text-[10px] leading-tight">{ocupadas ? `${ocupadas} res.` : "libre"}</span>
+                    </li>
+                  );
+                })}
+              </ul>
             </div>
           ))}
         </div>

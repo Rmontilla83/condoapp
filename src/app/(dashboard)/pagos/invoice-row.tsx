@@ -1,5 +1,6 @@
 "use client";
 
+import { usd, bs, tasa } from "@/lib/format";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { isInvoiceOverdue } from "@/lib/utils";
@@ -115,13 +116,13 @@ export function InvoiceRow({ invoice, rate = 0, selected, onToggle, onPayClick, 
       </div>
       <div className="flex items-center gap-3 shrink-0">
         <div className="text-right">
-          <p className="text-sm font-bold">${Number(invoice.amount).toFixed(2)}</p>
+          <p className="text-sm font-bold">{usd(Number(invoice.amount))}</p>
           {/* En una cuota YA PAGADA no se muestra la conversión a la tasa de
               hoy: al lado va el monto en bolívares congelado del pago, y dos
               cifras distintas en la misma tarjeta solo generan dudas. */}
           {rate > 0 && !isPaid && (
             <p className="text-[11px] text-muted-foreground">
-              Bs {(Number(invoice.amount) * rate).toFixed(2)}
+              {bs((Number(invoice.amount) * rate))}
             </p>
           )}
         </div>
@@ -153,8 +154,8 @@ export function InvoiceRow({ invoice, rate = 0, selected, onToggle, onPayClick, 
           )}
           {payment.amount_bs != null && payment.amount_bs > 0 && (
             <span className="font-mono text-[12px] text-mute tabular-nums">
-              ≈ Bs {payment.amount_bs.toFixed(2)}
-              {payment.exchange_rate ? ` (tasa ${payment.exchange_rate.toFixed(2)})` : ""}
+              ≈ {bs(payment.amount_bs)}
+              {payment.exchange_rate ? ` (tasa ${tasa(payment.exchange_rate)})` : ""}
             </span>
           )}
           {payment.receipt_url && (

@@ -760,7 +760,9 @@ export async function getDashboardContext(
       .from("announcements")
       .select("*")
       .eq("organization_id", orgId)
-      .eq("priority", "urgent")
+      // "Importante" también: un corte de agua anunciado como importante
+      // quedaba escondido detrás de un enlace gris de "3 comunicados".
+      .in("priority", ["urgent", "important"])
       .gte("published_at", sevenDaysAgo)
       .order("published_at", { ascending: false }),
     supabase

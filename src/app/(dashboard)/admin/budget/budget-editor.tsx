@@ -1,5 +1,6 @@
 "use client";
 
+import { usd } from "@/lib/format";
 import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -140,7 +141,7 @@ export function BudgetEditor({ year, budget, items, categories, executedByCatego
         </div>
         <div className="text-right">
           <p className="font-meta text-mute">TOTAL ANUAL</p>
-          <p className="font-display text-[28px] text-marine-deep">${totalYearly.toFixed(2)}</p>
+          <p className="font-display text-[28px] text-marine-deep">{usd(totalYearly)}</p>
         </div>
       </div>
 

@@ -1,3 +1,8 @@
+import { usd, bs, tasa as fmtTasa } from "@/lib/format";
+import { redirect } from "next/navigation";
+import { createClient } from "@/lib/supabase/server";
+import { saldosPorUnidad } from "@/lib/saldos";
+import { isAdminRole } from "@/lib/permissions";
 import {
   getCurrentProfile,
   getDashboardContext,
@@ -36,6 +41,10 @@ export default async function DashboardPage() {
   const profile = await getCurrentProfile();
   if (!profile?.organization_id) return null;
 
+  // El administrador aterrizaba en la vista de residente, mirando su propia
+  // deuda. Su trabajo empieza en el panel; su estado de cuenta sigue en /pagos.
+  if (isAdminRole(profile)) redirect("/admin");
+
   const ctx = await getDashboardContext(profile);
   if (!ctx) return null;
 
@@ -66,6 +75,12 @@ export default async function DashboardPage() {
     getLatestRejectionsByInvoice(actionableInvoices.map((i) => i.id)),
   ]);
   const inReviewTotal = inReviewInvoices.reduce((s, i) => s + Number(i.amount), 0);
+  // Solo las unidades cuyas cuotas puede ver (mismo criterio que /pagos).
+  const unidadesConCuotas = ctx.memberships
+    .filter((m) => m.role === "owner" || m.permissions?.can_see_fee !== false)
+    .map((m) => m.unit_id);
+  const saldos = await saldosPorUnidad(await createClient(), unidadesConCuotas);
+  const saldoAFavor = [...saldos.values()].reduce((s, v) => s + Math.max(v, 0), 0);
 
   return (
     <div className="space-y-8 md:space-y-10">
@@ -85,7 +100,7 @@ export default async function DashboardPage() {
                   actionableTotal > 0 ? "text-marine-deep" : "text-cyan-ink"
                 }`}
               >
-                <AnimatedCounter
+                <AnimatedCounter animate={false}
                   value={actionableTotal}
                   decimals={2}
                   prefix="$"
@@ -94,11 +109,16 @@ export default async function DashboardPage() {
               </p>
               {inReviewTotal > 0 && (
                 <p className="mt-2 font-meta text-amber-700">
-                  ${inReviewTotal.toFixed(2)} EN REVISIÓN
+                  {usd(inReviewTotal)} EN REVISIÓN
                 </p>
               )}
               {actionableTotal === 0 && inReviewTotal === 0 && (
                 <p className="mt-3 font-meta text-cyan-ink">AL DÍA · GRACIAS</p>
+              )}
+              {saldoAFavor > 0 && (
+                <p className="mt-3 inline-block rounded-lg bg-cyan/10 px-2.5 py-1 text-[13px] text-cyan-ink">
+                  {usd(saldoAFavor)} de saldo a favor · se descuenta de tus próximas cuotas
+                </p>
               )}
 
               {/* De qué es y para cuándo. Sin esto el número grande no termina
@@ -132,8 +152,8 @@ export default async function DashboardPage() {
                   más adentro, porque lo teclea en la app del banco. */}
               {totalBs > 0 && (
                 <p className="mt-2 font-mono text-[13px] text-mute tabular-nums">
-                  Bs {totalBs.toFixed(2)}
-                  <span className="font-sans"> · tasa {tasa.toFixed(2)}</span>
+                  {bs(totalBs)}
+                  <span className="font-sans"> · tasa {fmtTasa(tasa)}</span>
                 </p>
               )}
             </div>
@@ -184,7 +204,7 @@ export default async function DashboardPage() {
             <p className="mt-2 text-[15px] text-marine-deep">
               En {gastoDelMes.monthLabel} el condominio lleva gastados{" "}
               <span className="font-mono tabular-nums">
-                ${gastoDelMes.total.toFixed(2)}
+                {usd(gastoDelMes.total)}
               </span>{" "}
               en {gastoDelMes.count} concepto{gastoDelMes.count !== 1 ? "s" : ""}.
             </p>
@@ -194,6 +214,35 @@ export default async function DashboardPage() {
           </span>
         </Link>
       )}
+
+      {/* Conserje: la pregunta que el vecino le haría al conserje de carne y
+          hueso, a un toque. Cada sugerencia abre el chat con la pregunta hecha. */}
+      <div className="rounded-2xl bg-marine-deep text-frost p-5 md:p-6">
+        <p className="font-meta text-cyan">CONSERJE VIRTUAL</p>
+        <p className="mt-2 text-[16px] font-medium">¿Tienes una pregunta del edificio?</p>
+        <div className="mt-4 flex flex-wrap gap-2">
+          {[
+            "¿Cuánto debo?",
+            "¿Cómo pago?",
+            "¿Está libre el caney el sábado?",
+            "¿Hay algún aviso?",
+          ].map((q) => (
+            <Link
+              key={q}
+              href={`/conserje?q=${encodeURIComponent(q)}`}
+              className="rounded-full border border-frost/20 px-3.5 py-1.5 text-[13px] text-frost/90 transition-colors hover:border-cyan hover:text-cyan focus-visible:outline-2 focus-visible:outline-cyan"
+            >
+              {q}
+            </Link>
+          ))}
+          <Link
+            href="/conserje"
+            className="rounded-full bg-cyan px-3.5 py-1.5 text-[13px] font-medium text-marine-deep transition-colors hover:bg-frost"
+          >
+            Escribir otra →
+          </Link>
+        </div>
+      </div>
 
       {/* Decisión pendiente (si aplica) */}
       <PendingDecisionCard decisions={ctx.openDecisionsNotVoted} />

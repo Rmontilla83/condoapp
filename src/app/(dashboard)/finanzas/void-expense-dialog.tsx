@@ -1,5 +1,6 @@
 "use client";
 
+import { usd } from "@/lib/format";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -64,7 +65,7 @@ export function VoidExpenseDialog({ expenseId, expenseDescription, expenseAmount
         <DialogHeader>
           <DialogTitle>Anular gasto</DialogTitle>
           <DialogDescription>
-            Vas a anular: <strong>{expenseDescription}</strong> por ${expenseAmount.toFixed(2)}.
+            Vas a anular: <strong>{expenseDescription}</strong> por {usd(expenseAmount)}.
             La razón queda en el histórico — el gasto NO se borra, solo se marca como anulado.
           </DialogDescription>
         </DialogHeader>

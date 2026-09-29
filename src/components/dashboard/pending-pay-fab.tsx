@@ -1,5 +1,6 @@
 "use client";
 
+import { usd } from "@/lib/format";
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -27,6 +28,10 @@ export function PendingPayFab({
   // Oculto en /pagos (la pantalla ya muestra todos los pagos) y si tenant sin permission
   if (!canSeeFee) return null;
   if (pathname?.startsWith("/pagos")) return null;
+  // Ni en el inicio, que ya tiene su botón "Pagar", ni en el conserje: en el
+  // celular el FAB quedaba justo encima del campo de escribir y no se podía
+  // preguntar nada.
+  if (pathname === "/dashboard" || pathname?.startsWith("/conserje")) return null;
 
   // Sin nada accionable y nada en revisión → no FAB
   if (actionable.length === 0 && inReview.length === 0) return null;
@@ -40,7 +45,7 @@ export function PendingPayFab({
         <div className="rounded-full bg-amber-100 border border-amber-300 px-5 py-3 shadow-lg flex items-center justify-between gap-2">
           <span className="font-meta text-amber-800">EN REVISIÓN</span>
           <span className="font-display text-[15px] text-amber-900">
-            ${total.toFixed(2)} {currency}
+            {usd(total)} {currency}
           </span>
         </div>
       </div>
@@ -57,7 +62,7 @@ export function PendingPayFab({
     <div className="rounded-full bg-marine-deep text-frost px-5 py-3 shadow-[0_18px_40px_-12px_rgb(15,46,90,0.55)] flex items-center justify-between gap-3">
       <span className="font-meta text-ember">PAGAR</span>
       <span className="font-display text-[15px] tabular-nums">
-        {mixedCurrency ? "MÚLTIPLE" : `$${total.toFixed(2)} ${currency}`}
+        {mixedCurrency ? "MÚLTIPLE" : `${usd(total)} ${currency}`}
       </span>
     </div>
   );

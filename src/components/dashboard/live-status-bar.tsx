@@ -1,5 +1,6 @@
 "use client";
 
+import { bs } from "@/lib/format";
 import { useEffect, useState } from "react";
 
 interface LiveStatusBarProps {
@@ -20,7 +21,7 @@ function getVenezuelaTime(): string {
 
 function formatBsRate(rate: number | null): string {
   if (!rate || rate <= 0) return "—";
-  return `Bs ${rate.toFixed(2)}`;
+  return bs(rate);
 }
 
 export function LiveStatusBar({ initialRate, initialDate }: LiveStatusBarProps) {

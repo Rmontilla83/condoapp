@@ -190,7 +190,7 @@ function KpiCard({
       <p
         className={`mt-3 font-display text-[28px] leading-none tracking-[-0.02em] tabular-nums ${toneClass}`}
       >
-        <AnimatedCounter value={value} duration={1400} prefix={prefix ?? ""} />
+        <AnimatedCounter animate={false} value={value} duration={1400} prefix={prefix ?? ""} />
       </p>
     </div>
   );

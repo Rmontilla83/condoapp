@@ -1,5 +1,6 @@
 "use client";
 
+import { usd, bs } from "@/lib/format";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -143,8 +144,8 @@ export function MultiPayDialog({ target, rate, onClose, bankAccounts = [] }: Pro
                 {target.invoices.length === 1 ? "Registrar pago" : `Pagar ${target.invoices.length} cuotas`}
               </DialogTitle>
               <DialogDescription>
-                Total: ${total.toFixed(2)} {currency}
-                {totalBs > 0 ? ` · Bs ${totalBs.toFixed(2)}` : ""}
+                Total: {usd(total)} {currency}
+                {totalBs > 0 ? ` · ${bs(totalBs)}` : ""}
               </DialogDescription>
             </DialogHeader>
 
@@ -154,7 +155,7 @@ export function MultiPayDialog({ target, rate, onClose, bankAccounts = [] }: Pro
                   <li key={inv.id} className="flex items-center justify-between gap-3">
                     <span className="truncate">{inv.description}</span>
                     <span className="font-mono text-mute shrink-0">
-                      ${Number(inv.amount).toFixed(2)}
+                      {usd(Number(inv.amount))}
                     </span>
                   </li>
                 ))}

@@ -1,3 +1,4 @@
+import { usd, bs } from "@/lib/format";
 import {
   getCurrentProfile,
   getUnitIdsWithFeeAccess,
@@ -122,7 +123,7 @@ export default async function PagosPage() {
           <div className="text-right shrink-0">
             <p className="font-meta text-mute">TASA BCV</p>
             <p className="mt-1 font-display text-[20px] text-marine-deep">
-              Bs {rate.toFixed(2)}
+              {bs(rate)}
               <span className="text-mute text-sm">/$</span>
             </p>
             <p className="font-meta text-mute">{rateData.effective_date}</p>
@@ -131,22 +132,22 @@ export default async function PagosPage() {
       </div>
 
       {/* KPI cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-        <div className="rounded-2xl bg-card border border-border p-5">
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+        <div className="col-span-2 md:col-span-1 rounded-2xl bg-card border border-border p-5">
           <p className="font-meta text-mute">SALDO PENDIENTE</p>
           <p
             className={`mt-3 font-display text-[32px] leading-none tracking-[-0.02em] ${
               actionableTotal > 0 ? "text-marine-deep" : "text-cyan-ink"
             }`}
           >
-            ${actionableTotal.toFixed(2)}
+            {usd(actionableTotal)}
           </p>
           {rate > 0 && actionableTotal > 0 && (
-            <p className="mt-2 text-[13px] text-mute">Bs {(actionableTotal * rate).toFixed(2)}</p>
+            <p className="mt-2 text-[13px] text-mute">{bs((actionableTotal * rate))}</p>
           )}
           {inReviewTotal > 0 && (
             <p className="mt-2 font-meta text-amber-700">
-              ${inReviewTotal.toFixed(2)} EN REVISIÓN
+              {usd(inReviewTotal)} EN REVISIÓN
             </p>
           )}
           {pendingTotal === 0 && (
@@ -154,34 +155,40 @@ export default async function PagosPage() {
           )}
           {saldoAFavor > 0 && (
             <p className="mt-3 rounded-lg bg-cyan/10 px-2.5 py-1.5 text-[13px] text-cyan-ink">
-              Tienes <strong>${saldoAFavor.toFixed(2)}</strong> de saldo a favor. Se descuenta
+              Tienes <strong>{usd(saldoAFavor)}</strong> de saldo a favor. Se descuenta
               solo de tus próximas cuotas.
             </p>
           )}
         </div>
-        <div className="rounded-2xl bg-card border border-border p-5">
+        <div className="rounded-2xl bg-card border border-border p-4 md:p-5 min-w-0">
           <p className="font-meta text-mute">ÚLTIMO PAGO</p>
           {lastPaid ? (
             <>
-              <p className="mt-3 font-display text-[32px] leading-none tracking-[-0.02em] text-marine-deep">
-                ${Number(lastPaid.amount).toFixed(2)}
+              <p className="mt-3 font-display text-[22px] md:text-[32px] leading-none tracking-[-0.02em] text-marine-deep tabular-nums">
+                {usd(Number(lastPaid.amount))}
               </p>
-              <p className="mt-2 text-[13px] text-mute truncate">{lastPaid.description}</p>
+              <p className="mt-2 text-[13px] text-mute truncate">
+                {/* La cuota hermana del saldo a favor se llama "<concepto> · saldo a
+                    favor"; dicho así parecía que el vecino había pagado un saldo. */}
+                {lastPaid.description.endsWith(" · saldo a favor")
+                  ? `${lastPaid.description.replace(/ · saldo a favor$/, "")} · con saldo a favor`
+                  : lastPaid.description}
+              </p>
             </>
           ) : (
             <p className="mt-3 text-[15px] text-mute">Sin pagos</p>
           )}
         </div>
-        <div className="rounded-2xl bg-card border border-border p-5">
+        <div className="rounded-2xl bg-card border border-border p-4 md:p-5 min-w-0">
           <p className="font-meta text-mute">PRÓXIMO VENCIMIENTO</p>
           {nextDue ? (
             <>
-              <p className="mt-3 font-display text-[28px] leading-none tracking-[-0.02em] text-marine-deep">
+              <p className="mt-3 font-display text-[22px] md:text-[28px] leading-none tracking-[-0.02em] text-marine-deep">
                 {new Date(`${nextDue.due_date}T12:00:00Z`).toLocaleDateString("es", { day: "numeric", month: "long", timeZone: "UTC" })}
               </p>
               <p className="mt-2 text-[13px] text-mute">
-                ${Number(nextDue.amount).toFixed(2)}
-                {rate > 0 ? ` · Bs ${(Number(nextDue.amount) * rate).toFixed(2)}` : ""}
+                {usd(Number(nextDue.amount))}
+                {rate > 0 ? ` · ${bs(Number(nextDue.amount) * rate)}` : ""}
               </p>
             </>
           ) : (
@@ -254,7 +261,7 @@ export default async function PagosPage() {
                         {inv.description}
                       </p>
                       <p className="font-mono text-[13px] text-mute tabular-nums">
-                        ${Number(r.amount).toFixed(2)}
+                        {usd(Number(r.amount))}
                       </p>
                     </div>
                     <p className="mt-2 text-[14px] text-destructive">
@@ -351,10 +358,10 @@ export default async function PagosPage() {
               <div key={fee.id} className="flex items-center justify-between py-3 border-b border-border last:border-0">
                 <span className="text-[14px] text-mute">{fee.concept}</span>
                 <div className="text-right">
-                  <span className="text-[14px] font-medium text-marine-deep">${Number(fee.amount).toFixed(2)}</span>
+                  <span className="text-[14px] font-medium text-marine-deep">{usd(Number(fee.amount))}</span>
                   {rate > 0 && (
                     <span className="font-meta text-mute ml-3">
-                      BS {(Number(fee.amount) * rate).toFixed(2)}
+                      {bs((Number(fee.amount) * rate))}
                     </span>
                   )}
                 </div>
@@ -363,9 +370,9 @@ export default async function PagosPage() {
             <div className="flex items-center justify-between py-4 mt-1">
               <span className="text-[14px] font-medium text-marine-deep">Total</span>
               <div className="text-right">
-                <span className="font-display text-[20px] text-marine-deep">${feeTotal.toFixed(2)}</span>
+                <span className="font-display text-[20px] text-marine-deep">{usd(feeTotal)}</span>
                 {rate > 0 && (
-                  <span className="font-meta text-mute ml-3">BS {(feeTotal * rate).toFixed(2)}</span>
+                  <span className="font-meta text-mute ml-3">{bs((feeTotal * rate))}</span>
                 )}
               </div>
             </div>

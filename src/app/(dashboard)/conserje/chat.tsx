@@ -20,16 +20,35 @@ function recortar(historial: Turno[]): Turno[] {
   return h;
 }
 
-export function Chat({ primerNombre, modo }: { primerNombre: string; modo: "ia" | "demo" }) {
+export function Chat({
+  primerNombre,
+  modo,
+  preguntaInicial,
+}: {
+  primerNombre: string;
+  modo: "ia" | "demo";
+  /** Viene de las sugerencias del inicio (/conserje?q=...): se pregunta sola. */
+  preguntaInicial?: string;
+}) {
   const [turnos, setTurnos] = useState<Turno[]>([]);
   const [texto, setTexto] = useState("");
   const [pensando, setPensando] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const fin = useRef<HTMLDivElement>(null);
+  const inicialEnviada = useRef(false);
 
   useEffect(() => {
     fin.current?.scrollIntoView({ behavior: "smooth", block: "end" });
   }, [turnos, pensando]);
+
+  useEffect(() => {
+    // El ref evita el doble envío del modo estricto de React en desarrollo.
+    if (preguntaInicial && !inicialEnviada.current) {
+      inicialEnviada.current = true;
+      void enviar(preguntaInicial);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [preguntaInicial]);
 
   async function enviar(pregunta: string) {
     const limpia = pregunta.trim();
@@ -65,7 +84,7 @@ export function Chat({ primerNombre, modo }: { primerNombre: string; modo: "ia" 
   }
 
   return (
-    <div className="rounded-2xl bg-card border border-border flex flex-col min-h-[60vh] max-h-[75vh]">
+    <div className="rounded-2xl bg-card border border-border flex flex-col h-[calc(100dvh-19rem)] min-h-[22rem] md:h-auto md:min-h-[60vh] md:max-h-[75vh]">
       {modo === "demo" && (
         <p className="border-b border-border px-4 py-2 text-[12px] text-mute">
           <span className="font-meta text-ember mr-2">MODO DEMO</span>

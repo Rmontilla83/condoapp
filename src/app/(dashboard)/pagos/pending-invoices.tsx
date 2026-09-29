@@ -1,5 +1,6 @@
 "use client";
 
+import { usd } from "@/lib/format";
 import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { InvoiceRow } from "./invoice-row";
@@ -112,7 +113,7 @@ export function PendingInvoices({
           <div className="min-w-0">
             <p className="font-meta text-ember text-[11px]">SELECCIONADAS</p>
             <p className="mt-0.5 text-[14px] truncate">
-              {selected.size} cuota{selected.size !== 1 ? "s" : ""} · ${total.toFixed(2)}
+              {selected.size} cuota{selected.size !== 1 ? "s" : ""} · {usd(total)}
               {mixed && (
                 <span className="ml-2 text-amber-300 text-[12px]">(monedas distintas)</span>
               )}

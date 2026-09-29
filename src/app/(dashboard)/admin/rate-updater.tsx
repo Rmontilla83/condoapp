@@ -1,5 +1,6 @@
 "use client";
 
+import { bs } from "@/lib/format";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -46,7 +47,7 @@ export function RateUpdater({
       <div>
         <p className="font-meta text-mute">TASA BCV</p>
         <p className="mt-3 font-display text-[28px] leading-none tracking-[-0.02em] text-marine-deep">
-          Bs {rate.toFixed(2)}
+          {bs(rate)}
         </p>
         <p className="mt-2 font-meta text-mute">
           POR DÓLAR · {date || "—"}

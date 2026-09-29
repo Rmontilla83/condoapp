@@ -40,7 +40,10 @@ export default async function DashboardLayout({
   const viewingAs = profile?.view_as;
 
   // Tasa inicial desde BD para evitar flash "—" al primer render.
-  const rateData = await getCurrentRate(profile.organization_id);
+  const [rateData, { data: org }] = await Promise.all([
+    getCurrentRate(profile.organization_id),
+    supabase.from("organizations").select("name, city").eq("id", profile.organization_id).maybeSingle(),
+  ]);
   const initialRate = Number(rateData.rate) || null;
   const initialDate = rateData.effective_date || null;
 
@@ -65,6 +68,7 @@ export default async function DashboardLayout({
           userEmail={user.email ?? ""}
           isSuperAdmin={isSuperAdmin}
           viewingAs={viewingAs ?? null}
+          condominio={org ? { nombre: org.name as string, ciudad: (org.city as string) || null } : null}
         />
         {isSuperAdmin && viewingAs && (
           <div

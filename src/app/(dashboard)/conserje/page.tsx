@@ -2,7 +2,12 @@ import { getCurrentProfile } from "@/lib/queries";
 import { modoDelConserje } from "@/lib/conserje/conserje";
 import { Chat } from "./chat";
 
-export default async function ConserjePage() {
+export default async function ConserjePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ q?: string }>;
+}) {
+  const { q } = await searchParams;
   const profile = await getCurrentProfile();
   if (!profile?.organization_id) return null;
 
@@ -20,7 +25,11 @@ export default async function ConserjePage() {
           Solo ve la información de tus unidades.
         </p>
       </div>
-      <Chat primerNombre={primerNombre} modo={modoDelConserje()} />
+      <Chat
+        primerNombre={primerNombre}
+        modo={modoDelConserje()}
+        preguntaInicial={typeof q === "string" ? q.slice(0, 200) : undefined}
+      />
     </div>
   );
 }

@@ -1,3 +1,4 @@
+import { bs, tasa, usd } from "@/lib/format";
 import { notFound, redirect } from "next/navigation";
 import { getCurrentProfile, getCurrentRate } from "@/lib/queries";
 import { createClient } from "@/lib/supabase/server";
@@ -199,12 +200,12 @@ export default async function ConstanciaPage({
         <div className="py-6 space-y-2">
           <p className="font-meta text-mute">MONTO PAGADO</p>
           <p className="font-display text-[38px] leading-none tracking-[-0.03em] text-marine-deep tabular-nums">
-            {invoice.currency as string} {Number(invoice.amount).toFixed(2)}
+            {usd(Number(invoice.amount), invoice.currency as string)}
           </p>
           {equivalencia && (
             <p className="font-mono text-[14px] text-mute tabular-nums">
-              Equivalente a Bs {equivalencia.monto.toFixed(2)} · tasa{" "}
-              {equivalencia.tasa.toFixed(2)}
+              Equivalente a {bs(equivalencia.monto)} · tasa{" "}
+              {tasa(equivalencia.tasa)}
               {equivalencia.referencial
                 ? " de hoy (referencial: este pago se registró antes de que la app guardara la tasa)"
                 : " del día del pago"}

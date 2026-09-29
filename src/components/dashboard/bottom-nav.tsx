@@ -50,7 +50,13 @@ const moreItemsBase = [
   { href: "/reservas", label: "Reservas", adminOnly: false },
   { href: "/decisiones", label: "Decisiones", adminOnly: false },
   { href: "/mi-unidad", label: "Mi unidad", adminOnly: false },
-  { href: "/admin", label: "Admin", adminOnly: true },
+  // En el celular, el menú "Más" era la ÚNICA navegación: sin estas entradas,
+  // Unidades, Saldos a favor y Configuración no se podían abrir desde el teléfono.
+  { href: "/admin", label: "Panel admin", adminOnly: true },
+  { href: "/admin/units", label: "Unidades", adminOnly: true },
+  { href: "/admin/saldos", label: "Saldos a favor", adminOnly: true },
+  { href: "/admin/budget", label: "Presupuesto", adminOnly: true },
+  { href: "/admin/settings", label: "Configuración", adminOnly: true },
   { href: "/perfil", label: "Perfil", adminOnly: false },
 ];
 
@@ -61,7 +67,7 @@ export function BottomNav({ isAdmin = false }: { isAdmin?: boolean }) {
   const moreItems = moreItemsBase.filter((item) => !item.adminOnly || isAdmin);
 
   const isMoreActive = moreItems.some(
-    (item) => pathname === item.href || pathname.startsWith(item.href + "/")
+    (item) => estaActivo(pathname, item.href)
   );
 
   return (
@@ -73,7 +79,7 @@ export function BottomNav({ isAdmin = false }: { isAdmin?: boolean }) {
           <div className="absolute bottom-20 right-3 left-3 bg-card rounded-2xl border border-border shadow-2xl p-2 animate-in fade-in slide-in-from-bottom-4 duration-200">
             <div className="grid grid-cols-3 gap-1">
               {moreItems.map((item) => {
-                const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
+                const isActive = estaActivo(pathname, item.href);
                 return (
                   <Link
                     key={item.href}
@@ -102,7 +108,7 @@ export function BottomNav({ isAdmin = false }: { isAdmin?: boolean }) {
       >
         <div className="flex items-center justify-around py-2">
           {mainItems.map((item) => {
-            const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
+            const isActive = estaActivo(pathname, item.href);
             return (
               <Link
                 key={item.href}
@@ -135,4 +141,14 @@ export function BottomNav({ isAdmin = false }: { isAdmin?: boolean }) {
       </nav>
     </>
   );
+}
+
+/**
+ * "/admin" solo se marca en el panel mismo: con startsWith quedaba encendido
+ * junto a "Unidades" o "Saldos a favor", dos ítems activos a la vez.
+ */
+function estaActivo(pathname: string | null, href: string) {
+  if (!pathname) return false;
+  if (href === "/admin") return pathname === "/admin";
+  return pathname === href || pathname.startsWith(href + "/");
 }

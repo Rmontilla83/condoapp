@@ -17,10 +17,13 @@ import { AtryumLogo } from "@/components/brand/atryum-logo";
 export function Header({
   userEmail,
   isSuperAdmin = false,
+  condominio,
 }: {
   userEmail: string;
   isSuperAdmin?: boolean;
   viewingAs?: string | null;
+  /** En escritorio la franja superior estaba vacía salvo el avatar. */
+  condominio?: { nombre: string; ciudad: string | null } | null;
 }) {
   const router = useRouter();
   const initials = userEmail.slice(0, 2).toUpperCase();
@@ -32,11 +35,20 @@ export function Header({
   }
 
   return (
-    <header className="flex h-16 items-center justify-between border-b border-border bg-background px-4 md:px-6">
+    <header className="flex h-16 md:h-14 items-center justify-between border-b border-border bg-background px-4 md:px-10">
       <div className="flex items-center md:hidden">
         <AtryumLogo variant="horizontal" tone="color" className="text-[20px]" />
       </div>
-      <div className="hidden md:block" />
+      <div className="hidden md:flex items-baseline gap-2 min-w-0">
+        {condominio && (
+          <>
+            <span className="text-[15px] font-semibold text-marine-deep truncate">{condominio.nombre}</span>
+            {condominio.ciudad && (
+              <span className="font-meta text-mute">{condominio.ciudad.toUpperCase()}</span>
+            )}
+          </>
+        )}
+      </div>
       <DropdownMenu>
         <DropdownMenuTrigger render={<Button variant="ghost" className="relative h-9 w-9 rounded-full p-0" />}>
           <Avatar className="h-9 w-9">

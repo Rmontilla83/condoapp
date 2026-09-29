@@ -1,5 +1,6 @@
 "use client";
 
+import { usd } from "@/lib/format";
 import { useMemo, useState, useTransition } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -369,14 +370,14 @@ export function FeeConfigForm({
             <div className="flex items-center justify-between pt-2 border-t border-border">
               <span className="text-[13px] text-mute">Suma activa</span>
               <span className="font-display text-[18px] text-marine-deep">
-                ${breakdownTotal.toFixed(2)}
+                {usd(breakdownTotal)}
               </span>
             </div>
             {breakdownVsBaseDelta !== null && Math.abs(breakdownVsBaseDelta) >= 0.01 && (
               <p className="text-[12px] text-amber-700 bg-amber-50 border border-amber-200 rounded p-2">
                 {breakdownVsBaseDelta > 0
-                  ? `El desglose suma $${breakdownTotal.toFixed(2)}, $${breakdownVsBaseDelta.toFixed(2)} más que el total mensual ($${baseAmountNumeric.toFixed(2)}).`
-                  : `El desglose suma $${breakdownTotal.toFixed(2)}, $${Math.abs(breakdownVsBaseDelta).toFixed(2)} menos que el total mensual ($${baseAmountNumeric.toFixed(2)}).`}
+                  ? `El desglose suma ${usd(breakdownTotal)}, ${usd(breakdownVsBaseDelta)} más que el total mensual (${usd(baseAmountNumeric)}).`
+                  : `El desglose suma ${usd(breakdownTotal)}, ${usd(Math.abs(breakdownVsBaseDelta))} menos que el total mensual (${usd(baseAmountNumeric)}).`}
               </p>
             )}
           </div>

@@ -1,5 +1,6 @@
 "use client";
 
+import { usd, bs } from "@/lib/format";
 import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -690,7 +691,7 @@ function ModeStep({
                   <div key={t} className="flex items-center justify-between">
                     <span>{UNIT_TYPE_LABELS[t] ?? t}</span>
                     <span className={amt === undefined ? "text-destructive" : "font-mono"}>
-                      {amt === undefined ? "Sin configurar" : `$${Number(amt).toFixed(2)}`}
+                      {amt === undefined ? "Sin configurar" : `${usd(Number(amt))}`}
                     </span>
                   </div>
                 );
@@ -828,12 +829,12 @@ function PreviewStep({
         </div>
         <div className="flex justify-between border-t border-border pt-1 mt-1">
           <span className="text-mute">Total ({currency})</span>
-          <span className="font-display text-[16px] text-marine-deep">${total.toFixed(2)}</span>
+          <span className="font-display text-[16px] text-marine-deep">{usd(total)}</span>
         </div>
         {totalBs > 0 && (
           <div className="flex justify-between text-mute text-[12px]">
-            <span>Equivalente Bs</span>
-            <span>{totalBs.toFixed(2)}</span>
+            <span>Equivalente</span>
+            <span>{bs(totalBs)}</span>
           </div>
         )}
       </div>
@@ -883,7 +884,7 @@ function PreviewStep({
                     {u && u.aliquot !== null ? `${u.aliquot.toFixed(2)}%` : "—"}
                   </td>
                   <td className="px-3 py-1.5 text-right font-mono">
-                    ${inv.amount.toFixed(2)}
+                    {usd(inv.amount)}
                   </td>
                 </tr>
               );

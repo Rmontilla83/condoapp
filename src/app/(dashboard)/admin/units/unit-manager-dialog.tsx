@@ -79,7 +79,7 @@ export function UnitManagerDialog({
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger render={<Button variant="outline" size="sm" className="w-full" />}>
+      <DialogTrigger render={<Button variant="outline" size="sm" className="shrink-0" />}>
         Gestionar
       </DialogTrigger>
       <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">

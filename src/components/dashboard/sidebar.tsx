@@ -107,7 +107,7 @@ export function Sidebar({ isAdmin = false }: { isAdmin?: boolean }) {
 
       <nav aria-label="Secciones" className="flex-1 space-y-0.5 px-3 pb-6">
         {navItems.map((item) => {
-          const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
+          const isActive = estaActivo(pathname, item.href);
           return (
             <Link
               key={item.href}
@@ -131,7 +131,7 @@ export function Sidebar({ isAdmin = false }: { isAdmin?: boolean }) {
               <p className="font-meta text-sidebar-foreground/40">ADMINISTRACIÓN</p>
             </div>
             {adminItems.map((item) => {
-              const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
+              const isActive = estaActivo(pathname, item.href);
               return (
                 <Link
                   key={item.href}
@@ -159,4 +159,14 @@ export function Sidebar({ isAdmin = false }: { isAdmin?: boolean }) {
       </div>
     </aside>
   );
+}
+
+/**
+ * "/admin" solo se marca en el panel mismo: con startsWith quedaba encendido
+ * junto a "Unidades" o "Saldos a favor", dos ítems activos a la vez.
+ */
+function estaActivo(pathname: string | null, href: string) {
+  if (!pathname) return false;
+  if (href === "/admin") return pathname === "/admin";
+  return pathname === href || pathname.startsWith(href + "/");
 }

@@ -32,8 +32,12 @@ export function PassList({ passes, orgName, showUnit = false, hideShareButton = 
 
   if (passes.length === 0) {
     return (
-      <div className="rounded-2xl bg-card border border-border py-12 text-center">
-        <p className="text-[14px] text-mute">Sin pases todavía.</p>
+      <div className="rounded-2xl bg-card border border-border px-6 py-10 text-center">
+        <p className="text-[15px] font-medium text-marine-deep">Todavía no has invitado a nadie</p>
+        <p className="mt-2 text-[14px] text-mute max-w-sm mx-auto">
+          Toca «Nuevo visitante», escribe su nombre y cédula, y mándale el QR por WhatsApp. En la
+          entrada, el vigilante lo escanea y listo.
+        </p>
       </div>
     );
   }

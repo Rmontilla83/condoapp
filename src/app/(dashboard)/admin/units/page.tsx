@@ -6,6 +6,8 @@ import { UnitManagerDialog } from "./unit-manager-dialog";
 import { aliquotStatus, computeCoverage, formatAliquot } from "@/lib/units/aliquot";
 import type { OwnershipMode } from "@/types/database";
 import { UNIT_TYPE_LABELS } from "@/lib/labels";
+import { compararUnidades } from "@/lib/units/orden";
+import { UnitsFilter } from "./units-filter";
 
 const MODE_LABEL: Record<OwnershipMode, string> = {
   owner_occupied: "PROPIETARIO",
@@ -133,117 +135,89 @@ export default async function AdminUnitsPage() {
         </Link>
       )}
 
-      <div className="grid gap-4 md:grid-cols-2">
-        {(units ?? []).map((unit) => {
+      <UnitsFilter
+        filas={[...(units ?? [])].sort(compararUnidades).map((unit) => {
           const mode = unit.ownership_mode as OwnershipMode;
           const members = membersByUnit.get(unit.id) ?? [];
           const invites = invitesByUnit.get(unit.id) ?? [];
           const codes = codesByUnit.get(unit.id) ?? [];
-          const owners = members.filter((m) => m.role === "owner");
-          const tenants = members.filter((m) => m.role === "tenant");
+          const nombre = (m: (typeof members)[number] | undefined) => {
+            const pr = m?.profiles as { full_name?: string; email?: string } | null | undefined;
+            return pr?.full_name || pr?.email || "";
+          };
+          const propietario = nombre(members.find((m) => m.role === "owner"));
+          const inquilino = nombre(members.find((m) => m.role === "tenant"));
+          const tipo = unit.type === "apartment" ? "Apto" : UNIT_TYPE_LABELS[unit.type] ?? unit.type;
 
-          return (
-            <div key={unit.id} className="rounded-2xl bg-card border border-border overflow-hidden">
-              <div className="p-5 border-b border-border">
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <p className="font-meta text-mute">
-                      {/* Mostraba "APARTMENT": el valor crudo de la base, en inglés. */}
-                      {(unit.type === "apartment" ? "Apartamento" : UNIT_TYPE_LABELS[unit.type] ?? unit.type).toUpperCase()}
-                      {unit.floor != null && ` · PISO ${unit.floor}`}
-                    </p>
-                    <h2 className="mt-2 font-display text-[22px] leading-tight text-marine-deep">
-                      {unit.type === "penthouse" ? "" : "Apto "}{unit.unit_number}
-                      {unit.block && <span className="text-mute"> · {unit.block}</span>}
-                    </h2>
-                  </div>
-                  <div className="flex flex-col items-end gap-1.5 shrink-0">
-                    <span className={`font-meta px-2.5 py-1 rounded-md ${MODE_TONE[mode]}`}>
-                      {MODE_LABEL[mode]}
-                    </span>
-                    <span
-                      className={`font-meta px-2.5 py-1 rounded-md ${
-                        unit.aliquot === null || unit.aliquot === undefined
-                          ? "bg-ember/10 text-ember-ink"
-                          : "bg-cloud text-mute"
-                      }`}
-                    >
-                      {unit.aliquot === null || unit.aliquot === undefined
-                        ? "SIN ALÍCUOTA"
-                        : formatAliquot(Number(unit.aliquot))}
-                    </span>
-                  </div>
+          return {
+            id: unit.id,
+            torre: unit.block,
+            busqueda: `${unit.unit_number} ${unit.block ?? ""} ${propietario} ${inquilino}`.toLowerCase(),
+            fila: (
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-2 px-4 py-3">
+                <div className="w-full sm:w-44 shrink-0">
+                  <p className="text-[15px] font-semibold text-marine-deep">
+                    {unit.type === "penthouse" ? "" : `${tipo} `}
+                    {unit.unit_number}
+                    {unit.block && <span className="font-normal text-mute"> · {unit.block}</span>}
+                  </p>
+                  <p className="font-meta text-mute">
+                    {unit.aliquot === null || unit.aliquot === undefined ? (
+                      <span className="text-ember-ink">SIN ALÍCUOTA</span>
+                    ) : (
+                      formatAliquot(Number(unit.aliquot))
+                    )}
+                    {unit.floor != null && ` · PISO ${unit.floor}`}
+                  </p>
                 </div>
-              </div>
-
-              <div className="p-5 space-y-4">
-                <div className="space-y-2.5">
-                  <div className="flex items-baseline gap-3">
-                    <span className="font-meta text-mute w-24 shrink-0">PROPIETARIO</span>
-                    <span className="text-[13.5px] text-marine-deep truncate">
-                      {owners[0]
-                        ? (owners[0].profiles as { full_name?: string; email?: string } | null)
-                            ?.full_name ||
-                          (owners[0].profiles as { full_name?: string; email?: string } | null)
-                            ?.email
-                        : <span className="text-mute">—</span>}
-                    </span>
-                  </div>
-                  <div className="flex items-baseline gap-3">
-                    <span className="font-meta text-mute w-24 shrink-0">INQUILINO</span>
-                    <span className="text-[13.5px] text-marine-deep truncate">
-                      {tenants[0]
-                        ? (tenants[0].profiles as { full_name?: string; email?: string } | null)
-                            ?.full_name ||
-                          (tenants[0].profiles as { full_name?: string; email?: string } | null)
-                            ?.email
-                        : <span className="text-mute">—</span>}
-                    </span>
-                  </div>
-                  {(invites.length > 0 || codes.length > 0) && (
-                    <div className="flex items-baseline gap-3 flex-wrap">
-                      <span className="font-meta text-mute w-24 shrink-0">PENDIENTES</span>
-                      <span className="font-meta text-ember-ink">
-                        {invites.length > 0 && `${invites.length} INVITACIÓN(ES)`}
-                        {invites.length > 0 && codes.length > 0 && " · "}
-                        {codes.length > 0 && `${codes.length} CÓDIGO(S)`}
+                <div className="min-w-0 flex-1 text-[13.5px]">
+                  <p className="truncate text-marine-deep">
+                    {propietario || <span className="text-mute">Sin propietario</span>}
+                  </p>
+                  <p className="truncate text-mute">
+                    {inquilino ? `Inquilino: ${inquilino}` : MODE_LABEL[mode] === "PROPIETARIO" ? "Vive el propietario" : ""}
+                    {(invites.length > 0 || codes.length > 0) && (
+                      <span className="text-ember-ink">
+                        {" "}· {invites.length + codes.length} acceso{invites.length + codes.length !== 1 ? "s" : ""} pendiente{invites.length + codes.length !== 1 ? "s" : ""}
                       </span>
-                    </div>
-                  )}
+                    )}
+                  </p>
                 </div>
-
-                <UnitManagerDialog
-                  unit={{
-                    id: unit.id,
-                    unit_number: unit.unit_number,
-                    ownership_mode: mode,
-                  }}
-                  members={members.map((m) => ({
-                    id: m.id,
-                    role: m.role as "owner" | "tenant",
-                    full_name:
-                      (m.profiles as { full_name?: string; email?: string } | null)?.full_name ?? "",
-                    email:
-                      (m.profiles as { full_name?: string; email?: string } | null)?.email ?? "",
-                  }))}
-                  invites={invites.map((i) => ({
-                    id: i.id,
-                    email: i.email,
-                    assigned_role: i.assigned_role as "owner" | "tenant",
-                    expires_at: i.expires_at,
-                  }))}
-                  codes={codes.map((c) => ({
-                    id: c.id,
-                    code: c.code,
-                    assigned_role: c.assigned_role as "owner" | "tenant",
-                    expires_at: c.expires_at,
-                  }))}
-                />
+                <div className="flex items-center gap-2 shrink-0">
+                  <span className={`hidden md:inline font-meta px-2 py-0.5 rounded-md ${MODE_TONE[mode]}`}>
+                    {MODE_LABEL[mode]}
+                  </span>
+                  <UnitManagerDialog
+                    unit={{
+                      id: unit.id,
+                      unit_number: unit.block ? `${unit.unit_number} · ${unit.block}` : unit.unit_number,
+                      ownership_mode: mode,
+                    }}
+                    members={members.map((m) => ({
+                      id: m.id,
+                      role: m.role as "owner" | "tenant",
+                      full_name: (m.profiles as { full_name?: string; email?: string } | null)?.full_name ?? "",
+                      email: (m.profiles as { full_name?: string; email?: string } | null)?.email ?? "",
+                    }))}
+                    invites={invites.map((i) => ({
+                      id: i.id,
+                      email: i.email,
+                      assigned_role: i.assigned_role as "owner" | "tenant",
+                      expires_at: i.expires_at,
+                    }))}
+                    codes={codes.map((c) => ({
+                      id: c.id,
+                      code: c.code,
+                      assigned_role: c.assigned_role as "owner" | "tenant",
+                      expires_at: c.expires_at,
+                    }))}
+                  />
+                </div>
               </div>
-            </div>
-          );
+            ),
+          };
         })}
-      </div>
+      />
     </div>
   );
 }
