@@ -1,683 +1,457 @@
+import Image from "next/image";
 import Link from "next/link";
-import { Reveal } from "@/components/reveal";
-import { AtryumLogo, AtryumSymbol } from "@/components/brand/atryum-logo";
-import { Magnetic } from "@/components/ui/magnetic";
-import { TiltCard } from "@/components/ui/tilt-card";
-import { AnimatedCounter } from "@/components/ui/animated-counter";
-import { WowStack, type WowItem } from "@/components/landing/wow-stack";
-import { AudienceTabs } from "@/components/landing/audience-tabs";
+import { AtryumLogo } from "@/components/brand/atryum-logo";
+import { CaraConserje } from "@/components/conserje/cara";
 import { FAQAccordion } from "@/components/landing/faq-accordion";
-import {
-  CobranzaVisual,
-  IdentityVisual,
-  QrVisual,
-  DecisionVisual,
-  BudgetVisual,
-  StepsVisual,
-} from "@/components/landing/wow-visuals";
+import { ReciboVivo } from "@/components/landing/recibo-vivo";
+import { Icono, type NombreIcono } from "@/components/ui/icono";
+import { createAdminClient } from "@/lib/supabase/admin";
 
-const PORTAL_LOGIN = process.env.NEXT_PUBLIC_PORTAL_URL
-  ? `${process.env.NEXT_PUBLIC_PORTAL_URL}/login`
-  : "/login";
+/**
+ * atryum.net — la landing. Todo lo que dice está construido y en uso: si una
+ * función no existe en la app, no aparece aquí.
+ */
+export const revalidate = 3600;
 
-const wowItems: WowItem[] = [
+const PORTAL_LOGIN = process.env.NEXT_PUBLIC_PORTAL_URL ? `${process.env.NEXT_PUBLIC_PORTAL_URL}/login` : "/login";
+const DEMO = "mailto:hola@atryum.net?subject=Quiero%20ver%20Atryum%20en%20mi%20condominio";
+
+/** La tasa BCV más reciente registrada (la página se regenera cada hora). */
+async function tasaDelDia(): Promise<{ tasa: number; fecha: string }> {
+  try {
+    const { data } = await createAdminClient()
+      .from("exchange_rates")
+      .select("rate, effective_date")
+      .order("effective_date", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (data) {
+      return {
+        tasa: Number(data.rate),
+        fecha: new Date(`${data.effective_date as string}T12:00:00Z`).toLocaleDateString("es-VE", {
+          day: "numeric",
+          month: "long",
+          timeZone: "UTC",
+        }),
+      };
+    }
+  } catch {
+    /* sin base: la página igual se muestra */
+  }
+  return { tasa: 0, fecha: "" };
+}
+
+const PASOS_DEL_MES: { titulo: string; texto: string; icono: NombreIcono }[] = [
   {
-    number: "01",
-    pill: "COBRANZA POR ALÍCUOTA",
-    title: (
-      <>
-        Cada quien paga lo justo, no lo{" "}
-        <em className="font-editorial text-cyan">igualado</em>.
-      </>
-    ),
-    copy: "Vos definís el modo: plano, por alícuota, por tipo de unidad o manual. Tu residente sube un comprobante para pagar 3 facturas a la vez. Aparece el badge EN REVISIÓN, vos aprobás. Cero persecución por WhatsApp.",
-    bullets: [
-      "Por alícuota, plano, por tipo o manual — vos eligís",
-      "Un comprobante para múltiples cuotas + derrama",
-      "Cuentas bancarias del condo siempre visibles al residente",
-      "Badge EN REVISIÓN para evitar dobles pagos",
-    ],
-    visual: <CobranzaVisual />,
+    titulo: "La junta emite",
+    texto: "Las cuotas del mes por alícuota, la marina solo a quien tiene puesto, una derrama aprobada en asamblea. Cada recibo sale numerado, en dólares y con su equivalente en bolívares.",
+    icono: "lapiz",
   },
   {
-    number: "02",
-    pill: "TU UNIDAD DE UN VISTAZO",
-    title: (
-      <>
-        Abrís la app y entendés tu condominio en{" "}
-        <em className="font-editorial text-cyan">3 segundos</em>.
-      </>
-    ),
-    copy: "El residente entra y ve: su apto, qué debe, su próxima reserva, los anuncios urgentes y un botón flotante para pagar. Sin menúes, sin tutorial. Funciona también para inquilinos con permisos restringidos.",
-    bullets: [
-      "Identity strip: APTO · BLOQUE · CONDO · PROPIETARIO",
-      "Banner urgente solo cuando aplica a tu audiencia",
-      "FAB de pago si tenés saldo pendiente",
-      "Soporte multi-unidad (varias propiedades, un solo login)",
-    ],
-    visual: <IdentityVisual />,
+    titulo: "El vecino paga y lo reporta",
+    texto: "Paga desde su banco como siempre y sube la captura con la referencia. Puede abonar una parte. El saldo a favor se aplica solo.",
+    icono: "telefono",
   },
   {
-    number: "03",
-    pill: "VISITANTES CON QR + WHATSAPP",
-    title: (
-      <>
-        Tu visita entra con un{" "}
-        <em className="font-editorial text-cyan">mensaje</em>, no con una llamada.
-      </>
-    ),
-    copy: "Elegís el tipo (familia, Uber, delivery, mudanza, servicio). Atryum genera el QR, le mandás el link por WhatsApp. El vigilante escanea desde cualquier dispositivo. Si la placa o el tipo no coincide, lo ve.",
-    bullets: [
-      "7 tipos de visita con duración inteligente por defecto",
-      "Compartir por WhatsApp con un toque",
-      "Verificación pública: /verificar/[código]",
-      "Placa de vehículo + nombre + cédula",
-    ],
-    visual: <QrVisual />,
+    titulo: "La administración aprueba",
+    texto: "Revisa el comprobante contra el banco y aprueba. El vecino recibe el aviso y su constancia; la cuota desaparece de su deuda.",
+    icono: "check",
   },
   {
-    number: "04",
-    pill: "DECISIONES CON VOTO PONDERADO",
-    title: (
-      <>
-        Tu voto pesa lo que <em className="font-editorial text-ember">vale</em> tu apto.
-      </>
-    ),
-    copy: "Encuestas rápidas o asambleas formales con quórum dinámico. El voto ponderado por alícuota es legalmente vinculante en la mayoría de Latam. Tenants votan si el reglamento lo permite. Resultados en vivo, acta automática.",
-    bullets: [
-      "Encuesta rápida (1 pregunta) · Asamblea formal (N preguntas)",
-      "Voto ponderado por alícuota · 1 voter cuenta una sola vez",
-      "Quórum dinámico computado en tiempo real",
-      "IDs estables · links #decision-XYZ funcionan en histórico",
-    ],
-    killer: true,
-    visual: <DecisionVisual />,
-  },
-  {
-    number: "05",
-    pill: "PRESUPUESTO QUE TODOS VEN",
-    title: (
-      <>
-        Tu asamblea aprueba con datos,{" "}
-        <em className="font-editorial text-cyan">no con grito</em>.
-      </>
-    ),
-    copy: "Definís presupuesto anual por categoría con override mensual. Cada gasto tiene categoría normalizada, proveedor opcional y se puede anular con razón obligatoria. Las barras ejecutado/aprobado se ven en cyan, ámbar o rojo según uso.",
-    bullets: [
-      "13 categorías default + custom por condo",
-      "Override mensual por categoría (mes alto, mes bajo)",
-      "Anular gasto con razón ≥ 10 chars · histórico inmutable",
-      "Vista compartida residente/admin · cero opacidad",
-    ],
-    visual: <BudgetVisual />,
+    titulo: "Las cuentas cuadran solas",
+    texto: "Cada documento genera su asiento en el libro diario, en dólares y en bolívares. La relación de gastos para la asamblea sale lista para imprimir.",
+    icono: "barras",
   },
 ];
 
-const faqs = [
+const JUNTA: { grupo: string; items: { icono: NombreIcono; titulo: string; texto: string }[] }[] = [
   {
-    q: "¿Cuánto tarda el setup?",
-    a: "10 minutos. Creás el condominio, importás unidades por CSV o las agregás manuales, invitás a residentes por email o código físico. Ellos completan su registro solos.",
+    grupo: "Cobranza",
+    items: [
+      { icono: "barras", titulo: "Cuentas por cobrar con antigüedad", texto: "Quién debe, cuánto y desde cuándo: por vencer, 30, 60, 90 y más de 90 días. Se exporta a Excel." },
+      { icono: "reloj", titulo: "Recordatorios que salen solos", texto: "Tres días antes del vencimiento y al día siguiente. Para los morosos, un botón abre WhatsApp con el mensaje escrito." },
+      { icono: "voto", titulo: "Convenios de pago", texto: "La deuda vencida en cuotas mensuales. Mientras el vecino cumpla, figura al día y puede reservar." },
+      { icono: "dinero", titulo: "Intereses de mora", texto: "Tasa anual del condominio, por días de atraso y sin interés sobre intereses. Se revisa unidad por unidad antes de emitir." },
+    ],
   },
   {
-    q: "¿Qué pasa si decidimos irnos?",
-    a: "Exportás todos tus datos en CSV (cuotas, gastos, residentes, decisiones). Sin contrato, sin penalidad, cancelás cuando quieras desde la configuración del condominio.",
+    grupo: "Contabilidad",
+    items: [
+      { icono: "candado", titulo: "Recibos que no se pueden alterar", texto: "Número correlativo y sin edición posible. Un error se corrige con una nota de crédito, como pide el artículo 14 de la Ley de Propiedad Horizontal." },
+      { icono: "base", titulo: "Libro diario, mayor y balance", texto: "Salen de los documentos, siempre cuadrados, con el diferencial cambiario entre la tasa de emisión y la de cobro." },
+      { icono: "etiqueta", titulo: "Gastos con su soporte", texto: "Cada gasto con categoría, proveedor y factura. Presupuesto anual contra lo ejecutado, a la vista de todos." },
+      { icono: "familia", titulo: "Gastos de algunos, no de todos", texto: "Grupos de prorrateo para la marina o un estacionamiento techado: el total se reparte solo entre quienes corresponde." },
+    ],
   },
   {
-    q: "¿Funciona si no tengo internet en la entrada?",
-    a: "Sí. El vigilante escanea el QR offline desde su celular. Cuando vuelve la conexión, sincroniza el log. Los pases ya generados son válidos sin red.",
-  },
-  {
-    q: "¿Los residentes necesitan instalar algo?",
-    a: "No. Atryum es una web app. Funciona en cualquier celular o computadora con navegador. Se puede agregar al inicio del celular como app nativa (PWA).",
-  },
-  {
-    q: "¿Quién ve los datos financieros?",
-    a: "Vos como junta controlás. Por defecto residentes ven sus propias cuotas y el presupuesto aprobado. Inquilinos pueden tener permisos restringidos. Admins ven todo.",
-  },
-  {
-    q: "¿Hay costos por residente?",
-    a: "No. El precio es por unidad/mes (no por persona). Si tu apto tiene 5 inquilinos, igual cuenta como 1 unidad. Hasta 15 unidades, gratis para siempre.",
-  },
-  {
-    q: "¿Cumple con la legislación de mi país?",
-    a: "El voto ponderado por alícuota cumple con la Ley de Propiedad Horizontal en Venezuela, Colombia, Argentina, México, Perú y Chile. Cada decisión queda con timestamp inmutable + lista de votantes para acta legal.",
-  },
-  {
-    q: "¿Pueden ver mis vecinos cuánto debo?",
-    a: "No. Solo vos y los administradores ven tu saldo. Lo que sí pueden ver, si la junta lo activa, es la lista de unidades morosas (sin nombres ni montos), para presión social positiva.",
+    grupo: "Día a día",
+    items: [
+      { icono: "sobre", titulo: "Comunicados y avisos", texto: "Lo urgente llega también al correo. Cada vecino tiene su campana con lo que le concierne." },
+      { icono: "herramienta", titulo: "Averías con seguimiento", texto: "El vecino reporta con foto; la administración cambia el estado y el vecino se entera sin preguntar." },
+      { icono: "edificio", titulo: "Reservas con reglas", texto: "Capacidad, anticipación y límite por semana en cada área. Con cuotas vencidas, la app lo explica con tacto y no confirma la reserva." },
+      { icono: "persona", titulo: "Propietarios e inquilinos", texto: "Se cargan desde la planilla de Excel de la junta. El propietario decide qué puede ver y hacer su inquilino." },
+    ],
   },
 ];
 
-export default function HomePage() {
+const FAQS = [
+  {
+    q: "¿Los vecinos tienen que instalar algo?",
+    a: "No. Atryum funciona en el navegador del teléfono o de la computadora. Entran con su correo y un código de seis dígitos que les llega; no tienen que inventar una contraseña.",
+  },
+  {
+    q: "¿La app cobra o mueve dinero?",
+    a: "No. Cada vecino paga desde su banco como siempre (transferencia, pago móvil, Zelle) y reporta el pago con su captura. La administración lo verifica y lo aprueba. Atryum lleva la cuenta; el dinero va directo al condominio.",
+  },
+  {
+    q: "¿Cómo maneja los dólares y los bolívares?",
+    a: "Las cuotas se emiten en dólares con su equivalente en bolívares a la tasa BCV del día. Cada pago guarda la tasa con la que se hizo, y el libro registra la diferencia cambiaria.",
+  },
+  {
+    q: "¿Qué pasa con la deuda que ya existe?",
+    a: "Se carga como saldo de apertura desde la planilla de cuentas por cobrar de la junta: lo que cada unidad debía, o tenía a favor, el día que empiezan.",
+  },
+  {
+    q: "¿Mis vecinos pueden ver cuánto debo?",
+    a: "No. Cada propietario ve solo lo suyo. La administración ve todo el condominio. Atri, el conserje, solo responde sobre las unidades de quien le pregunta.",
+  },
+  {
+    q: "¿Los recibos tienen validez?",
+    a: "Cada recibo lleva número correlativo, no se puede editar ni borrar y se anula con nota de crédito. Hay libro diario, estado de cuenta por unidad y relación de gastos para la asamblea, todo listo para imprimir o guardar en PDF.",
+  },
+  {
+    q: "¿Y si decidimos irnos?",
+    a: "Las cuentas por cobrar, el libro diario y las planillas se descargan en Excel en cualquier momento. No hay contrato de permanencia.",
+  },
+];
+
+export default async function HomePage() {
+  const { tasa, fecha } = await tasaDelDia();
+
   return (
-    <div className="min-h-screen bg-frost text-marine-deep overflow-hidden">
-      {/* ═══════════════════════════════════════════════════════════════
-          NAV — flotante, glassmorphism, links a secciones
-      ═══════════════════════════════════════════════════════════════ */}
-      <nav className="fixed top-0 inset-x-0 z-50">
-        <div className="mx-auto max-w-7xl px-5 md:px-8 py-5">
-          <div className="flex items-center justify-between rounded-2xl bg-frost/80 backdrop-blur-xl border border-marine/15 px-5 py-3">
-            <Link href="/" className="flex items-center hover-scale" aria-label="Atryum — inicio">
-              <AtryumLogo
-                variant="horizontal"
-                tone="color"
-                className="text-[22px] md:text-[26px]"
-              />
-            </Link>
+    <div className="min-h-screen overflow-x-hidden bg-frost text-marine-deep">
+      {/* Franja de la tasa: lo primero que mira cualquier venezolano. */}
+      {tasa > 0 && (
+        <div className="bg-marine-deep text-frost">
+          <p className="mx-auto max-w-6xl px-5 py-1.5 text-[12.5px] md:px-8">
+            <span className="text-frost/60">Tasa BCV del {fecha}:</span>{" "}
+            <span className="font-mono tabular-nums text-cyan">Bs {tasa.toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+            <span className="hidden text-frost/60 sm:inline"> · Atryum la aplica a cada cuota y a cada pago.</span>
+          </p>
+        </div>
+      )}
 
-            <div className="hidden md:flex items-center gap-0.5 text-[13px] text-mute">
-              <a href="#dolor" className="px-3 py-1.5 rounded-lg hover:text-marine-deep hover:bg-marine/10 transition-all duration-200">
-                El dolor
-              </a>
-              <a href="#wow" className="px-3 py-1.5 rounded-lg hover:text-marine-deep hover:bg-marine/10 transition-all duration-200">
-                Producto
-              </a>
-              <a href="#audiencia" className="px-3 py-1.5 rounded-lg hover:text-marine-deep hover:bg-marine/10 transition-all duration-200">
-                Para vos
-              </a>
-              <a href="#precio" className="px-3 py-1.5 rounded-lg hover:text-marine-deep hover:bg-marine/10 transition-all duration-200">
-                Precio
-              </a>
-              <a href="#faq" className="px-3 py-1.5 rounded-lg hover:text-marine-deep hover:bg-marine/10 transition-all duration-200">
-                FAQ
-              </a>
-            </div>
-
-            <Link
-              href={PORTAL_LOGIN}
-              className="bg-marine-deep text-frost text-[13px] font-medium px-4 py-2 rounded-lg hover:bg-marine transition-colors btn-press"
-            >
+      <header className="sticky top-0 z-40 border-b border-marine-deep/10 bg-frost/90 backdrop-blur">
+        <nav className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-5 py-3.5 md:px-8" aria-label="Principal">
+          <Link href="/" aria-label="Atryum, inicio">
+            <AtryumLogo variant="horizontal" tone="color" className="text-[22px]" />
+          </Link>
+          <div className="hidden items-center gap-6 text-[14px] text-marine-deep/75 md:flex">
+            <a href="#mes" className="hover:text-marine-deep">Cómo funciona</a>
+            <a href="#junta" className="hover:text-marine-deep">Para la junta</a>
+            <a href="#vecino" className="hover:text-marine-deep">Para el vecino</a>
+            <a href="#precio" className="hover:text-marine-deep">Precio</a>
+          </div>
+          <div className="flex items-center gap-2">
+            <Link href={PORTAL_LOGIN} className="rounded-lg px-3 py-2 text-[14px] font-medium text-marine-deep hover:bg-marine-deep/5">
               Entrar
             </Link>
+            <a href={DEMO} className="hidden rounded-lg bg-marine-deep px-4 py-2 text-[14px] font-medium text-frost hover:bg-marine sm:inline-block">
+              Pedir una demostración
+            </a>
           </div>
-        </div>
-      </nav>
+        </nav>
+      </header>
 
-      {/* ═══════════════════════════════════════════════════════════════
-          HERO — dual-track con doble CTA según audiencia
-      ═══════════════════════════════════════════════════════════════ */}
-      <section className="relative pt-36 pb-20 md:pt-44 md:pb-32 overflow-hidden">
-        <div className="absolute inset-0 mesh-signature pointer-events-none" aria-hidden="true" />
-        <div
-          className="absolute inset-0 opacity-[0.04] pointer-events-none"
-          style={{
-            backgroundImage: "radial-gradient(#0F2E5A 1px, transparent 1px)",
-            backgroundSize: "28px 28px",
-          }}
-          aria-hidden="true"
-        />
-
-        <div className="relative mx-auto max-w-7xl px-5 md:px-8">
-          <div className="grid md:grid-cols-12 gap-10 md:gap-8 items-center">
-            <div className="md:col-span-6 lg:col-span-6">
-              <span className="hero-text font-meta-loose text-cyan">
-                CONDOMINIOS · LATAM · 2026
-              </span>
-
-              <h1 className="hero-text hero-text-d1 mt-6 font-display text-[clamp(2.5rem,5.8vw,4.75rem)] leading-[1.03] tracking-[-0.035em] text-marine-deep">
-                Tu condominio,{" "}
-                <em className="font-editorial text-cyan">finalmente</em>{" "}
-                en una sola pantalla.
-              </h1>
-
-              <p className="hero-text hero-text-d2 mt-6 text-[17px] leading-[1.65] text-mute max-w-lg">
-                Cobranza por alícuota. Visitantes con QR + WhatsApp. Voto
-                ponderado en asambleas. Presupuesto que todos auditan.
-                Sin obra. Sin cableado. Sin Excel.
-              </p>
-
-              <div className="hero-text hero-text-d3 mt-9 flex flex-wrap items-center gap-3">
-                <Magnetic strength={0.25}>
-                  <Link
-                    href={PORTAL_LOGIN}
-                    className="group bg-marine-deep text-frost text-[15px] font-medium pl-6 pr-4 py-3.5 rounded-xl hover:bg-marine inline-flex items-center gap-3 press-spring shadow-[0_8px_30px_rgb(15,46,90,0.16)] hover:shadow-[0_14px_40px_rgb(15,46,90,0.22)] transition-shadow duration-500"
-                  >
-                    Soy junta · Probar gratis
-                    <span className="flex h-7 w-7 items-center justify-center rounded-md bg-frost/10 group-hover:bg-frost/20 transition-colors">
-                      <svg className="h-3.5 w-3.5 transition-transform duration-500 group-hover:translate-x-1" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12h15m0 0l-6.75-6.75M19.5 12l-6.75 6.75" />
-                      </svg>
-                    </span>
-                  </Link>
-                </Magnetic>
-                <Magnetic strength={0.18}>
-                  <a
-                    href="#wow"
-                    className="text-[14px] font-medium text-marine-deep px-5 py-3.5 rounded-xl border border-marine/25 hover:bg-marine/10 hover:border-marine/40 transition-colors press-spring inline-block"
-                  >
-                    Soy residente · Ver demo
-                  </a>
-                </Magnetic>
-              </div>
-
-              <p className="hero-text hero-text-d4 mt-6 font-meta text-mute">
-                GRATIS HASTA 15 UNIDADES · SIN TARJETA · SIN CONTRATO
-              </p>
-            </div>
-
-            {/* Hero card */}
-            <div className="md:col-span-6 lg:col-span-6 flex justify-center md:justify-end">
-              <div className="relative hero-aside w-full max-w-[480px]">
-                <TiltCard max={6} glare className="relative rounded-3xl bg-marine-deep text-frost p-8 md:p-10 overflow-hidden grain shadow-[0_32px_80px_-20px_rgb(15,46,90,0.5)]">
-                  <div className="flex items-center justify-between">
-                    <span className="font-meta-loose text-ember">
-                      RESIDENCIAS COSTA DE PLATA
-                    </span>
-                    <AtryumSymbol tone="ember" className="h-4 w-4" />
-                  </div>
-
-                  <div className="mt-12 md:mt-16 flex items-end justify-between">
-                    <AtryumSymbol tone="ember" className="h-32 w-32 md:h-40 md:w-40" />
-                    <div className="text-right">
-                      <p className="font-meta text-frost/60">RECAUDACIÓN ABRIL</p>
-                      <p className="mt-1.5 font-display text-4xl md:text-5xl text-frost tabular-nums">
-                        <AnimatedCounter value={94} suffix="%" duration={1400} />
-                      </p>
-                      <p className="mt-1 text-[11px] text-frost/50">↑ 22 vs marzo</p>
-                    </div>
-                  </div>
-
-                  <div className="mt-8 pt-6 border-t border-frost/10 grid grid-cols-3 gap-4">
-                    <div>
-                      <p className="font-meta text-frost/60">UNIDADES</p>
-                      <p className="mt-1.5 font-display text-xl text-frost tabular-nums">
-                        <AnimatedCounter value={14} duration={1200} />
-                      </p>
-                    </div>
-                    <div>
-                      <p className="font-meta text-frost/60">VISITAS HOY</p>
-                      <p className="mt-1.5 font-display text-xl text-frost tabular-nums">
-                        <AnimatedCounter value={37} duration={1400} />
-                      </p>
-                    </div>
-                    <div>
-                      <p className="font-meta text-frost/60">VOTANDO</p>
-                      <p className="mt-1.5 font-display text-xl text-ember tabular-nums">
-                        <AnimatedCounter value={2} duration={1000} />
-                      </p>
-                    </div>
-                  </div>
-                </TiltCard>
-
-                {/* Floating cards */}
-                <div className="absolute -left-6 -bottom-8 md:-left-16 md:-bottom-10 hidden sm:block hero-card-float hero-card-float-d1 float-gentle">
-                  <div className="bg-card rounded-2xl shadow-[0_18px_50px_rgba(15,46,90,0.10)] border border-border p-5 w-56">
-                    <p className="font-meta text-cyan">PAGO RECIBIDO</p>
-                    <p className="mt-2 font-display text-[28px] text-marine-deep leading-tight tabular-nums">
-                      $84<span className="text-mute text-lg">.50</span>
-                    </p>
-                    <p className="mt-1 text-[12px] text-mute">3 cuotas · APTO 1-A</p>
-                  </div>
-                </div>
-
-                <div className="absolute -right-4 top-12 md:-right-12 md:top-20 hidden md:block hero-card-float hero-card-float-d2 float-gentle-d1">
-                  <div className="bg-card rounded-2xl shadow-[0_18px_50px_rgba(15,46,90,0.10)] border border-border p-4 w-52">
-                    <div className="flex items-center gap-2">
-                      <span className="h-1.5 w-1.5 rounded-full bg-cyan animate-pulse" />
-                      <p className="font-meta text-cyan">VISITA CONFIRMADA</p>
-                    </div>
-                    <p className="mt-2 text-[14px] font-medium text-marine-deep">Uber · ABC123</p>
-                    <p className="text-[11px] text-mute">→ APTO 2-A · 4H</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Trust strip */}
-          <div className="mt-20 md:mt-28 pt-10 border-t border-marine/10">
-            <p className="font-meta text-mute text-center mb-6">CONSTRUIDO SOBRE INFRAESTRUCTURA QUE NO SE CAE</p>
-            <div className="flex items-center justify-center gap-8 md:gap-14 flex-wrap opacity-60">
-              <span className="font-display text-[18px] text-marine-deep">Vercel</span>
-              <span className="font-display text-[18px] text-marine-deep">Supabase</span>
-              <span className="font-display text-[18px] text-marine-deep">Resend</span>
-              <span className="font-display text-[18px] text-marine-deep">SSL · TLS 1.3</span>
-              <span className="font-display text-[18px] text-marine-deep">RLS Postgres</span>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ═══════════════════════════════════════════════════════════════
-          SECCIÓN 2 · EL DOLOR REAL — quotes-as-stats
-      ═══════════════════════════════════════════════════════════════ */}
-      <section id="dolor" className="relative py-24 md:py-32 bg-marine-deep text-frost overflow-hidden grain">
-        <div className="absolute inset-0 mesh-signature-dark opacity-50 pointer-events-none" aria-hidden="true" />
-
-        <div className="relative mx-auto max-w-7xl px-5 md:px-8">
-          <Reveal>
-            <div className="max-w-3xl">
-              <span className="font-meta-loose text-ember">EL DOLOR REAL</span>
-              <h2 className="mt-6 font-display text-[clamp(2rem,4.2vw,3.5rem)] leading-[1.08] tracking-[-0.03em] text-frost">
-                Tu condominio funciona con un grupo de WhatsApp, una hoja de{" "}
-                <em className="font-editorial text-ember">Excel</em>{" "}
-                y mucha desconfianza.
-              </h2>
-              <p className="mt-7 text-[17px] text-frost/60 leading-relaxed max-w-2xl">
-                Le preguntamos a 40+ residentes y juntas en Caracas, Bogotá y
-                CDMX. Estas son las frases que más se repitieron.
-              </p>
-            </div>
-          </Reveal>
-
-          <div className="mt-14 grid md:grid-cols-3 gap-5">
-            {[
-              {
-                quote: "Pagué hace 2 semanas y la junta sigue diciendo que estoy moroso.",
-                who: "RESIDENTE",
-                city: "CARACAS",
-              },
-              {
-                quote: "La asamblea siempre termina en pelea. Nadie se pone de acuerdo en cómo se cuenta el voto.",
-                who: "JUNTA",
-                city: "BOGOTÁ",
-              },
-              {
-                quote: "Reporté la fuga del baño hace 3 meses. Ya cambió de admin y nadie sabe nada.",
-                who: "RESIDENTE",
-                city: "CDMX",
-              },
-            ].map((q, i) => (
-              <Reveal key={i} delay={i * 140}>
-                <div className="group rounded-2xl border border-frost/10 bg-frost/[0.03] p-7 transition-all duration-500 hover:border-ember/40 hover:bg-frost/[0.05] hover:-translate-y-1 h-full flex flex-col">
-                  <span className="font-display text-ember text-5xl leading-none mb-4" aria-hidden="true">&ldquo;</span>
-                  <p className="text-[16px] text-frost leading-relaxed flex-1">{q.quote}</p>
-                  <div className="mt-6 pt-5 border-t border-frost/10 flex items-center justify-between">
-                    <span className="font-meta text-ember">{q.who}</span>
-                    <span className="font-meta text-frost/40">{q.city}</span>
-                  </div>
-                </div>
-              </Reveal>
-            ))}
-          </div>
-
-          <Reveal delay={400}>
-            <div className="mt-14 max-w-3xl">
-              <p className="text-[17px] text-frost/80 leading-relaxed">
-                Atryum no es Excel con esteroides. Es la app que tu condominio
-                debió tener desde el principio: <em className="font-editorial text-ember">los datos en
-                un solo lugar, las reglas explícitas, las decisiones auditables</em>.
-              </p>
-            </div>
-          </Reveal>
-        </div>
-      </section>
-
-      {/* ═══════════════════════════════════════════════════════════════
-          SECCIÓN 3 · LOS 5 WOWs — sticky scroll storytelling
-      ═══════════════════════════════════════════════════════════════ */}
-      <section id="wow" className="py-24 md:py-32 relative">
-        <div className="mx-auto max-w-7xl px-5 md:px-8 lg:px-16">
-          <Reveal>
-            <div className="max-w-3xl mb-16 md:mb-24">
-              <span className="font-meta-loose text-cyan">LOS 5 WOWs</span>
-              <h2 className="mt-6 font-display text-[clamp(2rem,4.2vw,3.25rem)] leading-[1.08] tracking-[-0.03em] text-marine-deep">
-                Lo que hace que tus residentes lo{" "}
-                <em className="font-editorial text-cyan">amen</em>.
-              </h2>
-              <p className="mt-5 text-[17px] text-mute leading-relaxed max-w-2xl">
-                Cinco features que ningún competidor en LATAM tiene juntas.
-                El cuarto es el que más nos piden y nadie más lo hace bien.
-              </p>
-            </div>
-          </Reveal>
-
-          <WowStack items={wowItems} />
-        </div>
-      </section>
-
-      {/* ═══════════════════════════════════════════════════════════════
-          SECCIÓN 4 · CÓMO FUNCIONA EN 3 PASOS
-      ═══════════════════════════════════════════════════════════════ */}
-      <section className="py-24 md:py-32 bg-cloud/40 border-y border-border">
-        <div className="mx-auto max-w-7xl px-5 md:px-8">
-          <Reveal>
-            <div className="text-center max-w-2xl mx-auto mb-14">
-              <span className="font-meta-loose text-cyan">CÓMO FUNCIONA</span>
-              <h2 className="mt-6 font-display text-[clamp(2rem,4vw,3rem)] leading-[1.08] tracking-[-0.03em] text-marine-deep">
-                De cero a operativo en{" "}
-                <em className="font-editorial text-cyan">10 minutos</em>.
-              </h2>
-              <p className="mt-4 text-[16px] text-mute">
-                Sin instaladores. Sin reuniones de venta. Sin migración mágica.
-              </p>
-            </div>
-          </Reveal>
-          <Reveal delay={120}>
-            <StepsVisual />
-          </Reveal>
-        </div>
-      </section>
-
-      {/* ═══════════════════════════════════════════════════════════════
-          SECCIÓN 5 · PARA VOS — tabs Residente / Junta
-      ═══════════════════════════════════════════════════════════════ */}
-      <section id="audiencia" className="py-24 md:py-32">
-        <div className="mx-auto max-w-7xl px-5 md:px-8">
-          <Reveal>
-            <div className="text-center max-w-2xl mx-auto mb-12">
-              <span className="font-meta-loose text-cyan">PARA VOS</span>
-              <h2 className="mt-6 font-display text-[clamp(2rem,4vw,3rem)] leading-[1.08] tracking-[-0.03em] text-marine-deep">
-                Una app que sirve a los{" "}
-                <em className="font-editorial text-cyan">dos lados</em>.
-              </h2>
-            </div>
-          </Reveal>
-
-          <Reveal delay={120}>
-            <AudienceTabs
-              resident={{
-                headline: "Pagás justo, sabés qué pasa, votás con peso",
-                benefits: [
-                  { icon: "dinero", title: "Pagás lo que te toca", desc: "Cuotas calculadas con tu alícuota real, no por igualado." },
-                  { icon: "rayo", title: "Pagás en 30 segundos", desc: "Pago Móvil, Zelle, transferencia, Binance. Lo que uses." },
-                  { icon: "telefono", title: "Compartís visitas", desc: "Generás QR y lo mandás por WhatsApp en un toque." },
-                  { icon: "voto", title: "Votás de verdad", desc: "Tu voto pesa lo que vale tu apto, no como en el Whatsapp." },
-                ],
-              }}
-              board={{
-                headline: "Cobrás más, peleás menos, decidís con datos",
-                benefits: [
-                  { icon: "grafica", title: "Subís recaudación", desc: "Recordatorios automáticos + transparencia bajan la morosidad." },
-                  { icon: "barras", title: "Asambleas con quórum real", desc: "Voto ponderado por alícuota = acta legalmente vinculante." },
-                  { icon: "escudo", title: "Cero discusiones", desc: "Cada gasto tiene categoría, recibo y se puede anular con razón." },
-                  { icon: "reloj", title: "Recuperás tiempo", desc: "Adiós al WhatsApp 24/7. Todo queda en su flujo correspondiente." },
-                ],
-              }}
-              cta={
-                <Magnetic strength={0.22}>
-                  <Link
-                    href={PORTAL_LOGIN}
-                    className="group bg-marine-deep text-frost text-[15px] font-medium pl-6 pr-4 py-3.5 rounded-xl hover:bg-marine inline-flex items-center gap-3 press-spring shadow-[0_8px_30px_rgb(15,46,90,0.16)] hover:shadow-[0_14px_40px_rgb(15,46,90,0.22)] transition-shadow duration-500"
-                  >
-                    Empezar gratis
-                    <span className="flex h-7 w-7 items-center justify-center rounded-md bg-frost/10 group-hover:bg-frost/20 transition-colors">
-                      <svg className="h-3.5 w-3.5 transition-transform duration-500 group-hover:translate-x-1" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12h15m0 0l-6.75-6.75M19.5 12l-6.75 6.75" />
-                      </svg>
-                    </span>
-                  </Link>
-                </Magnetic>
-              }
-            />
-          </Reveal>
-        </div>
-      </section>
-
-      {/* ═══════════════════════════════════════════════════════════════
-          SECCIÓN 6 · PRECIO HONESTO
-      ═══════════════════════════════════════════════════════════════ */}
-      <section id="precio" className="py-24 md:py-32 bg-cloud/40">
-        <div className="mx-auto max-w-7xl px-5 md:px-8">
-          <Reveal>
-            <div className="text-center mb-16 max-w-2xl mx-auto">
-              <span className="font-meta-loose text-cyan">PRECIO</span>
-              <h2 className="mt-6 font-display text-[clamp(2rem,4vw,3rem)] leading-[1.08] tracking-[-0.03em] text-marine-deep">
-                Empezá gratis. Pagás solo si{" "}
-                <em className="font-editorial text-cyan">crecés</em>.
-              </h2>
-              <p className="mt-4 text-[16px] text-mute">
-                Sin setup. Sin contrato. Cancelás cuando quieras.
-                Todo lo de la lista ya está construido en producción.
-              </p>
-            </div>
-          </Reveal>
-
-          <div className="grid md:grid-cols-3 gap-5 max-w-5xl mx-auto">
-            <Reveal>
-              <PricingCard
-                title="Starter"
-                price="Gratis"
-                subtitle="Hasta 15 unidades, para siempre"
-                cta="Crear cuenta gratis"
-                ctaHref={PORTAL_LOGIN}
-                features={[
-                  "Cobranza por alícuota / plano / tipo",
-                  "Comprobante para múltiples cuotas",
-                  "Mantenimiento con foto + tracking",
-                  "Visitantes con QR + WhatsApp share",
-                  "Decisiones (encuestas + asambleas)",
-                  "Voto ponderado por alícuota",
-                  "Anuncios con prioridad",
-                ]}
-              />
-            </Reveal>
-
-            <Reveal delay={120}>
-              <PricingCard
-                variant="featured"
-                title="Pro"
-                price="$2"
-                priceSuffix="/ud/mes"
-                subtitle="El plan completo"
-                cta="Empezar prueba gratis"
-                ctaHref={PORTAL_LOGIN}
-                features={[
-                  "Todo lo de Starter, sin límite de unidades",
-                  "Presupuesto anual con override mensual",
-                  "Vista ejecutado vs aprobado",
-                  "Categorías de gasto + proveedores",
-                  "Anular gasto con razón obligatoria",
-                  "Reservas de áreas comunes",
-                  "Multi-moneda (USD + Bs)",
-                  "Multi-unidad (varias propiedades, un login)",
-                ]}
-              />
-            </Reveal>
-
-            <Reveal delay={240}>
-              <PricingCard
-                title="Business"
-                price="$3"
-                priceSuffix="/ud/mes"
-                subtitle="Administradoras profesionales"
-                cta="Hablar con ventas"
-                ctaHref={PORTAL_LOGIN}
-                features={[
-                  "Todo lo de Pro",
-                  "Multi-condominio bajo 1 cuenta",
-                  "Branding personalizado",
-                  "SLA 99.9%",
-                  "Soporte prioritario",
-                  "Onboarding asistido",
-                ]}
-              />
-            </Reveal>
-          </div>
-
-          <Reveal delay={400}>
-            <p className="text-center mt-12 font-meta text-mute">
-              ¿15 unidades exactas? · GRATIS PARA SIEMPRE · NUNCA TE COBRAREMOS POR USUARIO
+      <main>
+        {/* ── Portada ─────────────────────────────────────────────────── */}
+        <section className="mx-auto grid max-w-6xl items-center gap-14 px-5 pb-24 pt-16 md:grid-cols-[1.05fr_1fr] md:px-8 md:pt-24">
+          <div>
+            <h1 className="font-display text-[clamp(2.4rem,5.2vw,4.1rem)] font-bold leading-[1.02] tracking-[-0.04em] text-balance">
+              Cuotas claras, pagos comprobados y cuentas que cuadran.
+            </h1>
+            <p className="mt-6 max-w-[34rem] text-[18px] leading-[1.6] text-marine-deep/75">
+              Atryum es la administración del condominio en una sola app. La junta emite y cobra en dólares y bolívares, cada vecino
+              ve lo suyo desde el teléfono y el libro contable se lleva solo.
             </p>
-          </Reveal>
-        </div>
-      </section>
-
-      {/* ═══════════════════════════════════════════════════════════════
-          SECCIÓN 7 · FAQ
-      ═══════════════════════════════════════════════════════════════ */}
-      <section id="faq" className="py-24 md:py-32">
-        <div className="mx-auto max-w-3xl px-5 md:px-8">
-          <Reveal>
-            <div className="mb-12">
-              <span className="font-meta-loose text-cyan">PREGUNTAS DURAS</span>
-              <h2 className="mt-6 font-display text-[clamp(2rem,4vw,3rem)] leading-[1.08] tracking-[-0.03em] text-marine-deep">
-                Las que la junta{" "}
-                <em className="font-editorial text-cyan">siempre</em> pregunta.
-              </h2>
+            <div className="mt-9 flex flex-wrap gap-3">
+              <a href={DEMO} className="rounded-xl bg-ember px-6 py-3.5 text-[15px] font-semibold text-marine-deep shadow-[0_14px_36px_-14px_rgb(232_115_44/0.7)] hover:brightness-105">
+                Pedir una demostración
+              </a>
+              <a href="#mes" className="rounded-xl px-5 py-3.5 text-[15px] font-medium text-marine-deep ring-1 ring-marine-deep/20 hover:bg-marine-deep/5">
+                Ver cómo funciona
+              </a>
             </div>
-          </Reveal>
-          <Reveal delay={120}>
-            <FAQAccordion items={faqs} />
-          </Reveal>
-        </div>
-      </section>
+            <p className="mt-6 text-[13.5px] text-mute">Con su primer condominio piloto en Lechería, Anzoátegui. Sin instalar nada: funciona en el navegador.</p>
+          </div>
+          <ReciboVivo tasa={tasa || 857.89} fechaTasa={fecha || "día"} />
+        </section>
 
-      {/* ═══════════════════════════════════════════════════════════════
-          SECCIÓN 8 · CTA FINAL
-      ═══════════════════════════════════════════════════════════════ */}
-      <Reveal>
-        <section className="relative py-28 md:py-40 bg-marine-deep text-frost overflow-hidden grain">
-          <div className="absolute inset-0 mesh-signature-dark opacity-60 pointer-events-none" aria-hidden="true" />
-          <div className="relative mx-auto max-w-4xl px-5 md:px-8 text-center">
-            <AtryumSymbol tone="ember" className="h-14 w-14 mx-auto mb-8" />
-            <h2 className="font-display text-[clamp(2.25rem,5vw,4rem)] leading-[1.05] tracking-[-0.035em]">
-              Dale a tu condominio
-              <br />
-              la <em className="font-editorial text-ember">app</em> que se merece.
+        {/* ── Un mes en el condominio ─────────────────────────────────── */}
+        <section id="mes" className="border-y border-marine-deep/10 bg-white">
+          <div className="mx-auto max-w-6xl px-5 py-24 md:px-8">
+            <h2 className="max-w-2xl font-display text-[clamp(1.9rem,3.6vw,2.8rem)] font-bold leading-[1.08] tracking-[-0.03em] text-balance">
+              Un mes en el condominio, sin perseguir a nadie por WhatsApp
             </h2>
-            <p className="mt-6 text-[17px] text-frost/60 max-w-lg mx-auto">
-              2 minutos para registrarte. Sin tarjeta. Sin contrato.
-              Gratis hasta 15 unidades.
+            <p className="mt-4 max-w-2xl text-[17px] leading-relaxed text-marine-deep/70">
+              El recorrido de cada cuota, de la emisión al libro. Cada paso deja rastro y nadie tiene que reconstruir nada en Excel.
             </p>
-            <div className="mt-10">
-              <Magnetic strength={0.3}>
-                <Link
-                  href={PORTAL_LOGIN}
-                  className="group bg-ember text-marine-deep text-[15px] font-medium pl-7 pr-5 py-4 rounded-xl inline-flex items-center gap-3 press-spring shadow-[0_16px_44px_-12px_rgb(232,115,44,0.55)] hover:shadow-[0_24px_60px_-10px_rgb(232,115,44,0.7)] transition-shadow duration-500"
-                >
-                  Empezar gratis ahora
-                  <span className="flex h-7 w-7 items-center justify-center rounded-md bg-marine-deep/10 group-hover:bg-marine-deep/25 transition-colors">
-                    <svg className="h-3.5 w-3.5 transition-transform duration-500 group-hover:translate-x-1" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12h15m0 0l-6.75-6.75M19.5 12l-6.75 6.75" />
-                    </svg>
-                  </span>
-                </Link>
-              </Magnetic>
-            </div>
-            <p className="mt-8 font-meta text-frost/50">
-              ¿PREGUNTAS? · ESCRIBINOS A HOLA@ATRYUM.NET
-            </p>
+            <ol className="mt-14 grid gap-10 md:grid-cols-4 md:gap-8">
+              {PASOS_DEL_MES.map((p, i) => (
+                <li key={p.titulo} className="relative">
+                  <div className="flex items-center gap-3">
+                    <span className="flex h-10 w-10 items-center justify-center rounded-full bg-marine-deep font-display text-[15px] font-bold text-frost">
+                      {i + 1}
+                    </span>
+                    {i < PASOS_DEL_MES.length - 1 && <span className="hidden h-px flex-1 bg-marine-deep/15 md:block" aria-hidden="true" />}
+                  </div>
+                  <h3 className="mt-5 flex items-center gap-2 font-display text-[19px] font-semibold tracking-[-0.01em]">
+                    <Icono nombre={p.icono} className="h-5 w-5 text-cyan-ink" />
+                    {p.titulo}
+                  </h3>
+                  <p className="mt-2 text-[15px] leading-relaxed text-marine-deep/70">{p.texto}</p>
+                </li>
+              ))}
+            </ol>
           </div>
         </section>
-      </Reveal>
 
-      {/* ═══════════════════════════════════════════════════════════════
-          FOOTER
-      ═══════════════════════════════════════════════════════════════ */}
-      <footer className="border-t border-border py-12 bg-frost">
-        <div className="mx-auto max-w-7xl px-5 md:px-8 flex flex-col md:flex-row items-center justify-between gap-6">
-          <div className="flex items-center gap-4">
-            <AtryumLogo variant="horizontal" tone="color" className="text-[16px]" />
-            <span className="font-editorial text-mute text-[15px] hidden md:inline">
-              Un átrium dentro de cada A.
-            </span>
+        {/* ── Atri ─────────────────────────────────────────────────────── */}
+        <section className="bg-marine-deep text-frost">
+          <div className="mx-auto grid max-w-6xl items-center gap-12 px-5 py-24 md:grid-cols-[0.9fr_1.1fr] md:px-8">
+            <div>
+              <CaraConserje tam={96} />
+              <h2 className="mt-6 font-display text-[clamp(1.9rem,3.6vw,2.8rem)] font-bold leading-[1.08] tracking-[-0.03em] text-balance">
+                Atri, el conserje que responde a cualquier hora
+              </h2>
+              <p className="mt-4 max-w-md text-[17px] leading-relaxed text-frost/75">
+                Está en todas las pantallas. Contesta con los datos del condominio lo que antes era un mensaje a la administración, y si
+                algo se dañó, deja el reporte listo para confirmar.
+              </p>
+              <p className="mt-4 max-w-md text-[14px] text-frost/55">
+                Solo habla de las unidades de quien le pregunta: nunca de la deuda de otro vecino.
+              </p>
+            </div>
+            <div className="space-y-3 rounded-2xl bg-white/[0.04] p-5 ring-1 ring-white/10 sm:p-6" aria-label="Ejemplo de conversación con Atri">
+              <Burbuja de="vecino">¿Cuánto debo?</Burbuja>
+              <Burbuja de="atri">
+                Tienes 2 cuotas por pagar: $230,51 (Bs 197.751,67 a la tasa BCV de hoy). La de agosto ya está vencida.
+              </Burbuja>
+              <Burbuja de="vecino">¿Está libre el caney el sábado?</Burbuja>
+              <Burbuja de="atri">El caney el sábado está ocupado de 2:00 PM a 7:00 PM. El resto del día está libre.</Burbuja>
+              <Burbuja de="vecino">Hay una fuga en el pasillo del piso 5</Burbuja>
+              <Burbuja de="atri">
+                Lo reporto por ti a la administración. Revisa el formulario de abajo, agrega una foto si puedes y toca «Enviar reporte».
+              </Burbuja>
+            </div>
           </div>
-          <p className="font-meta text-mute">
-            HECHO POR{" "}
-            <a
-              href="https://tuwebgo.net"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-cyan hover:underline"
-            >
-              TUWEBGO.NET
+        </section>
+
+        {/* ── Para la junta ───────────────────────────────────────────── */}
+        <section id="junta" className="mx-auto max-w-6xl px-5 py-24 md:px-8">
+          <div className="grid gap-10 md:grid-cols-[1fr_2fr]">
+            <div>
+              <h2 className="font-display text-[clamp(1.9rem,3.6vw,2.8rem)] font-bold leading-[1.08] tracking-[-0.03em] text-balance">
+                Para la junta y la administración
+              </h2>
+              <p className="mt-4 text-[17px] leading-relaxed text-marine-deep/70">
+                Lo que hoy vive entre un Excel, una libreta y el grupo de WhatsApp, en un solo lugar y con respaldo.
+              </p>
+              <div className="relative mt-8 hidden aspect-[4/5] overflow-hidden rounded-2xl md:block">
+                <Image src="/landing/torres-ciudad.webp" alt="Torres residenciales al atardecer" fill sizes="(min-width: 768px) 30vw, 100vw" className="object-cover" />
+              </div>
+            </div>
+            <div className="space-y-12">
+              {JUNTA.map((g) => (
+                <div key={g.grupo}>
+                  <h3 className="border-b border-marine-deep/15 pb-2 font-display text-[15px] font-semibold text-cyan-ink">{g.grupo}</h3>
+                  <dl className="mt-5 grid gap-x-8 gap-y-6 sm:grid-cols-2">
+                    {g.items.map((it) => (
+                      <div key={it.titulo} className="flex gap-3.5">
+                        <Icono nombre={it.icono} className="mt-0.5 h-5 w-5 shrink-0 text-marine" />
+                        <div>
+                          <dt className="text-[15.5px] font-semibold">{it.titulo}</dt>
+                          <dd className="mt-1 text-[14.5px] leading-relaxed text-marine-deep/70">{it.texto}</dd>
+                        </div>
+                      </div>
+                    ))}
+                  </dl>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* ── Para el vecino ──────────────────────────────────────────── */}
+        <section id="vecino" className="border-y border-marine-deep/10 bg-white">
+          <div className="mx-auto grid max-w-6xl items-center gap-14 px-5 py-24 md:grid-cols-2 md:px-8">
+            <Telefono />
+            <div>
+              <h2 className="font-display text-[clamp(1.9rem,3.6vw,2.8rem)] font-bold leading-[1.08] tracking-[-0.03em] text-balance">
+                Para el vecino: abrir, ver cuánto debe y pagar
+              </h2>
+              <ul className="mt-8 space-y-5">
+                {[
+                  ["dinero", "Su saldo al día, en dólares y en bolívares a la tasa de hoy, con los datos bancarios del condominio a un toque."],
+                  ["clip", "Reporta el pago con la captura. Recibe el aviso cuando lo aprueban y descarga su constancia o su estado de cuenta."],
+                  ["auto", "Pases QR para sus visitas, que manda por WhatsApp. La garita le avisa cuando llegan."],
+                  ["paquete", "Un aviso cuando le dejan un paquete en la garita, y otro cuando alguien lo retira."],
+                  ["edificio", "Reserva la parrillera, el caney o la piscina viendo la disponibilidad de la semana."],
+                ].map(([icono, texto]) => (
+                  <li key={texto} className="flex gap-3.5 text-[16px] leading-relaxed text-marine-deep/80">
+                    <Icono nombre={icono as NombreIcono} className="mt-1 h-5 w-5 shrink-0 text-ember-ink" />
+                    {texto}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        </section>
+
+        {/* ── Garita ──────────────────────────────────────────────────── */}
+        <section className="relative isolate overflow-hidden bg-marine-deep text-frost">
+          <Image src="/landing/garita-noche.webp" alt="" fill sizes="100vw" className="-z-10 object-cover object-right opacity-80" />
+          <div className="absolute inset-0 -z-10 bg-gradient-to-r from-marine-deep from-35% via-marine-deep/80 to-marine-deep/10" aria-hidden="true" />
+          <div className="mx-auto max-w-6xl px-5 py-24 md:px-8">
+            <div className="max-w-xl">
+              <h2 className="font-display text-[clamp(1.9rem,3.6vw,2.8rem)] font-bold leading-[1.08] tracking-[-0.03em] text-balance">
+                La garita, sin libreta
+              </h2>
+              <p className="mt-4 text-[17px] leading-relaxed text-frost/75">
+                El teléfono o la tablet de la vigilancia se vincula una sola vez. El vigilante no necesita cuenta ni ve nada de cuotas.
+              </p>
+              <ul className="mt-8 space-y-4 text-[15.5px] text-frost/85">
+                <li className="flex gap-3"><Icono nombre="check" className="mt-0.5 h-5 w-5 shrink-0 text-cyan" />Escanea el QR de la visita y registra la entrada; un pase vencido o ya usado no pasa.</li>
+                <li className="flex gap-3"><Icono nombre="check" className="mt-0.5 h-5 w-5 shrink-0 text-cyan" />Ve las visitas esperadas del día y busca por nombre, cédula, placa o apartamento.</li>
+                <li className="flex gap-3"><Icono nombre="check" className="mt-0.5 h-5 w-5 shrink-0 text-cyan" />Recibe y entrega paquetes, y queda anotado quién los retiró.</li>
+              </ul>
+            </div>
+          </div>
+        </section>
+
+        {/* ── Quién ve qué ────────────────────────────────────────────── */}
+        <section className="mx-auto max-w-6xl px-5 py-24 md:px-8">
+          <h2 className="max-w-2xl font-display text-[clamp(1.9rem,3.6vw,2.8rem)] font-bold leading-[1.08] tracking-[-0.03em] text-balance">
+            Cada quien ve lo que le toca
+          </h2>
+          <div className="mt-10 overflow-x-auto rounded-2xl ring-1 ring-marine-deep/10">
+            <table className="w-full min-w-[40rem] bg-white text-left text-[14.5px]">
+              <thead className="bg-frost text-[13px] text-mute">
+                <tr>
+                  <th className="px-5 py-3 font-medium">Quién</th>
+                  <th className="px-5 py-3 font-medium">Ve</th>
+                  <th className="px-5 py-3 font-medium">Puede</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-marine-deep/10">
+                {[
+                  ["Propietario", "Sus cuotas, sus pagos, los gastos del condominio y los comunicados", "Pagar, reservar, invitar visitas, reportar averías, votar y dar permisos a su inquilino"],
+                  ["Inquilino", "Lo que el propietario le permita", "Lo mismo que el propietario, dentro de esos permisos"],
+                  ["Administración", "Todo el condominio", "Emitir, aprobar, anular con nota de crédito, registrar gastos, llevar el libro"],
+                  ["Garita", "Visitas del día y paquetes", "Registrar entradas y entregas; nada de dinero"],
+                ].map(([q, v, p]) => (
+                  <tr key={q}>
+                    <th scope="row" className="px-5 py-4 align-top font-semibold">{q}</th>
+                    <td className="px-5 py-4 align-top text-marine-deep/75">{v}</td>
+                    <td className="px-5 py-4 align-top text-marine-deep/75">{p}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        {/* ── Precio ──────────────────────────────────────────────────── */}
+        <section id="precio" className="border-y border-marine-deep/10 bg-white">
+          <div className="mx-auto max-w-6xl px-5 py-24 md:px-8">
+            <h2 className="max-w-2xl font-display text-[clamp(1.9rem,3.6vw,2.8rem)] font-bold leading-[1.08] tracking-[-0.03em] text-balance">
+              Precio por unidad, no por persona
+            </h2>
+            <p className="mt-4 max-w-2xl text-[17px] text-marine-deep/70">
+              Un apartamento con propietario e inquilino cuenta como una unidad. Sin contrato de permanencia.
+            </p>
+            <div className="mt-12 grid gap-5 md:grid-cols-3">
+              <Plan
+                nombre="Inicial"
+                precio="Gratis"
+                nota="Hasta 15 unidades"
+                items={["Cuotas por alícuota y pagos con comprobante", "Comunicados, averías y reservas", "Pases QR para visitas", "Atri, el conserje"]}
+              />
+              <Plan
+                destacado
+                nombre="Condominio"
+                precio="$2"
+                sufijo="por unidad al mes"
+                nota="Todo lo de la app"
+                items={[
+                  "Recibos numerados, notas de crédito y abonos",
+                  "Cuentas por cobrar, convenios e intereses",
+                  "Libro diario, mayor y relación de gastos",
+                  "Garita con visitas y paquetes",
+                  "Presupuesto, grupos de prorrateo y asambleas",
+                ]}
+              />
+              <Plan
+                nombre="Administradoras"
+                precio="$3"
+                sufijo="por unidad al mes"
+                nota="Varios condominios"
+                items={["Todo lo del plan Condominio", "Varios condominios en una cuenta", "Logo de cada condominio en su app", "Acompañamiento para la puesta en marcha"]}
+              />
+            </div>
+          </div>
+        </section>
+
+        {/* ── Preguntas ───────────────────────────────────────────────── */}
+        <section className="mx-auto max-w-3xl px-5 py-24 md:px-8">
+          <h2 className="font-display text-[clamp(1.9rem,3.6vw,2.8rem)] font-bold leading-[1.08] tracking-[-0.03em]">
+            Lo que la junta siempre pregunta
+          </h2>
+          <div className="mt-10">
+            <FAQAccordion items={FAQS} />
+          </div>
+        </section>
+
+        {/* ── Cierre ──────────────────────────────────────────────────── */}
+        <section className="bg-marine-deep text-frost">
+          <div className="mx-auto flex max-w-6xl flex-col items-start gap-8 px-5 py-20 md:flex-row md:items-center md:justify-between md:px-8">
+            <div className="max-w-xl">
+              <h2 className="font-display text-[clamp(1.9rem,3.6vw,2.8rem)] font-bold leading-[1.08] tracking-[-0.03em]">
+                Veamos tu condominio en Atryum
+              </h2>
+              <p className="mt-3 text-[17px] text-frost/70">
+                Te mostramos la app con una demostración y te ayudamos a cargar las unidades, las alícuotas y la deuda que ya existe.
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-3">
+              <a href={DEMO} className="rounded-xl bg-ember px-6 py-3.5 text-[15px] font-semibold text-marine-deep hover:brightness-105">
+                Pedir una demostración
+              </a>
+              <Link href="/guias/administracion" className="rounded-xl px-5 py-3.5 text-[15px] font-medium text-frost ring-1 ring-frost/25 hover:bg-white/5">
+                Leer la guía de la junta
+              </Link>
+            </div>
+          </div>
+        </section>
+      </main>
+
+      <footer className="border-t border-marine-deep/10">
+        <div className="mx-auto flex max-w-6xl flex-col gap-6 px-5 py-10 text-[14px] text-mute md:flex-row md:items-center md:justify-between md:px-8">
+          <AtryumLogo variant="horizontal" tone="color" className="text-[18px]" />
+          <nav className="flex flex-wrap gap-x-6 gap-y-2" aria-label="Guías">
+            <Link href="/guias/propietario" className="hover:text-marine-deep">Guía del propietario</Link>
+            <Link href="/guias/administracion" className="hover:text-marine-deep">Guía de la administración</Link>
+            <a href="mailto:hola@atryum.net" className="hover:text-marine-deep">hola@atryum.net</a>
+          </nav>
+          <p>
+            Hecho por{" "}
+            <a href="https://tuwebgo.net" target="_blank" rel="noopener noreferrer" className="text-marine hover:underline">
+              TuWebGo
             </a>
           </p>
         </div>
       </footer>
 
-      {/* SEO structured data */}
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
@@ -688,18 +462,9 @@ export default function HomePage() {
             applicationCategory: "BusinessApplication",
             operatingSystem: "Web",
             description:
-              "App de gestión de condominios para Latam. Cobranza por alícuota, voto ponderado en asambleas, visitantes con QR + WhatsApp, presupuesto que todos auditan.",
-            offers: {
-              "@type": "Offer",
-              price: "0",
-              priceCurrency: "USD",
-              description: "Gratis hasta 15 unidades",
-            },
-            creator: {
-              "@type": "Organization",
-              name: "Atryum",
-              url: "https://atryum.net",
-            },
+              "Administración de condominios en Venezuela: cuotas en dólares y bolívares a la tasa BCV, recibos numerados, cuentas por cobrar, libro diario, garita con visitas y paquetes, y un conserje virtual.",
+            offers: { "@type": "Offer", price: "0", priceCurrency: "USD", description: "Gratis hasta 15 unidades" },
+            creator: { "@type": "Organization", name: "Atryum", url: "https://atryum.net" },
           }),
         }}
       />
@@ -707,99 +472,98 @@ export default function HomePage() {
   );
 }
 
-interface PricingCardProps {
-  title: string;
-  price: string;
-  priceSuffix?: string;
-  subtitle: string;
-  cta: string;
-  ctaHref: string;
-  features: string[];
-  variant?: "default" | "featured";
+function Burbuja({ de, children }: { de: "vecino" | "atri"; children: React.ReactNode }) {
+  if (de === "vecino") {
+    return (
+      <p className="ml-auto w-fit max-w-[80%] rounded-2xl rounded-br-md bg-ember px-4 py-2.5 text-[14.5px] font-medium text-marine-deep">
+        {children}
+      </p>
+    );
+  }
+  return (
+    <div className="flex items-end gap-2">
+      <CaraConserje tam={28} animada={false} className="shrink-0" />
+      <p className="max-w-[85%] rounded-2xl rounded-bl-md bg-white px-4 py-2.5 text-[14.5px] leading-relaxed text-marine-deep">{children}</p>
+    </div>
+  );
 }
 
-function PricingCard({
-  title,
-  price,
-  priceSuffix,
-  subtitle,
-  cta,
-  ctaHref,
-  features,
-  variant = "default",
-}: PricingCardProps) {
-  const featured = variant === "featured";
-
+/** La pantalla de inicio del vecino, dibujada con los estilos de la app. */
+function Telefono() {
   return (
-    <div
-      className={`relative rounded-2xl p-7 h-full hover-lift ${
-        featured
-          ? "bg-marine-deep text-frost border border-marine-deep shadow-[0_20px_60px_rgba(15,46,90,0.18)]"
-          : "bg-card text-marine-deep border border-border"
-      }`}
-    >
-      {featured && (
-        <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-ember text-marine-deep font-meta px-3 py-1 rounded-full badge-pop badge-pop-d1">
-          MÁS ELEGIDO
+    <div className="mx-auto w-full max-w-[300px] rounded-[2.6rem] bg-marine-deep p-2.5 shadow-[0_40px_80px_-30px_rgb(15_46_90/0.55)]" aria-hidden="true">
+      <div className="overflow-hidden rounded-[2.1rem] bg-frost">
+        <div className="flex items-center justify-between bg-marine-deep px-5 pb-1.5 pt-3 text-[10px] text-frost/70">
+          <span>7:44 AM</span>
+          <span className="font-mono text-cyan">BCV 857,89</span>
         </div>
-      )}
-
-      <p className={`font-meta ${featured ? "text-ember" : "text-mute"}`}>
-        {title.toUpperCase()}
-      </p>
-      <div className="mt-4 flex items-baseline gap-1.5">
-        <span className="font-display text-[40px] leading-none">{price}</span>
-        {priceSuffix && (
-          <span className={`text-[14px] ${featured ? "text-frost/60" : "text-mute"}`}>
-            {priceSuffix}
-          </span>
-        )}
-      </div>
-      <p className={`mt-2 text-[13px] ${featured ? "text-frost/60" : "text-mute"}`}>
-        {subtitle}
-      </p>
-
-      <Link
-        href={ctaHref}
-        className={`mt-6 w-full py-3 rounded-xl text-[13px] font-medium transition-colors btn-press flex items-center justify-center ${
-          featured
-            ? "bg-ember text-marine-deep hover:bg-ember"
-            : "border border-marine/25 text-marine-deep hover:bg-marine/10"
-        }`}
-      >
-        {cta}
-      </Link>
-
-      <div
-        className={`mt-6 pt-6 space-y-3 border-t ${
-          featured ? "border-frost/10" : "border-border"
-        }`}
-      >
-        {features.map((f) => (
-          <div
-            key={f}
-            className={`flex items-start gap-2.5 text-[13px] ${
-              featured ? "text-frost/80" : "text-marine-deep/75"
-            }`}
-          >
-            <svg
-              className={`mt-0.5 h-4 w-4 shrink-0 ${featured ? "text-ember" : "text-cyan"}`}
-              viewBox="0 0 20 20"
-              fill="none"
-              aria-hidden="true"
-            >
-              <path
-                d="M4 10.5L8 14.5L16 6"
-                stroke="currentColor"
-                strokeWidth="1.75"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-            {f}
+        <div className="flex items-center gap-2 border-b border-marine-deep/10 bg-white px-4 py-3">
+          <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-marine-deep text-[11px] font-bold text-frost">EM</span>
+          <span className="font-display text-[13px] font-semibold">Residencias El Mirador</span>
+        </div>
+        <div className="space-y-3 px-4 py-4">
+          <p className="text-[11px] text-mute">Buenos días</p>
+          <p className="-mt-2 font-display text-[22px] font-bold tracking-[-0.03em]">María</p>
+          <div className="rounded-2xl bg-white p-4 ring-1 ring-marine-deep/10">
+            <p className="text-[10.5px] text-mute">Saldo pendiente</p>
+            <p className="mt-1 font-display text-[26px] font-bold leading-none tracking-[-0.03em]">$230,51</p>
+            <p className="mt-1.5 text-[10.5px] text-ember-ink">Cuota de agosto vencida hace 29 días</p>
+            <p className="text-[10.5px] text-mute">Bs 197.751,67 · tasa 857,89</p>
+            <span className="mt-3 block rounded-lg bg-marine py-2 text-center text-[12px] font-semibold text-frost">Pagar 2 cuotas</span>
           </div>
-        ))}
+          <div className="rounded-2xl bg-white p-3.5 ring-1 ring-marine-deep/10">
+            <p className="text-[11px] font-semibold">Tienes un paquete en la garita</p>
+            <p className="text-[10.5px] text-mute">Caja mediana · MRW · llegó hoy 11:20 AM</p>
+          </div>
+          <div className="flex items-center gap-2.5 rounded-2xl bg-white p-3 ring-1 ring-marine-deep/10">
+            <CaraConserje tam={30} animada={false} />
+            <p className="text-[10.5px] leading-snug text-marine-deep/80">Pregúntale a Atri lo que necesites, o cuéntale si algo se dañó.</p>
+          </div>
+        </div>
       </div>
+    </div>
+  );
+}
+
+function Plan({
+  nombre,
+  precio,
+  sufijo,
+  nota,
+  items,
+  destacado = false,
+}: {
+  nombre: string;
+  precio: string;
+  sufijo?: string;
+  nota: string;
+  items: string[];
+  destacado?: boolean;
+}) {
+  return (
+    <div className={`flex flex-col rounded-2xl p-7 ${destacado ? "bg-marine-deep text-frost" : "bg-frost ring-1 ring-marine-deep/10"}`}>
+      <p className={`font-display text-[18px] font-semibold ${destacado ? "text-ember" : ""}`}>{nombre}</p>
+      <p className="mt-4 flex items-baseline gap-1.5">
+        <span className="font-display text-[40px] font-bold leading-none tracking-[-0.03em]">{precio}</span>
+        {sufijo && <span className={`text-[14px] ${destacado ? "text-frost/65" : "text-mute"}`}>{sufijo}</span>}
+      </p>
+      <p className={`mt-2 text-[14px] ${destacado ? "text-frost/65" : "text-mute"}`}>{nota}</p>
+      <ul className={`mt-6 flex-1 space-y-3 border-t pt-6 text-[14.5px] ${destacado ? "border-white/10 text-frost/85" : "border-marine-deep/10 text-marine-deep/80"}`}>
+        {items.map((i) => (
+          <li key={i} className="flex gap-2.5">
+            <Icono nombre="check" className={`mt-0.5 h-4 w-4 shrink-0 ${destacado ? "text-ember" : "text-cyan-ink"}`} />
+            {i}
+          </li>
+        ))}
+      </ul>
+      <a
+        href={DEMO}
+        className={`mt-7 rounded-xl py-3 text-center text-[14px] font-semibold ${
+          destacado ? "bg-ember text-marine-deep hover:brightness-105" : "text-marine-deep ring-1 ring-marine-deep/20 hover:bg-marine-deep/5"
+        }`}
+      >
+        {precio === "Gratis" ? "Empezar" : "Pedir una demostración"}
+      </a>
     </div>
   );
 }
