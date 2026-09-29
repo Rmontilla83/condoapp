@@ -109,6 +109,9 @@ export default async function PagosPage() {
 
   const lastPaid = paidInvoices[0];
   const nextDue = actionableInvoices[0];
+  // La más antigua sin pagar puede estar ya vencida: entonces no es «próximo».
+  const hoyVE = new Date().toLocaleDateString("en-CA", { timeZone: "America/Caracas" });
+  const nextDueVencida = !!nextDue && nextDue.due_date < hoyVE;
 
   return (
     <div className="space-y-8">
@@ -180,7 +183,9 @@ export default async function PagosPage() {
           )}
         </div>
         <div className="rounded-2xl bg-card border border-border p-4 md:p-5 min-w-0">
-          <p className="font-meta text-mute">PRÓXIMO VENCIMIENTO</p>
+          <p className={`font-meta ${nextDueVencida ? "text-ember-ink" : "text-mute"}`}>
+            {nextDueVencida ? "VENCIDA DESDE" : "PRÓXIMO VENCIMIENTO"}
+          </p>
           {nextDue ? (
             <>
               <p className="mt-3 font-display text-[22px] md:text-[28px] leading-none tracking-[-0.02em] text-marine-deep">

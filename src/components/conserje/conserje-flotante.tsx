@@ -37,15 +37,17 @@ export function ConserjeFlotante({
     } catch {
       return;
     }
-    const t = setTimeout(() => setSaludo(true), 3500);
-    const f = setTimeout(() => {
-      setSaludo(false);
+    // Se marca como visto apenas aparece: si el vecino cambia de página antes
+    // de que se esconda, no tiene que volver a salirle en cada pantalla.
+    const t = setTimeout(() => {
+      setSaludo(true);
       try {
         localStorage.setItem("atri-saludo", "1");
       } catch {
         /* sin almacenamiento: vuelve a saludar la próxima vez, no pasa nada */
       }
-    }, 11000);
+    }, 3500);
+    const f = setTimeout(() => setSaludo(false), 11000);
     return () => {
       clearTimeout(t);
       clearTimeout(f);

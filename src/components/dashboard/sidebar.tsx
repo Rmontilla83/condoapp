@@ -105,7 +105,7 @@ export function Sidebar({ isAdmin = false }: { isAdmin?: boolean }) {
   const pathname = usePathname();
 
   return (
-    <aside className="hidden md:flex md:w-64 md:flex-col bg-sidebar text-sidebar-foreground">
+    <aside className="hidden md:flex md:w-64 md:shrink-0 md:flex-col md:overflow-y-auto bg-sidebar text-sidebar-foreground [scrollbar-width:thin]">
       {/* Logo hero: usamos el lockup apilado oficial del kit (PNG 1.3:1).
           En el sidebar dark queda premium con colores originales (manual
           "C Reversed" aprueba símbolo a color + wordmark blanco). */}

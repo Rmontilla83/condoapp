@@ -115,7 +115,7 @@ export function Contactos({ propietarios, condominio }: { propietarios: Propieta
       <dl className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         {[
           ["Propietarios", conteo.todos],
-          ["Con correo", conteo.todos - conteo.sin_correo],
+          ["Con correo", propietarios.filter((p) => p.correo).length],
           ["Con teléfono", conTelefono],
           ["Ya entraron", conteo.entraron],
         ].map(([label, n]) => (
