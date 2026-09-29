@@ -59,6 +59,17 @@ export async function createMaintenanceRequest(
       if (!misUnidades.includes(unitId)) {
         return { error: "Esa unidad no es tuya." };
       }
+      // Y del condominio en el que se crea el reporte: quien tiene unidades en
+      // dos condominios no puede cruzarlas.
+      const { data: unidad } = await createAdminClient()
+        .from("units")
+        .select("id")
+        .eq("id", unitId)
+        .eq("organization_id", profile.organization_id)
+        .maybeSingle();
+      if (!unidad) {
+        return { error: "Esa unidad no es de este condominio." };
+      }
     }
     if (commonAreaId) {
       const { data: area } = await supabase

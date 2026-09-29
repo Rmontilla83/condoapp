@@ -127,6 +127,11 @@ function detectar(texto: string): Intencion[] {
   // lista de áreas o a las normas, que también matchean palabras como "piso".
   const cat = categoriaServicio(texto);
   if ((cat && !encontradas.includes("deuda") && !encontradas.includes("disponibilidad")) || (encontradas.includes("servicio") && !encontradas.includes("deuda"))) {
+    // "Se me dañó el aire": los técnicos Y el reporte listo. Si es un área
+    // común ("se dañó el ascensor"), lo primero es avisarle a la administración.
+    if (encontradas.includes("mantenimiento") || /\b(se (me )?dano|se (me )?rompio)\b/.test(t)) {
+      return sugerirAveria(texto).lugar === "area_comun" ? ["mantenimiento", "servicio"] : ["servicio", "mantenimiento"];
+    }
     return ["servicio"];
   }
   // "¿Está libre la parrillera?" es disponibilidad, no la lista de áreas.
@@ -431,7 +436,12 @@ async function responderIntencion(
 
     case "mantenimiento": {
       const m = await q.misSolicitudes();
-      const lineas = ["Lo reporto por ti a la administración: revisa el formulario de abajo, agrega una foto si puedes y toca «Enviar reporte»."];
+      const propio = sugerirAveria(texto).lugar === "unidad" && categoriaServicio(texto) !== null;
+      const lineas = [
+        propio
+          ? "Si prefieres que lo vea la administración, te dejé el reporte listo abajo: revísalo, agrega una foto si puedes y toca «Enviar reporte»."
+          : "Lo reporto por ti a la administración: revisa el formulario de abajo, agrega una foto si puedes y toca «Enviar reporte».",
+      ];
       if (m.solicitudes.length) {
         lineas.push("Tus solicitudes:");
         for (const s of m.solicitudes.slice(0, 4)) lineas.push(`• ${s.titulo}: ${s.estado}`);

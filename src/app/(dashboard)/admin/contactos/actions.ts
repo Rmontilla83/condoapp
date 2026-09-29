@@ -45,7 +45,12 @@ export async function procesarPlanilla(texto: string, aplicar: boolean): Promise
   const { filas, error } = leerPlanilla(texto);
   if (error) return { error };
 
-  const propietarios = await propietariosDeOrg(orgId);
+  let propietarios: Awaited<ReturnType<typeof propietariosDeOrg>>;
+  try {
+    propietarios = await propietariosDeOrg(orgId);
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : "No se pudo leer los propietarios" };
+  }
   const porUnidad = new Map<string, typeof propietarios>();
   const porClaveCorta = new Map<string, typeof propietarios | null>();
   for (const p of propietarios) {
@@ -61,7 +66,10 @@ export async function procesarPlanilla(texto: string, aplicar: boolean): Promise
   // Estado vivo por persona: una misma persona puede tener varias unidades y
   // venir en varias filas.
   const persona = new Map(
-    propietarios.map((p) => [p.profileId, { nombre: p.nombre, correo: p.correo, telefono: p.telefono, entro: p.entro }]),
+    propietarios.map((p) => [
+      p.profileId,
+      { nombre: p.nombre, correo: p.correo, telefono: p.telefono, entro: p.entro, editable: p.editable },
+    ]),
   );
   const correoDe = new Map(propietarios.map((p) => [p.correo, p.profileId]));
 
@@ -102,6 +110,8 @@ export async function procesarPlanilla(texto: string, aplicar: boolean): Promise
       if (!correoValido(f.correo)) detalle = `Correo inválido: ${f.correo}`;
       else if (esCorreoProvisional(f.correo)) detalle = "Ese correo es de prueba";
       else if (dueñoDelCorreo && dueñoDelCorreo !== dueño.profileId) detalle = `${f.correo} ya lo usa otra cuenta`;
+      else if (!actual.editable)
+        detalle = "Esta cuenta es de administración o tiene unidades en otro condominio; su correo no se cambia desde aquí";
       else if (actual.entro && !esCorreoProvisional(actual.correo))
         detalle = `Ya entra con ${actual.correo}; ese correo se cambia desde su unidad`;
       else {
@@ -122,6 +132,14 @@ export async function procesarPlanilla(texto: string, aplicar: boolean): Promise
       cambios.push(`nombre → ${patch.full_name}`);
     }
 
+    // Teléfono y nombre tampoco se tocan en cuentas ajenas a este condominio.
+    if (!actual.editable) {
+      delete patch.phone;
+      delete patch.full_name;
+      cambios.length = 0;
+      if (patch.email === undefined) detalle = detalle ?? "Cuenta de administración o de otro condominio: no se modifica desde aquí";
+    }
+
     if (cambios.length === 0) {
       resultados.push({ ...base, estado: detalle ? "error" : "igual", detalle });
       continue;
@@ -129,6 +147,17 @@ export async function procesarPlanilla(texto: string, aplicar: boolean): Promise
 
     if (aplicar) {
       if (patch.email) {
+        // Se vuelve a mirar en Auth justo antes: si entró después de cargar la
+        // lista, su correo ya no se cambia desde aquí.
+        const { data: cuenta, error: cuentaError } = await db.auth.admin.getUserById(dueño.profileId);
+        if (cuentaError || !cuenta?.user) {
+          resultados.push({ ...base, estado: "error", cambios, detalle: "No se pudo verificar la cuenta" });
+          continue;
+        }
+        if (cuenta.user.last_sign_in_at && !esCorreoProvisional(cuenta.user.email)) {
+          resultados.push({ ...base, estado: "error", cambios, detalle: `Ya entra con ${cuenta.user.email}; ese correo se cambia desde su unidad` });
+          continue;
+        }
         // email_confirm: el correo lo entregó la junta; así no sale ningún
         // correo de confirmación de Supabase.
         const { error: authError } = await db.auth.admin.updateUserById(dueño.profileId, {

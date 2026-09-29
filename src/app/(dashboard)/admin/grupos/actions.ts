@@ -55,10 +55,18 @@ export async function guardarMiembros(groupId: string, miembrosJson: string): Pr
   const ok = new Set((validas ?? []).map((u) => u.id as string));
   if (ok.size !== filas.length) return { error: "Hay unidades que no son de este condominio" };
 
-  const { error: delError } = await db.from("charge_group_members").delete().eq("group_id", groupId);
-  if (delError) return { error: delError.message };
-  const { error } = await db.from("charge_group_members").insert(filas.map((f) => ({ group_id: groupId, ...f })));
+  // Primero se escriben los nuevos y después se quitan los que salieron: si
+  // algo falla a mitad, el grupo no queda vacío.
+  const { error } = await db
+    .from("charge_group_members")
+    .upsert(filas.map((f) => ({ group_id: groupId, ...f })), { onConflict: "group_id,unit_id" });
   if (error) return { error: error.message };
+  const { data: actuales } = await db.from("charge_group_members").select("unit_id").eq("group_id", groupId);
+  const salen = (actuales ?? []).map((m) => m.unit_id as string).filter((u) => !ok.has(u));
+  if (salen.length > 0) {
+    const { error: delError } = await db.from("charge_group_members").delete().eq("group_id", groupId).in("unit_id", salen);
+    if (delError) return { error: delError.message };
+  }
   revalidatePath("/admin/grupos");
   revalidatePath("/admin");
   return { success: true };
