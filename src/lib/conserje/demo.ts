@@ -82,12 +82,13 @@ function armar(dia: number, mes: number, hoy: Date): string | null {
 }
 
 type Intencion =
-  | "emergencia" | "servicio"
+  | "emergencia" | "servicio" | "paquete"
   | "privacidad" | "saludo" | "gracias" | "disponibilidad" | "saldo_favor" | "revision"
   | "historial" | "deuda" | "pagar" | "areas" | "contacto" | "normas" | "comunicados"
   | "alicuota" | "tasa" | "mantenimiento";
 
 const REGLAS: [Intencion, RegExp][] = [
+  ["paquete", /\b(paquete\w*|encomienda\w*|pedido\w*|garita tiene|llego algo|me llego|mercado libre|amazon)\b/],
   ["emergencia", /\b(emergencia\w*|incendio|fuego|humo|ambulancia|herid\w*|infarto|desmay\w*|robo|asalto|ladron\w*|policia|bomberos)\b/],
   ["servicio", /\b(tecnico\w*|proveedor\w*|servicio\w*|recomienda\w*|conoces (a )?(un|una|algun\w*)|quien (arregla|repara)|se (me )?dano|se (me )?rompio)\b/],
   ["privacidad", /\b(vecino|vecina|morosos|quien(es)? debe|cuanto debe (el|la)|deuda de(l| la| otro)|otro apartamento)\b/],
@@ -121,6 +122,7 @@ function detectar(texto: string): Intencion[] {
   const t = norm(texto);
   const encontradas = REGLAS.filter(([, re]) => re.test(t)).map(([i]) => i);
   if (encontradas.includes("emergencia")) return ["emergencia"];
+  if (encontradas.includes("paquete")) return ["paquete"];
   // "Se me dañó el aire", "necesito un plomero": pedir un técnico le gana a la
   // lista de áreas o a las normas, que también matchean palabras como "piso".
   const cat = categoriaServicio(texto);
@@ -192,6 +194,17 @@ async function responderIntencion(
   const primerNombre = nombre.trim().split(/\s+/)[0] ?? "";
 
   switch (i) {
+    case "paquete": {
+      const p = await q.misPaquetes();
+      if (p.paquetes.length === 0) return "No tienes paquetes esperando en la garita. Cuando llegue uno, te aviso en la campana.";
+      const lineas = [p.paquetes.length === 1 ? "Tienes un paquete en la garita:" : `Tienes ${p.paquetes.length} paquetes en la garita:`];
+      for (const x of p.paquetes.slice(0, 5)) {
+        lineas.push(`• ${x.que}${x.empresa ? ` (${x.empresa})` : ""}, llegó el ${new Date(x.llego).toLocaleDateString("es-VE", { day: "numeric", month: "long" })}`);
+      }
+      lineas.push("Pásalo retirando por la garita.");
+      return lineas.join("\n");
+    }
+
     case "emergencia": {
       const c = await q.condominio();
       return [

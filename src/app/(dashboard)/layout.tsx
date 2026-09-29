@@ -14,6 +14,7 @@ import { LiveStatusBar } from "@/components/dashboard/live-status-bar";
 import { Onboarding } from "@/components/onboarding";
 import { PendingPayFab } from "@/components/dashboard/pending-pay-fab";
 import { ConserjeFlotante } from "@/components/conserje/conserje-flotante";
+import type { AvisoFila } from "@/components/dashboard/campana";
 import { modoDelConserje } from "@/lib/conserje/conserje";
 
 export default async function DashboardLayout({
@@ -42,9 +43,16 @@ export default async function DashboardLayout({
   const viewingAs = profile?.view_as;
 
   // Tasa inicial desde BD para evitar flash "—" al primer render.
-  const [rateData, { data: org }] = await Promise.all([
+  const [rateData, { data: org }, { data: avisos }] = await Promise.all([
     getCurrentRate(profile.organization_id),
     supabase.from("organizations").select("name, city").eq("id", profile.organization_id).maybeSingle(),
+    // Los propios, por RLS (migration 046).
+    supabase
+      .from("notifications")
+      .select("id, kind, title, body, link, read_at, created_at")
+      .eq("profile_id", profile.id)
+      .order("created_at", { ascending: false })
+      .limit(20),
   ]);
   const initialRate = Number(rateData.rate) || null;
   const initialDate = rateData.effective_date || null;
@@ -71,6 +79,7 @@ export default async function DashboardLayout({
           isSuperAdmin={isSuperAdmin}
           viewingAs={viewingAs ?? null}
           condominio={org ? { nombre: org.name as string, ciudad: (org.city as string) || null } : null}
+          avisos={(avisos ?? []) as AvisoFila[]}
         />
         {isSuperAdmin && viewingAs && (
           <div

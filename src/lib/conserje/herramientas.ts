@@ -89,6 +89,12 @@ export function herramientasDelConserje(
       run: async ({ categoria }) => json(await q.directorioDeServicios(categoria ?? null)),
     }),
     betaZodTool({
+      name: "mis_paquetes",
+      description: "Paquetes que están esperando en la garita para las unidades de esta persona. Para '¿llegó mi paquete?', '¿tengo algo en la garita?'.",
+      inputSchema: sinArgs,
+      run: async () => json(await q.misPaquetes()),
+    }),
+    betaZodTool({
       name: "proponer_reporte_de_averia",
       description:
         "Prepara un reporte de avería para que la persona lo revise y lo envíe. NO lo envía: ella ve un formulario ya llenado debajo de tu respuesta y confirma. Úsala cuando cuente un daño: fuga, ascensor parado, luz del pasillo, portón dañado, filtración.",

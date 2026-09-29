@@ -3,6 +3,7 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { casetaActual, puedeRegistrarEntrada } from "@/lib/caseta";
 import { revalidatePath } from "next/cache";
+import { notificar } from "@/lib/notificaciones";
 
 /**
  * Registra la entrada de un visitante desde /verificar/[code].
@@ -90,7 +91,38 @@ async function registrar(passId: string, stationId: string | null, qrCode: strin
   // La bitácora no debe tumbar el registro: el visitante ya está en la puerta.
   if (logError) console.error("[grantAccess] no se pudo escribir access_logs:", logError.message);
 
+  await avisarLlegada(passId, stationId, ahora);
+
   revalidatePath("/visitantes");
   revalidatePath(`/verificar/${qrCode}`);
   return { success: true as const };
+}
+
+/** "Llegó tu visita": a quien la invitó, en la campana y por correo. */
+async function avisarLlegada(passId: string, stationId: string | null, cuando: string) {
+  const db = createAdminClient();
+  const { data: pase } = await db
+    .from("access_passes")
+    .select("visitor_name, organization_id, created_by, profiles:created_by(email), organizations(timezone)")
+    .eq("id", passId)
+    .maybeSingle();
+  if (!pase?.created_by) return;
+  const { data: caseta } = stationId
+    ? await db.from("guard_stations").select("name").eq("id", stationId).maybeSingle()
+    : { data: null };
+  const perfil = (Array.isArray(pase.profiles) ? pase.profiles[0] : pase.profiles) as { email?: string } | null;
+  const org = (Array.isArray(pase.organizations) ? pase.organizations[0] : pase.organizations) as { timezone?: string } | null;
+  const hora = new Intl.DateTimeFormat("es-VE", {
+    timeZone: org?.timezone || "America/Caracas",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: true,
+  }).format(new Date(cuando));
+  await notificar(pase.organization_id as string, [{ id: pase.created_by as string, email: perfil?.email ?? null }], {
+    tipo: "visita_llego",
+    titulo: `Llegó tu visita: ${pase.visitor_name as string}`,
+    cuerpo: `Entró a las ${hora}${caseta?.name ? ` por ${caseta.name as string}` : ""}.`,
+    enlace: "/visitantes",
+    claveUnica: `visita:${passId}`,
+  });
 }

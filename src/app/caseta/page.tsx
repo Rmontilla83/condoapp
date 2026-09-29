@@ -7,6 +7,8 @@ import { DEFAULT_TIME_ZONE, todayInTimeZone, zonedToISO } from "@/lib/utils";
 import { VISITOR_KIND_BY_ID } from "@/app/(dashboard)/visitantes/visitor-kinds";
 import type { VisitorKind } from "@/types/database";
 import { RegistrarEntrada } from "./registrar-entrada";
+import { Paquetes } from "./paquetes";
+import { compararUnidades } from "@/lib/units/orden";
 
 export const metadata: Metadata = { title: "Caseta · Atryum" };
 export const dynamic = "force-dynamic";
@@ -56,7 +58,7 @@ export default async function CasetaPage({
   const finHoy = new Date(Date.parse(zonedToISO(hoy, "23:59", zona)) + 60_000).toISOString();
   const ahora = new Date().toISOString();
 
-  const [{ data: pases }, { data: entradas }] = await Promise.all([
+  const [{ data: pases }, { data: entradas }, { data: paquetes }, { data: unidades }] = await Promise.all([
     db
       .from("access_passes")
       .select("id, visitor_name, visitor_id_number, visitor_kind, vehicle_plate, valid_from, valid_until, units:unit_id(unit_number, block), profiles:created_by(full_name)")
@@ -73,6 +75,14 @@ export default async function CasetaPage({
       .gte("scanned_at", inicioHoy)
       .order("scanned_at", { ascending: false })
       .limit(50),
+    db
+      .from("packages")
+      .select("id, description, carrier, recipient_name, received_at, units:unit_id(unit_number, block)")
+      .eq("organization_id", caseta.organization_id)
+      .eq("status", "waiting")
+      .order("received_at", { ascending: false })
+      .limit(100),
+    db.from("units").select("id, unit_number, block").eq("organization_id", caseta.organization_id),
   ]);
 
   type Unidad = { unit_number: string; block: string | null } | null;
@@ -167,6 +177,29 @@ export default async function CasetaPage({
           </ul>
         )}
       </section>
+
+      <Paquetes
+        paquetes={(paquetes ?? []).map((p) => ({
+          id: p.id as string,
+          description: p.description as string,
+          carrier: (p.carrier as string) ?? null,
+          recipient_name: (p.recipient_name as string) ?? null,
+          destino: destino(p.units as unknown as Unidad),
+          recibido: new Intl.DateTimeFormat("es-VE", { timeZone: zona, day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", hour12: true }).format(new Date(p.received_at as string)),
+        }))}
+        unidades={[...(unidades ?? [])]
+          .sort((a, b) =>
+            compararUnidades(
+              { unit_number: a.unit_number as string, block: a.block as string | null },
+              { unit_number: b.unit_number as string, block: b.block as string | null },
+            ),
+          )
+          .map((u) => ({
+            id: u.id as string,
+            etiqueta: `Apto ${u.unit_number as string}${u.block ? ` · ${u.block as string}` : ""}`,
+            torre: (u.block as string) ?? null,
+          }))}
+      />
 
       <section>
         <p className="font-meta text-mute mb-2">ENTRADAS DE HOY · {(entradas ?? []).length}</p>

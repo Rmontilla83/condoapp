@@ -13,17 +13,20 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { AtryumLogo } from "@/components/brand/atryum-logo";
+import { Campana, type AvisoFila } from "./campana";
 
 export function Header({
   userEmail,
   isSuperAdmin = false,
   condominio,
+  avisos = [],
 }: {
   userEmail: string;
   isSuperAdmin?: boolean;
   viewingAs?: string | null;
   /** En escritorio la franja superior estaba vacía salvo el avatar. */
   condominio?: { nombre: string; ciudad: string | null } | null;
+  avisos?: AvisoFila[];
 }) {
   const router = useRouter();
   const initials = userEmail.slice(0, 2).toUpperCase();
@@ -49,6 +52,8 @@ export function Header({
           </>
         )}
       </div>
+      <div className="flex items-center gap-2">
+      <Campana avisos={avisos} />
       <DropdownMenu>
         <DropdownMenuTrigger render={<Button variant="ghost" className="relative h-9 w-9 rounded-full p-0" />}>
           <Avatar className="h-9 w-9">
@@ -91,6 +96,7 @@ export function Header({
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
+      </div>
     </header>
   );
 }

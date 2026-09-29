@@ -364,7 +364,28 @@ export function consultasDelConserje(ctx: ConserjeContexto) {
     };
   }
 
+  async function misPaquetes() {
+    if (ctx.unidades.length === 0) return { paquetes: [] };
+    const { data } = await db
+      .from("packages")
+      .select("unit_id, description, carrier, received_at")
+      .eq("organization_id", ctx.orgId)
+      .in("unit_id", ctx.unidades.map((u) => u.id))
+      .eq("status", "waiting")
+      .order("received_at", { ascending: false });
+    return {
+      paquetes: (data ?? []).map((p) => ({
+        unidad: etiqueta.get(p.unit_id as string) ?? "",
+        que: p.description as string,
+        empresa: (p.carrier as string) ?? null,
+        llego: p.received_at as string,
+      })),
+      donde: "Se retiran en la garita.",
+    };
+  }
+
   return {
+    misPaquetes,
     directorioDeServicios,
     tasaBcv, estadoDeCuenta, historialDePagos, miUnidad, comoPagar, areasComunes,
     disponibilidad, condominio, comunicados, misSolicitudes,

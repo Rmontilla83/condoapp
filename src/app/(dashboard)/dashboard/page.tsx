@@ -82,6 +82,12 @@ export default async function DashboardPage() {
     .map((m) => m.unit_id);
   const saldos = await saldosPorUnidad(await createClient(), unidadesConCuotas);
   const saldoAFavor = [...saldos.values()].reduce((s, v) => s + Math.max(v, 0), 0);
+  const { data: paquetes } = await (await createClient())
+    .from("packages")
+    .select("id, description, received_at")
+    .in("unit_id", ctx.memberships.map((m) => m.unit_id))
+    .eq("status", "waiting")
+    .order("received_at", { ascending: false });
 
   return (
     <div className="space-y-8 md:space-y-10">
@@ -165,6 +171,27 @@ export default async function DashboardPage() {
               canSeeFee={ctx.canSeeFee}
               bankAccounts={bankAccounts}
             />
+          </div>
+        </div>
+      )}
+
+      {/* Paquetes esperando en la garita. */}
+      {(paquetes ?? []).length > 0 && (
+        <div className="flex items-center gap-4 rounded-2xl border border-cyan/40 bg-cyan/5 p-5">
+          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-marine-deep text-frost" aria-hidden="true">
+            <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth={1.6} stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M21 7.5l-9-5.25L3 7.5m18 0l-9 5.25m9-5.25v9l-9 5.25M3 7.5l9 5.25M3 7.5v9l9 5.25m0-9v9" />
+            </svg>
+          </span>
+          <div className="min-w-0">
+            <p className="text-[16px] font-semibold text-marine-deep">
+              {(paquetes ?? []).length === 1
+                ? "Tienes un paquete en la garita"
+                : `Tienes ${(paquetes ?? []).length} paquetes en la garita`}
+            </p>
+            <p className="text-[14px] text-mute truncate">
+              {(paquetes ?? []).map((p) => p.description as string).join(" · ")}
+            </p>
           </div>
         </div>
       )}
