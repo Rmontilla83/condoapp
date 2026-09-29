@@ -33,6 +33,8 @@ interface DialogProps {
   units: Array<ComputeUnit & { unit_number: string; block: string | null }>;
   feeTypeAmounts: FeeTypeAmount[];
   exchangeRate: number | null;
+  /** Grupos de prorrateo (migration 047): la marina, etc. */
+  groups?: Array<{ id: string; name: string; weights: Record<string, number> }>;
 }
 
 interface FormState {
@@ -50,6 +52,8 @@ interface FormState {
   total_amount: string; // divide_total
   base_amount: string;
   manual_amounts: Record<string, string>; // unit_id -> string
+  group_id: string;
+  group_total: string;
 }
 
 function defaultMonthYear() {
@@ -65,7 +69,7 @@ const MONTH_LABELS = [
   "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre",
 ];
 
-export function GenerateInvoicesDialog({ org, units, feeTypeAmounts, exchangeRate }: DialogProps) {
+export function GenerateInvoicesDialog({ org, units, feeTypeAmounts, exchangeRate, groups = [] }: DialogProps) {
   const { month: defMonth, year: defYear } = defaultMonthYear();
 
   const [open, setOpen] = useState(false);
@@ -87,6 +91,8 @@ export function GenerateInvoicesDialog({ org, units, feeTypeAmounts, exchangeRat
     total_amount: "",
     base_amount: org.fee_base_amount ? String(org.fee_base_amount) : "",
     manual_amounts: Object.fromEntries(units.map((u) => [u.id, ""])),
+    group_id: groups[0]?.id ?? "",
+    group_total: "",
   }));
 
   const typeAmountsMap = useMemo(
@@ -105,10 +111,12 @@ export function GenerateInvoicesDialog({ org, units, feeTypeAmounts, exchangeRat
     if (form.description.trim()) return form.description.trim();
     if (form.kind === "monthly") {
       const monthName = MONTH_LABELS[parseInt(form.month) - 1] ?? form.month;
-      return `Cuota ${monthName} ${form.year}`;
+      // Por grupo: "Marina Octubre 2026", no "Cuota…", que chocaría con la cuota del mes.
+      const grupo = form.mode === "by_group" ? groups.find((g) => g.id === form.group_id)?.name : null;
+      return `${grupo ?? "Cuota"} ${monthName} ${form.year}`;
     }
     return "Derrama extraordinaria";
-  }, [form.description, form.kind, form.month, form.year]);
+  }, [form.description, form.kind, form.month, form.year, form.mode, form.group_id, groups]);
 
   const previewResult = useMemo(() => {
     if (step !== "preview") return null;
@@ -131,8 +139,10 @@ export function GenerateInvoicesDialog({ org, units, feeTypeAmounts, exchangeRat
               Object.entries(form.manual_amounts).map(([k, v]) => [k, parseFloat(v) || 0]),
             )
           : undefined,
+      group_weights: form.mode === "by_group" ? groups.find((g) => g.id === form.group_id)?.weights : undefined,
+      group_total: form.mode === "by_group" && form.group_total ? parseFloat(form.group_total) : undefined,
     });
-  }, [step, org.id, org.currency, form, dueDateResolved, descriptionResolved, units, exchangeRate, typeAmountsMap]);
+  }, [step, org.id, org.currency, form, dueDateResolved, descriptionResolved, units, exchangeRate, typeAmountsMap, groups]);
 
   function reset() {
     const d = defaultMonthYear();
@@ -152,6 +162,8 @@ export function GenerateInvoicesDialog({ org, units, feeTypeAmounts, exchangeRat
       total_amount: "",
       base_amount: org.fee_base_amount ? String(org.fee_base_amount) : "",
       manual_amounts: Object.fromEntries(units.map((u) => [u.id, ""])),
+      group_id: groups[0]?.id ?? "",
+      group_total: "",
     });
   }
 
@@ -190,6 +202,10 @@ export function GenerateInvoicesDialog({ org, units, feeTypeAmounts, exchangeRat
           setError(`Faltan montos para tipos: ${[...new Set(missing)].join(", ")}. Configúralos en Ajustes.`);
           return;
         }
+      }
+      if (form.mode === "by_group" && (!form.group_id || !form.group_total || parseFloat(form.group_total) <= 0)) {
+        setError("Elige el grupo e indica el total a repartir (> 0)");
+        return;
       }
       if (form.mode === "manual") return setStep("manual");
       return setStep("preview");
@@ -231,6 +247,10 @@ export function GenerateInvoicesDialog({ org, units, feeTypeAmounts, exchangeRat
     if (form.mode === "flat") fd.set("flat_amount", form.flat_amount);
     if (form.mode === "divide_total") fd.set("total_amount", form.total_amount);
     if (form.mode === "by_aliquot") fd.set("base_amount", form.base_amount);
+    if (form.mode === "by_group") {
+      fd.set("group_id", form.group_id);
+      fd.set("group_total", form.group_total);
+    }
     if (form.mode === "manual") {
       const cleaned = Object.fromEntries(
         Object.entries(form.manual_amounts).map(([k, v]) => [k, parseFloat(v) || 0]),
@@ -310,6 +330,7 @@ export function GenerateInvoicesDialog({ org, units, feeTypeAmounts, exchangeRat
             onChange={setForm}
             feeTypeAmounts={feeTypeAmounts}
             unitsTypes={[...new Set(units.map((u) => u.type))]}
+            groups={groups}
           />
         )}
 
@@ -596,16 +617,18 @@ function ModeStep({
   onChange,
   feeTypeAmounts,
   unitsTypes,
+  groups,
 }: {
   form: FormState;
   onChange: (f: FormState | ((p: FormState) => FormState)) => void;
   feeTypeAmounts: FeeTypeAmount[];
   unitsTypes: string[];
+  groups: Array<{ id: string; name: string; weights: Record<string, number> }>;
 }) {
   return (
     <div className="space-y-4">
       <div className="space-y-2">
-        {FEE_MODES.map((m) => (
+        {[...FEE_MODES, ...(groups.length ? (["by_group"] as const) : [])].map((m) => (
           <label
             key={m}
             className={`flex items-start gap-3 rounded-lg border p-3 cursor-pointer transition ${
@@ -639,6 +662,41 @@ function ModeStep({
             placeholder="85.00"
             onChange={(e) => onChange((p) => ({ ...p, flat_amount: e.target.value }))}
           />
+        </div>
+      )}
+
+      {form.mode === "by_group" && (
+        <div className="space-y-3 rounded-lg bg-cyan/5 border border-cyan/20 p-3">
+          <div className="space-y-2">
+            <Label htmlFor="group-id">Grupo</Label>
+            <select
+              id="group-id"
+              value={form.group_id}
+              onChange={(e) => onChange((p) => ({ ...p, group_id: e.target.value }))}
+              className="flex h-11 w-full rounded-md border border-input bg-background px-3 py-2 text-base md:text-sm"
+            >
+              {groups.map((g) => (
+                <option key={g.id} value={g.id}>
+                  {g.name} · {Object.keys(g.weights).length} unidades
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="group-total">Total a repartir entre el grupo</Label>
+            <Input
+              id="group-total"
+              type="number"
+              step="0.01"
+              min="0"
+              value={form.group_total}
+              placeholder="1008.75"
+              onChange={(e) => onChange((p) => ({ ...p, group_total: e.target.value }))}
+            />
+          </div>
+          <p className="text-[12px] text-mute">
+            Solo las unidades del grupo reciben cuota, en proporción a su peso. El total es exacto al centavo.
+          </p>
         </div>
       )}
 

@@ -12,7 +12,8 @@ export type MaintenanceStatus =
 export type PaymentStatus = "pending" | "paid" | "overdue" | "cancelled";
 export type TransactionStatus = "pending" | "approved" | "rejected";
 
-export type FeeMode = "flat" | "divide_total" | "by_aliquot" | "by_type" | "manual";
+// by_group: solo al emitir (grupos de prorrateo, migration 047); no es modo por defecto del condominio.
+export type FeeMode = "flat" | "divide_total" | "by_aliquot" | "by_type" | "manual" | "by_group";
 export type InvoiceKind = "monthly" | "extraordinary";
 export type BankAccountKind =
   | "transfer"

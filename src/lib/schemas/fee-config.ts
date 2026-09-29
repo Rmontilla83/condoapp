@@ -8,6 +8,7 @@ export const FEE_MODE_LABELS: Record<FeeMode, string> = {
   by_aliquot: "Por alícuota (proporcional)",
   by_type: "Por tipo de unidad",
   manual: "Manual (monto por unidad)",
+  by_group: "Por grupo (solo sus miembros)",
 };
 
 export const FEE_MODE_DESCRIPTIONS: Record<FeeMode, string> = {
@@ -16,6 +17,7 @@ export const FEE_MODE_DESCRIPTIONS: Record<FeeMode, string> = {
   by_aliquot: "El admin ingresa el total a cobrar. Se reparte entre las unidades proporcional a su alícuota; el total cobrado siempre es exacto.",
   by_type: "Configura un monto por tipo de unidad (apartamento, PH, local, etc.).",
   manual: "Cada vez que generas cuotas decides el monto unidad por unidad.",
+  by_group: "Un gasto que pagan solo algunas unidades (la marina, un estacionamiento techado). Se reparte el total entre los miembros del grupo según su peso.",
 };
 
 export const UNIT_TYPES = [

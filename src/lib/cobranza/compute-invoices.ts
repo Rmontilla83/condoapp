@@ -43,6 +43,8 @@ export interface ComputeInput {
   base_amount?: number; // by_aliquot
   type_amounts?: Record<string, number>; // by_type
   manual_amounts?: Record<string, number>; // unit_id -> amount
+  group_weights?: Record<string, number>; // by_group: unit_id -> peso (solo miembros)
+  group_total?: number; // by_group: total a repartir entre los miembros
 }
 
 export interface ComputeResult {
@@ -250,6 +252,23 @@ export function computeInvoiceAmounts(input: ComputeInput): ComputeResult {
       break;
     }
 
+    case "by_group": {
+      const total = input.group_total;
+      if (total === undefined || Number.isNaN(total) || total <= 0) {
+        errors.push("Modo por grupo requiere un total > 0.");
+        return { invoices: [], warnings, errors };
+      }
+      const pesos = input.group_weights ?? {};
+      const miembros = input.units.filter((u) => (pesos[u.id] ?? 0) > 0);
+      if (miembros.length === 0) {
+        errors.push("El grupo no tiene unidades.");
+        return { invoices: [], warnings, errors };
+      }
+      // Solo los miembros reciben cuota; el total es exacto entre ellos.
+      perUnit = distributeExact(total, miembros.map((u) => ({ id: u.id, w: pesos[u.id] })));
+      break;
+    }
+
     default: {
       errors.push(`Modo de cobranza desconocido: ${input.fee_mode}`);
       return { invoices: [], warnings, errors };
@@ -258,7 +277,8 @@ export function computeInvoiceAmounts(input: ComputeInput): ComputeResult {
 
   if (errors.length > 0) return { invoices: [], warnings, errors };
 
-  const invoices: InvoiceInsert[] = input.units.map((u) => {
+  const destinatarias = input.fee_mode === "by_group" ? input.units.filter((u) => perUnit.has(u.id)) : input.units;
+  const invoices: InvoiceInsert[] = destinatarias.map((u) => {
     const amount = perUnit.get(u.id) ?? 0;
     const amount_bs = input.exchange_rate
       ? round2(amount * input.exchange_rate)

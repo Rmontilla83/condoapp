@@ -22,6 +22,7 @@ const adminItems = [
   { href: "/admin/units", label: "Unidades", icon: "units" },
   { href: "/admin/budget", label: "Presupuesto", icon: "finanzas" },
   { href: "/admin/saldos", label: "Saldos a favor", icon: "payments" },
+  { href: "/admin/grupos", label: "Grupos de prorrateo", icon: "units" },
   { href: "/admin/settings", label: "Configuración", icon: "settings" },
 ];
 

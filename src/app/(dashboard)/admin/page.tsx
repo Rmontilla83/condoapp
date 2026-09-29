@@ -63,6 +63,20 @@ export default async function AdminPage() {
   ]);
 
   const org = orgRes.data;
+  // Grupos de prorrateo (migration 047) para el modo "por grupo" al emitir.
+  const { data: gruposRaw } = await createAdminClient()
+    .from("charge_groups")
+    .select("id, name, charge_group_members(unit_id, weight)")
+    .eq("organization_id", profile.organization_id)
+    .eq("active", true)
+    .order("name");
+  const grupos = (gruposRaw ?? []).map((g) => ({
+    id: g.id as string,
+    name: g.name as string,
+    weights: Object.fromEntries(
+      ((g.charge_group_members ?? []) as { unit_id: string; weight: number }[]).map((m) => [m.unit_id, Number(m.weight)]),
+    ),
+  }));
   const nombreCondominio = org?.name ?? "tu condominio";
   const units = (unitsRes.data ?? []).map((u) => ({
     id: u.id as string,
@@ -240,6 +254,7 @@ export default async function AdminPage() {
                 units={units}
                 feeTypeAmounts={feeTypeAmounts as FeeTypeAmount[]}
                 exchangeRate={Number(rateData.rate) || null}
+                groups={grupos}
               />
               <VoidInvoiceRunDialog runs={invoiceRuns} />
             </div>

@@ -123,6 +123,8 @@ export async function generateMonthlyInvoices(formData: FormData) {
   let base_amount: number | undefined;
   let manual_amounts: Record<string, number> | undefined;
   let type_amounts: Record<string, number> | undefined;
+  let group_weights: Record<string, number> | undefined;
+  let group_total: number | undefined;
 
   if (mode === "flat") {
     const raw =
@@ -154,6 +156,23 @@ export async function generateMonthlyInvoices(formData: FormData) {
     } catch {
       return { error: "Formato de manual_amounts inválido" };
     }
+  } else if (mode === "by_group") {
+    const groupId = String(formData.get("group_id") ?? "");
+    group_total = parseFloat(String(formData.get("group_total") ?? ""));
+    if (!groupId) return { error: "Elige el grupo" };
+    if (Number.isNaN(group_total) || group_total <= 0) return { error: "Total del grupo requerido (> 0)" };
+    // Los pesos salen de la base, no del formulario.
+    const { data: grupo } = await supabase
+      .from("charge_groups")
+      .select("id, charge_group_members(unit_id, weight)")
+      .eq("id", groupId)
+      .eq("organization_id", profile!.organization_id!)
+      .eq("active", true)
+      .maybeSingle();
+    if (!grupo) return { error: "Ese grupo no existe" };
+    group_weights = Object.fromEntries(
+      ((grupo.charge_group_members ?? []) as { unit_id: string; weight: number }[]).map((m) => [m.unit_id, Number(m.weight)]),
+    );
   } else if (mode === "by_type") {
     const { data: rows } = await supabase
       .from("fee_type_amounts")
@@ -195,6 +214,8 @@ export async function generateMonthlyInvoices(formData: FormData) {
     base_amount,
     type_amounts,
     manual_amounts,
+    group_weights,
+    group_total,
   });
 
   if (result.errors.length > 0) {
