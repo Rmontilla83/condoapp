@@ -242,3 +242,21 @@ export function cuotaEmitida(p: {
     }),
   };
 }
+
+export function bienvenidaPropietario(p: { condominio: string; nombre: string | null; correo: string; unidades: string }) {
+  return {
+    asunto: `${p.condominio} ya está en Atryum: tu acceso`,
+    html: layout({
+      condominio: p.condominio,
+      eyebrow: "Bienvenida",
+      titulo: `${p.nombre ? `Hola ${p.nombre.split(" ")[0]}, ` : ""}tu condominio ya está en Atryum`,
+      parrafos: [
+        `La administración de ${p.condominio} empezó a usar Atryum. Desde ahí ves lo que debes, reportas tus pagos con el comprobante, reservas áreas comunes, registras visitas y reportas averías.`,
+        "Para entrar no necesitas contraseña: escribe tu correo y te llega un código de 6 dígitos.",
+      ],
+      destacado: { etiqueta: `Tu correo de acceso · ${p.unidades}`, valor: p.correo },
+      cta: { texto: "Entrar a Atryum", href: `${portalUrl()}/login` },
+      pie: "Si este correo no es tuyo o la unidad no es la tuya, avísale a la administración.",
+    }),
+  };
+}
