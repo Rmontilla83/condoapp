@@ -33,7 +33,17 @@ GUIAS = [
         "Cobrar lo que corresponde, poder demostrar en qué se gastó y que las decisiones queden "
         "por escrito. El manual de Atryum para la junta de condominio.",
     ),
+    (
+        "guia-pruebas.html",
+        "pruebas.html",
+        "Pruebas de aceptación · Atryum",
+        "La lista de pruebas que hace la junta antes de operar con Atryum: qué probar, qué tiene "
+        "que pasar y cómo reportar lo que falle.",
+    ),
 ]
+
+# Las guías de uso llevan capturas; la de pruebas es una lista interactiva.
+MIN_CAPTURAS = {"propietario.html": 8, "administracion.html": 8, "pruebas.html": 0}
 
 BASE = "https://atryum.net"
 
@@ -99,6 +109,6 @@ for origen, destino, titulo, desc in GUIAS:
     # Comprobaciones mínimas de que el empaquetado no rompió nada.
     assert html.count("<style>") == 1, f"{destino}: se perdió el CSS"
     assert "fonts.googleapis.com" in html, f"{destino}: se perdió el link de fuentes"
-    assert html.count("<figure class=\"cap\">") >= 8, f"{destino}: faltan capturas"
+    assert html.count("<figure class=\"cap\">") >= MIN_CAPTURAS[destino], f"{destino}: faltan capturas"
     assert "<body>" in html and "</body>" in html
 print("empaquetado OK")

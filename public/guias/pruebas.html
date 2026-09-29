@@ -1,0 +1,489 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pruebas de aceptación · Atryum</title>
+<meta name="description" content="La lista de pruebas que hace la junta antes de operar con Atryum: qué probar, qué tiene que pasar y cómo reportar lo que falle.">
+<meta name="robots" content="index, follow">
+<link rel="canonical" href="https://atryum.net/guias/pruebas">
+<link rel="icon" href="/icon-192.png">
+
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="Atryum">
+<meta property="og:locale" content="es_ES">
+<meta property="og:title" content="Pruebas de aceptación · Atryum">
+<meta property="og:description" content="La lista de pruebas que hace la junta antes de operar con Atryum: qué probar, qué tiene que pasar y cómo reportar lo que falle.">
+<meta property="og:url" content="https://atryum.net/guias/pruebas">
+<meta property="og:image" content="https://atryum.net/brand/og-image.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Pruebas de aceptación · Atryum">
+<meta name="twitter:description" content="La lista de pruebas que hace la junta antes de operar con Atryum: qué probar, qué tiene que pasar y cómo reportar lo que falle.">
+<meta name="twitter:image" content="https://atryum.net/brand/og-image.png">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500;600&display=swap">
+<style>
+/* Mismos tokens que las guías del propietario y de la administración. */
+:root {
+  --marine: #1E4D8F;
+  --marine-deep: #0F2E5A;
+  --cyan: #2FB4E6;
+  --ember: #E8732C;
+  --ground: #F4F7FB;
+  --surface: #FFFFFF;
+  --surface-2: #EAEEF4;
+  --line: #DBE3EE;
+  --text: #0F2E5A;
+  --text-soft: #3A5478;
+  --meta: #5D6E86;
+  --accent: #17738F;
+  --accent-bg: rgba(47,180,230,0.10);
+  --warm: #B4530F;
+  --warm-bg: rgba(232,115,44,0.10);
+  --ok: #1D7A4E;
+  --ok-bg: rgba(29,122,78,0.10);
+  --danger: #B3271A;
+  --danger-bg: rgba(179,39,26,0.08);
+  --shadow-sm: 0 2px 12px -6px rgb(15 46 90 / 0.30);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --ground: #08182E; --surface: #102847; --surface-2: #17335A; --line: #24446E;
+    --text: #EAF1F9; --text-soft: #BACADF; --meta: #92A8C4; --accent: #74CFF4;
+    --accent-bg: rgba(47,180,230,0.14); --warm: #F5A163; --warm-bg: rgba(232,115,44,0.16);
+    --ok: #6FD3A2; --ok-bg: rgba(111,211,162,0.13); --danger: #F08476; --danger-bg: rgba(240,132,118,0.12);
+    --shadow-sm: 0 2px 12px -6px rgb(0 0 0 / 0.6);
+  }
+}
+:root[data-theme="dark"] {
+  --ground: #08182E; --surface: #102847; --surface-2: #17335A; --line: #24446E;
+  --text: #EAF1F9; --text-soft: #BACADF; --meta: #92A8C4; --accent: #74CFF4;
+  --accent-bg: rgba(47,180,230,0.14); --warm: #F5A163; --warm-bg: rgba(232,115,44,0.16);
+  --ok: #6FD3A2; --ok-bg: rgba(111,211,162,0.13); --danger: #F08476; --danger-bg: rgba(240,132,118,0.12);
+  --shadow-sm: 0 2px 12px -6px rgb(0 0 0 / 0.6);
+}
+
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0; background: var(--ground); color: var(--text);
+  font: 400 16px/1.6 Inter, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+h1, h2, h3 { font-family: Archivo, Inter, sans-serif; color: var(--text); margin: 0; text-wrap: balance; }
+p { margin: 0; }
+.meta {
+  font: 600 11.5px/1.4 "JetBrains Mono", ui-monospace, monospace;
+  letter-spacing: 0.1em; text-transform: uppercase; color: var(--meta);
+}
+.wrap { max-width: 860px; margin: 0 auto; padding: 0 16px 96px; }
+
+header.top { padding: 48px 0 28px; display: grid; gap: 14px; }
+header.top h1 { font-size: clamp(2rem, 6vw, 3rem); line-height: 1.05; letter-spacing: -0.035em; font-weight: 700; }
+header.top .lede { max-width: 62ch; color: var(--text-soft); font-size: 1.05rem; }
+
+.box { border: 1px solid var(--line); border-radius: 14px; background: var(--surface); padding: 18px 20px; }
+.box + .box { margin-top: 14px; }
+.box h2 { font-size: 1.15rem; letter-spacing: -0.015em; margin-bottom: 8px; }
+.box ul { margin: 8px 0 0; padding-left: 1.2rem; color: var(--text-soft); }
+.box li + li { margin-top: 4px; }
+.warn { background: var(--warm-bg); border-color: color-mix(in srgb, var(--ember) 38%, transparent); }
+.note { background: var(--accent-bg); border-color: color-mix(in srgb, var(--cyan) 35%, transparent); }
+
+.sev { display: grid; gap: 8px; margin-top: 10px; }
+.sev div { display: grid; grid-template-columns: 7.5rem 1fr; gap: 10px; color: var(--text-soft); }
+.sev strong { color: var(--text); }
+
+/* Barra de progreso fija */
+.bar {
+  position: sticky; top: 0; z-index: 5; margin: 14px -16px 0; padding: 12px 16px;
+  background: color-mix(in srgb, var(--ground) 92%, transparent); backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--line);
+  display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center;
+}
+.quien { display: flex; gap: 10px; align-items: center; margin-top: 28px; font-size: 15px; color: var(--text-soft); }
+.quien input {
+  font: inherit; font-size: 16px; padding: 6px 10px; border-radius: 8px;
+  border: 1px solid var(--line); background: var(--surface); color: var(--text); width: 12rem;
+}
+.progreso { flex: 1 1 12rem; display: grid; gap: 4px; min-width: 10rem; }
+.progreso .pista { height: 6px; border-radius: 99px; background: var(--surface-2); overflow: hidden; display: flex; }
+.progreso .pista i { display: block; height: 100%; }
+.progreso .pista .p-ok { background: var(--ok); }
+.progreso .pista .p-mal { background: var(--danger); }
+.progreso .pista .p-na { background: var(--meta); opacity: .5; }
+.progreso small { font-size: 12.5px; color: var(--meta); font-variant-numeric: tabular-nums; }
+.btn {
+  font: 600 14px/1 Inter, sans-serif; padding: 10px 14px; border-radius: 9px; cursor: pointer;
+  border: 1px solid var(--line); background: var(--surface); color: var(--text);
+}
+.btn.primary { background: var(--marine-deep); border-color: var(--marine-deep); color: #F4F7FB; }
+:root[data-theme="dark"] .btn.primary { background: var(--accent); border-color: var(--accent); color: #08182E; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .btn.primary { background: var(--accent); border-color: var(--accent); color: #08182E; } }
+.btn:focus-visible, .estado button:focus-visible, textarea:focus-visible, input:focus-visible { outline: 2px solid var(--cyan); outline-offset: 2px; }
+
+/* Bloques y casos */
+section.bloque { margin-top: 44px; }
+section.bloque > header { display: grid; gap: 6px; margin-bottom: 14px; }
+section.bloque h2 { font-size: 1.5rem; letter-spacing: -0.025em; }
+section.bloque > header p { color: var(--text-soft); max-width: 62ch; }
+
+.caso {
+  border: 1px solid var(--line); border-radius: 14px; background: var(--surface);
+  padding: 16px 18px; display: grid; gap: 10px;
+}
+.caso + .caso { margin-top: 12px; }
+.caso[data-r="ok"] { border-color: color-mix(in srgb, var(--ok) 45%, var(--line)); }
+.caso[data-r="mal"] { border-color: color-mix(in srgb, var(--danger) 55%, var(--line)); box-shadow: var(--shadow-sm); }
+.caso-top { display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap; }
+.caso-id { font: 600 13px/1 "JetBrains Mono", monospace; color: var(--accent); min-width: 2.2rem; }
+.caso h3 { font-size: 1.05rem; letter-spacing: -0.01em; flex: 1 1 14rem; }
+.rol { font-size: 12px; padding: 3px 9px; border-radius: 99px; background: var(--surface-2); color: var(--text-soft); white-space: nowrap; }
+.caso ol { margin: 0; padding-left: 1.25rem; color: var(--text-soft); font-size: 15px; }
+.caso ol li + li { margin-top: 3px; }
+.espera { font-size: 15px; color: var(--text); padding-left: 12px; border-left: 3px solid var(--cyan); }
+.espera b { font-weight: 600; }
+
+.estado { display: flex; gap: 6px; flex-wrap: wrap; }
+.estado button {
+  font: 500 13.5px/1 Inter, sans-serif; padding: 9px 13px; border-radius: 8px; cursor: pointer;
+  border: 1px solid var(--line); background: transparent; color: var(--text-soft);
+}
+.estado button[aria-pressed="true"][data-v="ok"] { background: var(--ok-bg); border-color: var(--ok); color: var(--ok); }
+.estado button[aria-pressed="true"][data-v="mal"] { background: var(--danger-bg); border-color: var(--danger); color: var(--danger); }
+.estado button[aria-pressed="true"][data-v="na"] { background: var(--surface-2); color: var(--text); }
+.caso textarea {
+  font: inherit; font-size: 16px; width: 100%; min-height: 4.2rem; padding: 8px 10px; resize: vertical;
+  border-radius: 8px; border: 1px solid var(--line); background: var(--ground); color: var(--text);
+}
+.caso select {
+  font: inherit; font-size: 15px; padding: 6px 8px; border-radius: 8px;
+  border: 1px solid var(--line); background: var(--surface); color: var(--text);
+}
+.falla { display: none; gap: 8px; }
+.caso[data-r="mal"] .falla { display: grid; }
+.caso .falla label { font-size: 13px; color: var(--meta); display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+
+.aviso-copiado { font-size: 13px; color: var(--ok); }
+footer.fin { margin-top: 56px; color: var(--meta); font-size: 14px; display: grid; gap: 8px; }
+
+@media (max-width: 560px) {
+  .sev div { grid-template-columns: 1fr; gap: 2px; }
+  .quien input { flex: 1; }
+  .bar { gap: 8px 10px; }
+  .bar .btn { padding: 8px 11px; font-size: 13px; }
+  #imprimir { display: none; }
+}
+@media print {
+  .bar, .estado button:not([aria-pressed="true"]), .btn { display: none !important; }
+  .caso { break-inside: avoid; }
+  body { background: #fff; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .caso { transition: border-color .2s; }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <p class="meta">Atryum · Pruebas formales de la junta</p>
+    <h1>Pruebas de aceptación</h1>
+    <p class="lede">
+      La lista de lo que hay que probar antes de que el condominio empiece a operar con Atryum.
+      Cada prueba dice qué hacer y qué tiene que pasar. Márcala como <strong>Pasa</strong> o
+      <strong>Falla</strong>; al final, copias los resultados y los mandas por WhatsApp.
+    </p>
+  </header>
+
+  <div class="box warn">
+    <h2>Antes de empezar</h2>
+    <ul>
+      <li>La app está en <strong>portal.atryum.net</strong>. Se entra con el correo y un código de seis dígitos que llega a ese correo; no hay contraseña.</li>
+      <li>Hasta que termine la prueba hay <strong>datos de ensayo</strong>: cuotas de julio y agosto, pagos, saldos a favor, gastos, reservas y proveedores marcados «dato de prueba» o «(demo)». No son reales y se borran antes de operar. Las cuotas y la marina de septiembre sí son las reales.</li>
+      <li>Hagan cada prueba <strong>en el teléfono</strong>, que es donde la va a usar la mayoría. Las de administración, también en una computadora.</li>
+      <li>Si una prueba crea algo (una cuota, un comunicado, una reserva), escriban «PRUEBA» en el texto para poder borrarlo después.</li>
+      <li>Lo que marquen aquí queda guardado solo en este teléfono o computadora.</li>
+    </ul>
+  </div>
+
+  <div class="box note">
+    <h2>Cómo calificar una falla</h2>
+    <div class="sev">
+      <div><strong>Bloquea</strong><span>No se puede operar así: un monto mal calculado, un pago que no llega a la administración, alguien que ve datos que no son suyos.</span></div>
+      <div><strong>Molesta</strong><span>Funciona, pero confunde o cuesta: un texto que no se entiende, un botón difícil de encontrar.</span></div>
+      <div><strong>Sugerencia</strong><span>Algo que estaría bien tener. Se anota para después.</span></div>
+    </div>
+    <p style="margin-top:12px;color:var(--text-soft)">
+      La app queda aceptada cuando ninguna prueba termina con una falla que <strong>bloquea</strong>.
+      Si ven una, anoten qué hicieron justo antes y, si pueden, tomen una captura de pantalla.
+    </p>
+  </div>
+
+  <label class="quien">Probado por <input id="quien" autocomplete="name" placeholder="Tu nombre"></label>
+
+  <div class="bar" role="region" aria-label="Progreso">
+    <div class="progreso" aria-live="polite">
+      <div class="pista" aria-hidden="true"><i class="p-ok"></i><i class="p-mal"></i><i class="p-na"></i></div>
+      <small id="resumen">0 de 0 probadas</small>
+    </div>
+    <button class="btn primary" id="copiar" type="button">Copiar resultados</button>
+    <button class="btn" id="imprimir" type="button">Imprimir</button>
+    <span class="aviso-copiado" id="copiado" hidden>Copiado. Pégalo en WhatsApp.</span>
+  </div>
+
+  <div id="lista"></div>
+
+  <footer class="fin">
+    <p>¿Una duda que no está aquí? Pregúntenle a Atri dentro de la app, o escriban a quien les pasó esta lista.</p>
+    <p>Guías completas: <a href="/guias/propietario" style="color:var(--accent)">propietario</a> · <a href="/guias/administracion" style="color:var(--accent)">administración</a>.</p>
+  </footer>
+</div>
+
+<script>
+(function () {
+  // Cada bloque: [id, título, a quién, descripción, casos]. Caso: [id, título, rol, pasos, qué debe pasar]
+  var BLOQUES = [
+    ["acceso", "Entrar a la app", "Primero lo primero: que cada quien pueda entrar con su correo.", [
+      ["A1", "Entrar por primera vez", "Propietario", [
+        "Abre portal.atryum.net en el teléfono.",
+        "Escribe tu correo y toca continuar.",
+        "Copia el código de seis dígitos que te llegó al correo."
+      ], "Entras a tu pantalla de inicio y ves tu apartamento. El código llega en menos de un minuto (revisa también la carpeta de spam)."],
+      ["A2", "Volver a entrar", "Propietario", [
+        "Cierra sesión desde tu perfil.",
+        "Vuelve a entrar con el mismo correo."
+      ], "La app recuerda tu correo y te pide solo el código nuevo."],
+      ["A3", "Entrar como administración", "Administración", [
+        "Entra con el correo de la cuenta de administración.",
+        "Abre el Panel admin."
+      ], "Ves las cifras del mes, los comprobantes por revisar y la lista de morosos."]
+    ]],
+    ["cuotas", "Cuotas y pagos", "El centro de todo: que cada propietario vea lo correcto y pueda reportar su pago.", [
+      ["B1", "Ver cuánto debo", "Propietario", [
+        "En la pantalla de inicio, mira el número grande.",
+        "Compáralo con lo que dice la planilla de la junta para tu apartamento."
+      ], "El monto en dólares coincide con la planilla, y el equivalente en bolívares usa la tasa BCV del día."],
+      ["B2", "Reportar un pago con comprobante", "Propietario", [
+        "Toca «Pagar».",
+        "Elige la cuota, el método (transferencia, pago móvil, Zelle) y escribe la referencia.",
+        "Sube la foto o el PDF del comprobante y envía."
+      ], "La cuota queda «En revisión» y deja de contarse como deuda. La administración la ve en su panel."],
+      ["B3", "Pago rechazado", "Propietario", [
+        "Pídele a la administración que rechace tu pago de prueba con un motivo (prueba C2)."
+      ], "Te llega el aviso con el motivo, en la campana y al correo, y puedes volver a reportarlo."],
+      ["B4", "Constancia de pago", "Propietario", [
+        "Cuando la administración apruebe tu pago, entra a Pagos.",
+        "Abre el pago aprobado y descarga la constancia."
+      ], "La constancia muestra condominio, apartamento, monto, fecha y referencia."],
+      ["B5", "Saldo a favor", "Propietario", [
+        "Si tu apartamento tiene saldo a favor, mira tu inicio y tus cuotas."
+      ], "El saldo aparece y cubre la cuota (o parte de ella) sin que tengas que hacer nada."]
+    ]],
+    ["admin", "Administración", "Lo que hace la junta cada mes. Las pruebas que emiten cuotas se anulan al terminar.", [
+      ["C1", "Aprobar un comprobante", "Administración", [
+        "En el Panel admin, abre un comprobante pendiente.",
+        "Mira la imagen, verifica el monto contra el banco y aprueba."
+      ], "La cuota pasa a pagada, el propietario recibe el aviso y el panel actualiza la cobranza."],
+      ["C2", "Rechazar un comprobante", "Administración", [
+        "Abre otro comprobante pendiente.",
+        "Recházalo escribiendo el motivo (por ejemplo: «La referencia no aparece en el banco»)."
+      ], "El propietario recibe el motivo y la cuota vuelve a estar pendiente."],
+      ["C3", "Emitir una cuota y anularla", "Administración", [
+        "Emitir cuotas → ordinaria, concepto «PRUEBA octubre», reparto por alícuota con un total cualquiera.",
+        "Revisa la vista previa: cada unidad con su monto.",
+        "Emite. Después, Anular una tanda de cuotas → elige «PRUEBA octubre» y escribe el motivo."
+      ], "La suma de la vista previa es exactamente el total que escribiste, al centavo. Al anular, las cuotas desaparecen de los propietarios."],
+      ["C4", "Cuota de la marina por grupo", "Administración", [
+        "Emitir cuotas → modo «Por grupo», grupo Marina, concepto «PRUEBA marina», un total cualquiera.",
+        "Revisa la vista previa y emite. Luego anula la tanda."
+      ], "Solo reciben cuota las unidades con puesto en la marina, y la suma es exacta."],
+      ["C5", "Morosos y recordatorios", "Administración", [
+        "En el panel, mira la lista de morosos.",
+        "Toca «WhatsApp» en una unidad con teléfono cargado (no lo envíes).",
+      ], "Se abre WhatsApp con el mensaje ya escrito: apartamento, monto y enlace para pagar."],
+      ["C6", "Registrar un gasto con factura", "Administración", [
+        "Finanzas → Registrar gasto, con concepto «PRUEBA», categoría, monto y la foto de una factura."
+      ], "El gasto aparece en Finanzas, también en la vista de los propietarios, con su factura."],
+      ["C7", "Enviar un comunicado", "Administración", [
+        "Comunicados → nuevo, título «PRUEBA», prioridad normal."
+      ], "Los propietarios lo ven en Comunicados. Uno urgente les llega también al correo."],
+      ["C8", "Cargar los contactos de la junta", "Administración", [
+        "Admin → Contactos → Descargar planilla.",
+        "Complétala con algunos correos y teléfonos reales, cópiala desde Excel y pégala.",
+        "Toca «Revisar cambios» (todavía no apliques)."
+      ], "La app muestra, fila por fila, qué va a cambiar y qué filas tienen problemas. No se envía ningún correo."],
+      ["C9", "Actualizar la tasa del día", "Administración", [
+        "En el panel, revisa la tasa BCV y actualízala si hace falta."
+      ], "Los montos en bolívares de los propietarios cambian con la nueva tasa."]
+    ]],
+    ["convivencia", "Convivencia", "Reservas, averías, visitas y decisiones.", [
+      ["D1", "Reservar un área común", "Propietario", [
+        "Reservas → Parrillera → una fecha de la próxima semana, con horario.",
+        "Intenta una segunda reserva la misma semana."
+      ], "La primera queda confirmada. La segunda se rechaza explicando la regla (una por semana)."],
+      ["D2", "Reportar una avería con foto", "Propietario", [
+        "Averías → Reportar, en un área común, con descripción «PRUEBA» y una foto."
+      ], "El reporte aparece en tu lista. Cuando la administración le cambia el estado, te llega el aviso."],
+      ["D3", "Crear un pase para una visita", "Propietario", [
+        "Visitantes → nuevo pase tipo «Familia», con nombre y cédula.",
+        "Compártelo por WhatsApp."
+      ], "La visita recibe un enlace con el código QR y la hora hasta la que vale."],
+      ["D4", "Votar en una encuesta", "Propietario", [
+        "Que la administración abra una encuesta «PRUEBA» y cada miembro de la junta vote."
+      ], "Cada apartamento vota una sola vez y el resultado se ve al cerrar."]
+    ]],
+    ["caseta", "Garita", "El teléfono o la tablet de la vigilancia. El vigilante no necesita cuenta.", [
+      ["E1", "Vincular el dispositivo de la garita", "Administración", [
+        "Configuración → Caseta → crear el enlace.",
+        "Ábrelo en el teléfono o la tablet de la garita."
+      ], "Ese dispositivo queda como caseta: muestra las entradas del día y no pide iniciar sesión."],
+      ["E2", "Registrar la entrada de una visita", "Vigilancia", [
+        "Escanea el QR del pase de la prueba D3 con la cámara del dispositivo.",
+        "Registra la entrada."
+      ], "La caseta muestra nombre, apartamento y validez. El propietario recibe «Llegó tu visita» con la hora."],
+      ["E3", "Pase vencido o usado", "Vigilancia", [
+        "Escanea un pase que ya venció (o uno de un solo uso ya registrado)."
+      ], "La caseta lo muestra en rojo y no deja registrar la entrada."],
+      ["E4", "Recibir y entregar un paquete", "Vigilancia", [
+        "En la caseta, registra un paquete para un apartamento de la junta, con descripción «PRUEBA».",
+        "Luego toca «Lo vinieron a buscar» y escribe quién lo retira."
+      ], "El apartamento recibe «Tienes un paquete en la garita» y luego «Retiraron tu paquete»."]
+    ]],
+    ["atri", "Atri, el conserje", "La carita con gorra que aparece en la esquina de todas las pantallas.", [
+      ["F1", "Preguntar cuánto debo", "Propietario", [
+        "Toca a Atri y escribe «¿cuánto debo?»."
+      ], "Responde con tu saldo real y te explica cómo pagarlo."],
+      ["F2", "Preguntar por otro vecino", "Propietario", [
+        "Escribe «¿cuánto debe el apartamento 2-3 de la torre B?»."
+      ], "Atri no da datos de otro apartamento."],
+      ["F3", "Reportar una avería hablando", "Propietario", [
+        "Escribe «se me dañó el aire acondicionado».",
+        "Revisa el formulario que te propone y envíalo."
+      ], "El reporte aparece en Averías con la categoría correcta."],
+      ["F4", "Atri en el teléfono", "Propietario", [
+        "Recorre Inicio, Pagos, Reservas y Visitantes en el teléfono."
+      ], "La burbuja de Atri está siempre visible y no tapa el botón de pagar ni la barra de abajo."]
+    ]],
+    ["privacidad", "Privacidad", "Lo que nadie debería poder ver.", [
+      ["G1", "Solo lo mío", "Propietario", [
+        "Recorre Pagos, Averías y Visitantes buscando datos de otros apartamentos."
+      ], "Solo aparece lo de tu apartamento. En Finanzas se ven los totales del condominio, no las deudas de cada vecino."],
+      ["G2", "El inquilino ve lo que se le permite", "Propietario", [
+        "Si tienes inquilino, en Mi unidad revisa qué puede ver y hacer.",
+        "Pídele que entre y confirme."
+      ], "El inquilino solo ve y hace lo que marcaste."]
+    ]]
+  ];
+
+  var CLAVE = "atryum:pruebas:v1";
+  var estado = {};
+  try { estado = JSON.parse(localStorage.getItem(CLAVE) || "{}") || {}; } catch (e) { estado = {}; }
+  function guardar() { try { localStorage.setItem(CLAVE, JSON.stringify(estado)); } catch (e) {} }
+
+  var lista = document.getElementById("lista");
+  var todos = [];
+
+  function el(tag, attrs, hijos) {
+    var n = document.createElement(tag);
+    for (var k in attrs || {}) {
+      if (k === "text") n.textContent = attrs[k];
+      else n.setAttribute(k, attrs[k]);
+    }
+    (hijos || []).forEach(function (h) { if (h) n.appendChild(h); });
+    return n;
+  }
+
+  BLOQUES.forEach(function (b) {
+    var sec = el("section", { class: "bloque", id: b[0] }, [
+      el("header", {}, [el("h2", { text: b[1] }), el("p", { text: b[2] })])
+    ]);
+    b[3].forEach(function (c) {
+      var id = c[0];
+      todos.push(c);
+      var st = estado[id] || {};
+      var art = el("article", { class: "caso", "data-r": st.r || "" });
+      var botones = el("div", { class: "estado", role: "group", "aria-label": "Resultado de " + id });
+      [["ok", "Pasa"], ["mal", "Falla"], ["na", "No aplica"]].forEach(function (o) {
+        var bt = el("button", { type: "button", "data-v": o[0], "aria-pressed": st.r === o[0] ? "true" : "false", text: o[1] });
+        bt.addEventListener("click", function () {
+          var s = estado[id] || {};
+          s.r = s.r === o[0] ? "" : o[0];
+          estado[id] = s; guardar();
+          art.setAttribute("data-r", s.r);
+          botones.querySelectorAll("button").forEach(function (x) { x.setAttribute("aria-pressed", x.getAttribute("data-v") === s.r ? "true" : "false"); });
+          pintar();
+        });
+        botones.appendChild(bt);
+      });
+      var sel = el("select", { "aria-label": "Gravedad de la falla en " + id });
+      [["", "Elegir…"], ["Bloquea", "Bloquea"], ["Molesta", "Molesta"], ["Sugerencia", "Sugerencia"]].forEach(function (o) {
+        var op = el("option", { value: o[0], text: o[1] });
+        if ((st.g || "") === o[0]) op.selected = true;
+        sel.appendChild(op);
+      });
+      sel.addEventListener("change", function () { (estado[id] = estado[id] || {}).g = sel.value; guardar(); pintar(); });
+      var nota = el("textarea", { placeholder: "Qué pasó y qué hiciste justo antes", "aria-label": "Nota de la falla en " + id });
+      nota.value = st.n || "";
+      nota.addEventListener("input", function () { (estado[id] = estado[id] || {}).n = nota.value; guardar(); });
+
+      var pasos = el("ol");
+      c[3].forEach(function (p) { pasos.appendChild(el("li", { text: p })); });
+      var espera = el("p", { class: "espera" }, [el("b", { text: "Debe pasar: " }), document.createTextNode(c[4])]);
+
+      [
+        el("div", { class: "caso-top" }, [el("span", { class: "caso-id", text: id }), el("h3", { text: c[1] }), el("span", { class: "rol", text: c[2] })]),
+        pasos, espera, botones,
+        el("div", { class: "falla" }, [el("label", {}, [document.createTextNode("Gravedad"), sel]), nota])
+      ].forEach(function (h) { art.appendChild(h); });
+      sec.appendChild(art);
+    });
+    lista.appendChild(sec);
+  });
+
+  var quien = document.getElementById("quien");
+  try { quien.value = localStorage.getItem(CLAVE + ":quien") || ""; } catch (e) {}
+  quien.addEventListener("input", function () { try { localStorage.setItem(CLAVE + ":quien", quien.value); } catch (e) {} });
+
+  function pintar() {
+    var ok = 0, mal = 0, na = 0, bloquea = 0;
+    todos.forEach(function (c) {
+      var s = estado[c[0]] || {};
+      if (s.r === "ok") ok++;
+      else if (s.r === "mal") { mal++; if (s.g === "Bloquea") bloquea++; }
+      else if (s.r === "na") na++;
+    });
+    var t = todos.length;
+    var pista = document.querySelectorAll(".pista i");
+    pista[0].style.width = (ok / t * 100) + "%";
+    pista[1].style.width = (mal / t * 100) + "%";
+    pista[2].style.width = (na / t * 100) + "%";
+    document.getElementById("resumen").textContent =
+      (ok + mal + na) + " de " + t + " probadas · " + ok + " pasan · " + mal + " fallan" +
+      (bloquea ? " (" + bloquea + " bloquean)" : "");
+  }
+  pintar();
+
+  document.getElementById("copiar").addEventListener("click", function () {
+    var lineas = ["Pruebas de aceptación Atryum", (quien.value ? "Probado por " + quien.value + " · " : "") + new Date().toLocaleDateString("es-VE"), ""];
+    var pend = [];
+    todos.forEach(function (c) {
+      var s = estado[c[0]] || {};
+      if (s.r === "ok") lineas.push("PASA  " + c[0] + " " + c[1]);
+      else if (s.r === "mal") lineas.push("FALLA " + c[0] + " " + c[1] + (s.g ? " [" + s.g + "]" : "") + (s.n ? ": " + s.n.trim() : ""));
+      else if (s.r === "na") lineas.push("N/A   " + c[0] + " " + c[1]);
+      else pend.push(c[0]);
+    });
+    if (pend.length) lineas.push("", "Sin probar: " + pend.join(", "));
+    var texto = lineas.join("\n");
+    var aviso = document.getElementById("copiado");
+    function listo() { aviso.hidden = false; setTimeout(function () { aviso.hidden = true; }, 3000); }
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(texto).then(listo, function () { window.prompt("Copia el texto:", texto); });
+    else window.prompt("Copia el texto:", texto);
+  });
+  document.getElementById("imprimir").addEventListener("click", function () { window.print(); });
+})();
+</script>
+</body>
+</html>

@@ -357,6 +357,8 @@ ul.plain li { margin: 0.45rem 0; }
       <a href="#decidir">Encuestas y asambleas</a>
       <a href="#averias">Mantenimiento</a>
       <a href="#areas">Áreas comunes</a>
+      <a href="#caseta">Caseta y paquetes</a>
+      <a href="#atri">Atri, el conserje</a>
       <a href="#permisos">Quién puede qué</a>
       <a href="#mes">El mes tipo</a>
       <a href="#limites">Lo que no hace</a>
@@ -508,9 +510,15 @@ ul.plain li { margin: 0.45rem 0; }
           <div>
             <h3>Invitar a los propietarios</h3>
             <p>
-              Cargas el correo de cada propietario junto a su unidad. Ellos entran con ese correo
-              y un código de seis dígitos — no tienen que crear una cuenta ni inventar una
-              contraseña.
+              En <strong>Admin → Contactos</strong> descargas la planilla con las unidades y los
+              nombres, la junta le agrega correos y teléfonos, y la pegas de vuelta desde Excel.
+              La app te muestra qué va a cambiar antes de aplicarlo, y no envía nada en ese paso.
+            </p>
+            <p>
+              Cuando decidas, tocas «Invitar» y cada propietario recibe un correo de bienvenida
+              (uno solo aunque tenga dos apartamentos), o se lo mandas por WhatsApp desde tu
+              teléfono. Entran con su correo y un código de seis dígitos, sin contraseña. La
+              misma pantalla te dice quién ya entró.
             </p>
           </div>
         </li>
@@ -605,6 +613,11 @@ ul.plain li { margin: 0.45rem 0; }
               <td><strong>Monto único</strong></td>
               <td>El mismo monto para todas las unidades.</td>
               <td>Condominios de unidades idénticas, o gastos que no dependen del tamaño (una derrama pareja acordada en asamblea).</td>
+            </tr>
+            <tr>
+              <td><strong>Por grupo</strong></td>
+              <td>Reparte un total solo entre las unidades de un grupo, según el peso de cada una. Las demás no reciben cuota.</td>
+              <td>Gastos que pagan solo algunos: la marina, un estacionamiento techado (arts. 11 y 12 de la Ley de Propiedad Horizontal). Los grupos se arman en <strong>Admin → Grupos de prorrateo</strong>.</td>
             </tr>
           </tbody>
         </table>
@@ -730,6 +743,8 @@ ul.plain li { margin: 0.45rem 0; }
         <li><strong>Una cuota está vencida</strong> cuando pasó su fecha en la zona horaria del condominio y sigue sin pagarse. No unas horas antes por diferencia de huso, que es el error clásico.</li>
         <li><strong>Un comprobante en revisión no cuenta como moroso.</strong> Mientras tú lo revisas, ese vecino no aparece en la lista.</li>
         <li>Desde ahí puedes mandar un comunicado dirigido, sin sacar los nombres a la vista de todo el edificio.</li>
+        <li><strong>Recordar a todos</strong> deja el recordatorio en la campana de cada moroso y le escribe al correo. Junto a cada unidad, <strong>WhatsApp</strong> abre el chat con el propietario y el mensaje ya escrito, con el monto y el enlace para pagar.</li>
+        <li>Además, la app recuerda sola: tres días antes de cada vencimiento y al día siguiente si quedó sin pagar. A quien ya envió su comprobante no le escribe.</li>
       </ul>
     </section>
 
@@ -969,8 +984,59 @@ ul.plain li { margin: 0.45rem 0; }
     <hr class="rule">
 
     <!-- ══════════════════════════════════════════════════ -->
+    <!-- novedades-2026-09-29 -->
+    <section id="caseta">
+      <p class="meta">12 · Operación</p>
+      <h2>Caseta, visitas y paquetes</h2>
+
+      <p>
+        El teléfono o la tablet de la garita se vincula una sola vez como caseta. Desde ahí el
+        vigilante escanea los pases QR de las visitas y registra las encomiendas, sin tener
+        cuenta propia ni ver datos de cuotas.
+      </p>
+
+      <ul class="plain">
+        <li><strong>Entrada de una visita</strong>: al registrarla, el vecino que creó el pase recibe «Llegó tu visita» con la hora.</li>
+        <li><strong>Paquete recibido</strong>: el vigilante elige el apartamento, escribe qué es y quién lo trajo. El apartamento recibe el aviso en la campana y en el correo.</li>
+        <li><strong>Paquete entregado</strong>: «Lo vinieron a buscar», escribe quién lo retira y queda registrado. El vecino recibe la confirmación.</li>
+      </ul>
+    </section>
+
+    <hr class="rule">
+
+    <!-- ══════════════════════════════════════════════════ -->
+
+    <section id="atri">
+      <p class="meta">13 · Operación</p>
+      <h2>Atri, el conserje</h2>
+
+      <p>
+        Atri es la carita con gorra que aparece en todas las pantallas de los residentes. Contesta
+        las preguntas de siempre (cuánto debo, cómo pago, si está libre la parrillera, a qué hora se
+        saca la basura) con los datos reales del condominio, y le arma al vecino el reporte de
+        avería para que solo lo confirme. Eso le quita a la administración buena parte de los
+        mensajes repetidos.
+      </p>
+
+      <div class="note">
+        <p class="meta" style="margin:0">Lo que conviene cargar</p>
+        <p>
+          En <strong>Configuración</strong>: el horario de la oficina, el teléfono de contacto y
+          las normas de convivencia (basura, ruido, mascotas, mudanzas). Atri responde con eso;
+          si no está cargado, manda al vecino a preguntarle a la administración.
+        </p>
+      </div>
+      <p>
+        Atri solo ve lo de la persona que le pregunta: nunca revela las deudas ni los datos de
+        otro vecino, y no aprueba ni borra nada.
+      </p>
+    </section>
+
+    <hr class="rule">
+
+    <!-- ══════════════════════════════════════════════════ -->
     <section id="permisos">
-      <p class="meta">12 · Gobierno</p>
+      <p class="meta">14 · Gobierno</p>
       <h2>Quién puede qué</h2>
 
       <div class="tablewrap">
@@ -1017,7 +1083,7 @@ ul.plain li { margin: 0.45rem 0; }
 
     <!-- ══════════════════════════════════════════════════ -->
     <section id="mes">
-      <p class="meta">13 · Rutina</p>
+      <p class="meta">15 · Rutina</p>
       <h2>El mes tipo</h2>
 
       <p>Cuando el condominio ya está cargado, un mes completo de administración se ve así:</p>
@@ -1047,7 +1113,7 @@ ul.plain li { margin: 0.45rem 0; }
 
     <!-- ══════════════════════════════════════════════════ -->
     <section id="limites">
-      <p class="meta">14 · Honestidad</p>
+      <p class="meta">16 · Honestidad</p>
       <h2>Lo que Atryum no hace</h2>
 
       <p>Conviene decirlo antes de firmar, no después.</p>

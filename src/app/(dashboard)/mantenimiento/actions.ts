@@ -9,6 +9,7 @@ import { enviarEmail } from "@/lib/email/send";
 import { mantenimientoActualizado } from "@/lib/email/templates";
 import { emailDePerfil, nombreDeOrg } from "@/lib/email/recipients";
 import { MAINTENANCE_STATUS_LABELS } from "@/lib/labels";
+import { notificar } from "@/lib/notificaciones";
 
 export type CreateMaintenanceResult =
   | { success: true; requestId: string; photosUploaded: number; photosFailed: number }
@@ -247,6 +248,14 @@ export async function updateRequestStatus(
       } catch (e) {
         console.error("[email] mantenimiento falló:", e instanceof Error ? e.message : e);
       }
+      // La campana, sin correo: el correo de arriba ya salió.
+      await notificar(profile.organization_id, [{ id: actualizado.reported_by as string, email: null }], {
+        tipo: "averia_actualizada",
+        titulo: `Tu reporte «${(actualizado.title as string) ?? "avería"}»: ${MAINTENANCE_STATUS_LABELS[status] ?? status}`,
+        cuerpo: motivo || undefined,
+        enlace: "/mantenimiento",
+        correo: false,
+      });
     }
 
     revalidatePath("/mantenimiento");

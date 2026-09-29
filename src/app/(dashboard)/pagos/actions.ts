@@ -14,6 +14,7 @@ import {
   normalizeRejectionReason,
 } from "@/lib/rejection-reasons";
 import { enviarEmail } from "@/lib/email/send";
+import { notificar } from "@/lib/notificaciones";
 import { pagoAprobado, pagoRechazado } from "@/lib/email/templates";
 import { emailsDeUnidad, emailDePerfil, nombreDeOrg } from "@/lib/email/recipients";
 
@@ -281,6 +282,17 @@ async function notificarPago(
       html: plantilla.html,
       evento: `pago_${tipo}`,
     });
+
+    // La campana de quien pagó (el correo ya salió arriba).
+    if (tx.paid_by) {
+      await notificar(orgId, [{ id: tx.paid_by as string, email: null }], {
+        tipo: "pago_revisado",
+        titulo: tipo === "aprobado" ? `Pago aprobado: ${concepto}` : `Pago rechazado: ${concepto}`,
+        cuerpo: tipo === "aprobado" ? `${monto}. Ya puedes descargar tu constancia.` : `Motivo: ${motivo ?? "sin motivo"}. Puedes volver a reportarlo.`,
+        enlace: "/pagos",
+        correo: false,
+      });
+    }
   } catch (e) {
     console.error("[email] notificarPago falló:", e instanceof Error ? e.message : e);
   }

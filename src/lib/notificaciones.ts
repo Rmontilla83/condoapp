@@ -17,7 +17,8 @@ export type TipoAviso =
   | "paquete_recibido"
   | "paquete_entregado"
   | "recordatorio_pago"
-  | "averia_actualizada";
+  | "averia_actualizada"
+  | "pago_revisado";
 
 export interface Aviso {
   tipo: TipoAviso;
