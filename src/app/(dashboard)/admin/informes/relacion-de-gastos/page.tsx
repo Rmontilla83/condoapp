@@ -11,6 +11,7 @@ import { Pestanas, PESTANAS_CUENTAS } from "@/components/contabilidad/ui";
 import { SelectorPeriodo } from "@/components/contabilidad/selector-periodo";
 
 const r2 = (n: number) => Math.round(n * 100) / 100;
+const larga = (d: string) => d.split("-").reverse().join("/");
 const corta = (d: string) =>
   new Date(`${d}T12:00:00Z`).toLocaleDateString("es-VE", { day: "2-digit", month: "2-digit", timeZone: "UTC" });
 
@@ -49,11 +50,11 @@ export default async function RelacionDeGastosPage({ searchParams }: { searchPar
     db.from("exchange_rates").select("rate, effective_date").eq("organization_id", orgId).lte("effective_date", hasta).order("effective_date"),
     db
       .from("invoices")
-      .select("amount, kind")
+      .select("amount, kind, created_at, due_date")
       .eq("organization_id", orgId)
       .neq("kind", "opening")
-      .gte("created_at", desde)
-      .lt("created_at", hastaFin),
+      .lt("created_at", hastaFin)
+      .gte("due_date", desde),
     db
       .from("transactions")
       .select("amount, payment_method, invoices!inner(organization_id)")
@@ -86,7 +87,16 @@ export default async function RelacionDeGastosPage({ searchParams }: { searchPar
   }
   const grupos = [...porCat.values()].filter((c) => c.items!.length).sort((a, b) => a.pos - b.pos);
   const gastado = r2(grupos.reduce((s, c) => s + c.total, 0));
-  const facturado = r2((cuotas ?? []).reduce((s, c) => s + Number(c.amount), 0) - (notas ?? []).reduce((s, n) => s + Number(n.amount), 0));
+  // Fecha contable del recibo: la de emisión, salvo que se haya cargado después
+  // de su vencimiento (mismo criterio que el libro diario).
+  const fechaContable = (c: { created_at: unknown; due_date: unknown }) => {
+    const emitido = new Date(c.created_at as string).toLocaleDateString("en-CA", { timeZone: membrete.timezone });
+    return emitido < (c.due_date as string) ? emitido : (c.due_date as string);
+  };
+  const facturado = r2(
+    (cuotas ?? []).filter((c) => { const f = fechaContable(c); return f >= desde && f <= hasta; }).reduce((s, c) => s + Number(c.amount), 0) -
+      (notas ?? []).reduce((s, n) => s + Number(n.amount), 0),
+  );
   const cobrado = r2((pagos ?? []).reduce((s, p) => s + Number(p.amount), 0));
   const sinSoporte = (gastos ?? []).filter((g) => !g.receipt_url).length;
 
@@ -99,7 +109,7 @@ export default async function RelacionDeGastosPage({ searchParams }: { searchPar
       <Documento
         membrete={membrete}
         tipo="Relación de gastos"
-        numero={`${corta(desde)} al ${corta(hasta)}`}
+        numero={`${larga(desde)} al ${larga(hasta)}`}
         fecha={`Emitida el ${fechaLarga(hoy)}`}
         ancho="max-w-4xl"
         pie={

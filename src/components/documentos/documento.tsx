@@ -82,15 +82,16 @@ export function Documento({
         </header>
 
         {sello && (
-          <div
-            className={`pointer-events-none absolute right-10 top-36 rotate-[-10deg] rounded-lg border-[3px] px-4 py-1.5 font-display text-[22px] font-bold uppercase tracking-[0.12em] opacity-80 ${colorSello}`}
-            aria-label={sello.texto}
-          >
-            {sello.texto}
+          <div className="flex justify-end pt-4">
+            <span
+              className={`rotate-[-6deg] rounded-lg border-[3px] px-4 py-1 font-display text-[20px] font-bold uppercase tracking-[0.12em] opacity-85 ${colorSello}`}
+            >
+              {sello.texto}
+            </span>
           </div>
         )}
 
-        <div className="pt-6">{children}</div>
+        <div className={sello ? "pt-2" : "pt-6"}>{children}</div>
 
         <footer className="mt-10 flex flex-wrap items-end justify-between gap-3 border-t border-border pt-4 text-[11px] text-mute">
           <div className="max-w-xl">{pie}</div>

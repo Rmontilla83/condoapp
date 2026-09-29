@@ -47,6 +47,10 @@ export default async function MayorPage({
 
   const v = (c: (typeof balance)[number], campo: "inicial" | "debe" | "haber" | "final") =>
     enBs ? c[`${campo}Bs` as const] : c[`${campo}Usd` as const];
+  // Saldo en su naturaleza: deudora (activo, gastos) o acreedora (pasivo,
+  // patrimonio, ingresos, diferencial). Así el pasivo no aparece «negativo».
+  const acreedora = (cta: string) => /^[2347]\./.test(cta);
+  const nat = (c: (typeof balance)[number], campo: "inicial" | "final") => (acreedora(c.cuenta) ? -v(c, campo) : v(c, campo));
   const grupos = Object.entries(GRUPOS_CUENTA)
     .map(([g, nombre]) => ({ g, nombre, cuentas: balance.filter((c) => c.cuenta.startsWith(`${g}.`)) }))
     .filter((x) => x.cuentas.length);
@@ -55,7 +59,8 @@ export default async function MayorPage({
   const gastos = balance.filter((c) => c.cuenta.startsWith("5.")).reduce((s, c) => s + v(c, "debe") - v(c, "haber"), 0);
   const cambiario = -balance.filter((c) => c.cuenta.startsWith("7.")).reduce((s, c) => s + v(c, "debe") - v(c, "haber"), 0);
 
-  let corrido = cuenta ? v(cuenta, "inicial") : 0;
+  const signo = cuenta && acreedora(cuenta.cuenta) ? -1 : 1;
+  let corrido = cuenta ? signo * v(cuenta, "inicial") : 0;
 
   return (
     <div className="space-y-6">
@@ -86,7 +91,7 @@ export default async function MayorPage({
               Volver al balance
             </Link>
           }
-          pie={`Emitido el ${fechaLarga(hoy)}. Saldo = debe − haber.`}
+          pie={`Emitido el ${fechaLarga(hoy)}. Saldo en la naturaleza de la cuenta (${signo < 0 ? "acreedora: haber − debe" : "deudora: debe − haber"}).`}
         >
           <table className="w-full text-[12.5px]">
             <thead>
@@ -107,7 +112,7 @@ export default async function MayorPage({
               {movimientos.map((l, i) => {
                 const d = enBs ? l.debe_bs : l.debe_usd;
                 const h = enBs ? l.haber_bs : l.haber_usd;
-                corrido = Math.round((corrido + d - h) * 100) / 100;
+                corrido = Math.round((corrido + signo * (d - h)) * 100) / 100;
                 return (
                   <tr key={i} className="border-b border-border break-inside-avoid">
                     <td className="py-1.5 pr-2 whitespace-nowrap">{corta(l.fecha)}</td>
@@ -125,7 +130,7 @@ export default async function MayorPage({
                 <td colSpan={3} className="pt-3 text-right font-meta text-mute">MOVIMIENTOS Y SALDO FINAL</td>
                 <td className="pt-3 pl-2 text-right tabular-nums">{fmt(v(cuenta, "debe"))}</td>
                 <td className="pt-3 pl-2 text-right tabular-nums">{fmt(v(cuenta, "haber"))}</td>
-                <td className="pt-3 pl-2 text-right font-display text-[15px] tabular-nums">{fmt(v(cuenta, "final"))}</td>
+                <td className="pt-3 pl-2 text-right font-display text-[15px] tabular-nums">{fmt(signo * v(cuenta, "final"))}</td>
               </tr>
             </tfoot>
           </table>
@@ -137,7 +142,7 @@ export default async function MayorPage({
           numero={`${corta(desde)} al ${corta(hasta)}`}
           fecha={`En ${enBs ? "bolívares" : "dólares"}`}
           ancho="max-w-5xl"
-          pie={`Emitido el ${fechaLarga(hoy)}. Saldo inicial: todo lo anterior al ${corta(desde)}. Toca una cuenta para ver su mayor.`}
+          pie={`Emitido el ${fechaLarga(hoy)}. Saldo inicial: todo lo anterior al ${corta(desde)}. Saldos en su naturaleza: deudora para activo y gastos, acreedora para pasivo, patrimonio e ingresos. Toca una cuenta para ver su mayor.`}
         >
           <div className="grid grid-cols-3 gap-3">
             {[
@@ -175,10 +180,10 @@ export default async function MayorPage({
                         <span className="font-mono text-[11px] text-mute">{c.cuenta}</span> {c.nombre}
                       </Link>
                     </td>
-                    <td className="py-1.5 pl-2 text-right tabular-nums">{fmt(v(c, "inicial"))}</td>
+                    <td className="py-1.5 pl-2 text-right tabular-nums">{fmt(nat(c, "inicial"))}</td>
                     <td className="py-1.5 pl-2 text-right tabular-nums">{fmt(v(c, "debe"))}</td>
                     <td className="py-1.5 pl-2 text-right tabular-nums">{fmt(v(c, "haber"))}</td>
-                    <td className="py-1.5 pl-2 text-right font-medium tabular-nums">{fmt(v(c, "final"))}</td>
+                    <td className="py-1.5 pl-2 text-right font-medium tabular-nums">{fmt(nat(c, "final"))}</td>
                   </tr>
                 ))}
               </tbody>

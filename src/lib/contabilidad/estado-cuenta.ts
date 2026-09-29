@@ -95,7 +95,9 @@ export async function estadoDeCuenta(db: SupabaseClient, unitId: string, tz = "A
   for (const c of cuotas ?? []) {
     const apertura = c.kind === "opening";
     movs.push({
-      fecha: apertura ? (c.due_date as string) : dia(c.created_at as string, tz),
+      // Un recibo cargado después de su vencimiento (histórico) se fecha al
+      // vencimiento: si no, sus pagos aparecerían antes que el cargo.
+      fecha: apertura ? (c.due_date as string) : [dia(c.created_at as string, tz), c.due_date as string].sort()[0],
       orden: 0,
       tipo: apertura ? "apertura" : "recibo",
       documento: numeroRecibo(c.receipt_number as number | null),
