@@ -87,8 +87,9 @@ export default function LoginPage() {
     }
     setLoading(true);
     const supabase = createClient();
+    const correo = email.trim().toLowerCase();
     const { error: signInError } = await supabase.auth.signInWithPassword({
-      email,
+      email: correo,
       password,
     });
     if (signInError) {
@@ -96,6 +97,7 @@ export default function LoginPage() {
       setLoading(false);
       return;
     }
+    localStorage.setItem(LAST_EMAIL_KEY, correo);
     setStage("success");
     router.push("/dashboard");
   }
@@ -262,7 +264,7 @@ export default function LoginPage() {
                       type="email"
                       placeholder="tu@correo.com"
                       value={email}
-                      onChange={(e) => setEmail(e.target.value)}
+                      onChange={(e) => setEmail(e.target.value.replace(/\s/g, ""))}
                       required
                       autoFocus
                       autoComplete="email"
@@ -309,7 +311,7 @@ export default function LoginPage() {
                       type="email"
                       placeholder="tu@correo.com"
                       value={email}
-                      onChange={(e) => setEmail(e.target.value)}
+                      onChange={(e) => setEmail(e.target.value.replace(/\s/g, ""))}
                       required
                       autoFocus
                       autoComplete="email"
@@ -369,7 +371,7 @@ export default function LoginPage() {
                         type="email"
                         placeholder="tu@correo.com"
                         value={email}
-                        onChange={(e) => setEmail(e.target.value)}
+                        onChange={(e) => setEmail(e.target.value.replace(/\s/g, ""))}
                         required
                         autoComplete="email"
                         disabled={loading}

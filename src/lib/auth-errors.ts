@@ -34,7 +34,7 @@ export function translateAuthError(message: string): string {
     return "La contraseña es demasiado corta para la política del condominio.";
   }
   if (m.includes("invalid login credentials")) {
-    return "Correo o contraseña incorrectos. Si nunca creaste una contraseña, entra con el código y créala desde tu perfil.";
+    return "Correo o contraseña incorrectos. Revisa que el correo escrito arriba sea el de tu cuenta (se rellena con el último que usaste en este equipo). Si nunca creaste una contraseña, entra con el código y créala desde tu perfil.";
   }
   if (m.includes("smtp") || m.includes("email")) {
     return `Problema al enviar el correo: ${message}`;
