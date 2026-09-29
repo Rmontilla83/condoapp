@@ -113,7 +113,14 @@ export function InvoiceRow({ invoice, rate = 0, selected, onToggle, onPayClick, 
           <p className="text-xs text-muted-foreground">
             {/* due_date es una fecha sin hora ("2026-09-30"). `new Date()` la lee
                 como medianoche UTC y en Venezuela (UTC-4) se mostraba el día anterior. */}
-            {invoice.receipt_number != null && <>Recibo {numeroRecibo(invoice.receipt_number)} · </>}
+            {invoice.receipt_number != null && (
+              <>
+                <a href={`/recibos/${invoice.id}`} className="text-cyan-ink hover:underline">
+                  Recibo {numeroRecibo(invoice.receipt_number)}
+                </a>{" "}
+                ·{" "}
+              </>
+            )}
             Vence: {new Date(`${invoice.due_date}T12:00:00Z`).toLocaleDateString("es", { timeZone: "UTC" })}
           </p>
         </div>

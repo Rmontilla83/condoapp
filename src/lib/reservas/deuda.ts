@@ -1,3 +1,4 @@
+import { conveniosActivos } from "@/lib/contabilidad/cobranza";
 import { ESTADOS_ABIERTOS, estaAbierta, pendienteDe } from "@/lib/cuotas";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { todayInTimeZone, DEFAULT_TIME_ZONE } from "@/lib/utils";
@@ -53,6 +54,9 @@ export async function deudaQueImpideReservar(
     (c) => !((c.transactions ?? []) as { status: string }[]).some((t) => t.status === "pending"),
   );
   if (vencidas.length === 0) return null;
+  // Con un convenio de pago al día, la unidad cuenta como al día.
+  const convenios = await conveniosActivos(db, profile.organization_id, hoy);
+  if (unidades.some((u) => convenios.get(u)?.alDia)) return null;
   return { cuotas: vencidas.length, monto: vencidas.reduce((s, c) => s + pendienteDe(c), 0) };
 }
 

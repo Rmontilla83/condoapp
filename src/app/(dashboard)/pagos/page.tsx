@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { comoPendiente, estaAbierta } from "@/lib/cuotas";
 import { usd, bs } from "@/lib/format";
 import {
@@ -125,6 +126,17 @@ export default async function PagosPage() {
           <h1 className="mt-4 font-display text-[clamp(1.75rem,3.5vw,2.5rem)] leading-[1.1] tracking-[-0.03em] text-marine-deep">
             Tu estado de <em className="font-editorial text-cyan-ink">cuenta</em>
           </h1>
+          <div className="mt-3 flex flex-wrap gap-2">
+            {unitIds.map((u, i) => (
+              <Link
+                key={u}
+                href={`/estado-de-cuenta/${u}`}
+                className="inline-flex h-8 items-center rounded-full border border-border px-3 text-[12.5px] font-medium text-marine-deep hover:bg-frost"
+              >
+                {unitIds.length > 1 ? `Estado de cuenta ${i + 1}` : "Ver estado de cuenta"}
+              </Link>
+            ))}
+          </div>
         </div>
         {rate > 0 && (
           <div className="text-right shrink-0">

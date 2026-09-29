@@ -52,7 +52,7 @@ export function normalizarTelefono(texto: string): string | null {
   return d.length >= 11 && d.length <= 15 ? `+${d}` : null;
 }
 
-function separarLinea(linea: string, sep: string): string[] {
+export function separarLinea(linea: string, sep: string): string[] {
   const celdas: string[] = [];
   let actual = "";
   let comillas = false;

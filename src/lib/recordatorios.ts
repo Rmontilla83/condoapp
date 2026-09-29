@@ -1,3 +1,4 @@
+import { conveniosActivos } from "@/lib/contabilidad/cobranza";
 import { ESTADOS_ABIERTOS, estaAbierta, pendienteDe } from "@/lib/cuotas";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { notificar, perfilesDeUnidad } from "@/lib/notificaciones";
@@ -45,8 +46,11 @@ export async function recordarMorosidad(orgId: string, soloUnidad?: string): Pro
     porUnidad.set(k, v);
   }
 
+  // Quien cumple su convenio de pago no recibe recordatorios de morosidad.
+  const convenios = await conveniosActivos(db, orgId, hoy);
   let avisados = 0;
   for (const [unitId, v] of porUnidad) {
+    if (convenios.get(unitId)?.alDia) continue;
     const r = await notificar(orgId, await perfilesDeUnidad(unitId), {
       tipo: "recordatorio_pago",
       titulo: `Tienes ${v.n === 1 ? "una cuota vencida" : `${v.n} cuotas vencidas`}: ${usd(v.total)}`,

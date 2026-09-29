@@ -1,3 +1,4 @@
+import { conveniosActivos } from "@/lib/contabilidad/cobranza";
 import { ESTADOS_ABIERTOS, estaAbierta, pendienteDe } from "@/lib/cuotas";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { isInvoiceOverdue, todayInTimeZone, zonedToISO } from "@/lib/utils";
@@ -232,7 +233,10 @@ export function consultasDelConserje(ctx: ConserjeContexto) {
     const vencidas = (data ?? []).filter(
       (c) => !((c.transactions ?? []) as { status: string }[]).some((t) => t.status === "pending"),
     );
-    return vencidas.length ? { cuotas: vencidas.length, monto: r2(vencidas.reduce((s, c) => s + pendienteDe(c), 0)) } : null;
+    if (!vencidas.length) return null;
+    const convenios = await conveniosActivos(db, ctx.orgId, todayInTimeZone(ctx.timezone));
+    if (ids.some((u) => convenios.get(u)?.alDia)) return null;
+    return { cuotas: vencidas.length, monto: r2(vencidas.reduce((s, c) => s + pendienteDe(c), 0)) };
   }
 
   async function disponibilidad(area: string, fecha: string) {

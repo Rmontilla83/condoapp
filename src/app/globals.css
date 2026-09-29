@@ -462,3 +462,9 @@
     scroll-behavior: auto !important;
   }
 }
+
+/* Lo que flota sobre la página (Atri, la barra de pago) no va al papel. */
+@media print {
+  .fixed { display: none !important; }
+  .documento { break-inside: auto; }
+}
