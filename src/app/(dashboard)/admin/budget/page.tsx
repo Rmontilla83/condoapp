@@ -1,3 +1,5 @@
+import { createAdminClient } from "@/lib/supabase/admin";
+import { gastoEnUsd, serieDeTasas } from "@/lib/contabilidad/gastos";
 import { redirect } from "next/navigation";
 import {
   getCurrentProfile,
@@ -38,10 +40,11 @@ export default async function BudgetPage({
   const items = (budgetData?.items as OrgBudgetItem[] | undefined) ?? [];
   const cats = categories as ExpenseCategory[];
 
+  const tasas = await serieDeTasas(createAdminClient(), profile.organization_id);
   const executed = executedByCategory(
     expenses.map((e) => ({
       category_id: e.category_id as string,
-      amount: Number(e.amount),
+      amount: gastoEnUsd(e as { amount: number; currency: string; expense_date: string }, tasas),
       expense_date: e.expense_date as string,
       voided_at: (e.voided_at as string | null) ?? null,
     })),

@@ -1,3 +1,4 @@
+import { gastoEnUsd, serieDeTasas, textoPeriodo } from "@/lib/contabilidad/gastos";
 import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
 import { todayInTimeZone, isInvoiceOverdue } from "@/lib/utils";
@@ -354,7 +355,7 @@ export async function getAdminStats(orgId: string) {
         .eq("organization_id", orgId),
       supabase
         .from("expense_records")
-        .select("amount")
+        .select("amount, currency, expense_date")
         .eq("organization_id", orgId)
         .is("voided_at", null),
       supabase
@@ -366,8 +367,11 @@ export async function getAdminStats(orgId: string) {
         // /finanzas (que sí filtraba) mostraba una cifra distinta del mismo
         // dinero en la misma app.
         .eq("status", "approved")
+        // El saldo a favor aplicado no es dinero nuevo: ya se contó al recibirlo.
+        .neq("payment_method", "credit")
         .order("paid_at", { ascending: false }),
     ]);
+  const tasas = await serieDeTasas(supabase, orgId);
 
   const totalUnits = unitsRes.count ?? 0;
   const invoices = invoicesRes.data ?? [];
@@ -404,10 +408,9 @@ export async function getAdminStats(orgId: string) {
     (sum, t) => sum + Number(t.amount),
     0
   );
-  const totalExpenses = expenses.reduce(
-    (sum, e) => sum + Number(e.amount),
-    0
-  );
+  const totalExpenses = Math.round(
+    expenses.reduce((sum, e) => sum + gastoEnUsd(e as { amount: number; currency: string; expense_date: string }, tasas), 0) * 100,
+  ) / 100;
 
   return {
     totalUnits,
@@ -417,6 +420,11 @@ export async function getAdminStats(orgId: string) {
     totalIncome,
     totalExpenses,
     balance: totalIncome - totalExpenses,
+    // Qué período cubre el acumulado: desde el primer movimiento hasta hoy.
+    periodo: textoPeriodo(
+      [...transactions.map((t) => t.paid_at as string), ...expenses.map((e) => e.expense_date as string)],
+      today,
+    ),
     recentTransactions: transactions.slice(0, 5),
   };
 }
@@ -520,7 +528,7 @@ export async function getExpensesForYear(orgId: string, year: number) {
   const supabase = await createClient();
   const { data } = await supabase
     .from("expense_records")
-    .select("id, category_id, amount, expense_date, voided_at")
+    .select("id, category_id, amount, currency, expense_date, voided_at")
     .eq("organization_id", orgId)
     .gte("expense_date", `${year}-01-01`)
     .lte("expense_date", `${year}-12-31`);

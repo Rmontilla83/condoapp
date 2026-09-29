@@ -321,7 +321,10 @@ export default async function AdminPage() {
 
       {/* Resumen financiero */}
       <div className="rounded-2xl bg-card border border-border p-6">
-        <p className="font-meta text-mute mb-5">RESUMEN FINANCIERO · ACUMULADO</p>
+        <div className="mb-5 flex flex-wrap items-baseline justify-between gap-2">
+          <p className="font-meta text-mute">RESUMEN FINANCIERO · ACUMULADO</p>
+          <p className="text-[13px] text-mute">{stats.periodo}. En dólares; los gastos en bolívares, a la tasa BCV de su día.</p>
+        </div>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           <div className="rounded-xl bg-cloud/40 border border-border p-4">
             <p className="font-meta text-mute">RECAUDADO</p>

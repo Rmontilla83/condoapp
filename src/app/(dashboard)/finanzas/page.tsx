@@ -1,3 +1,5 @@
+import { todayInTimeZone } from "@/lib/utils";
+import { gastoEnUsd, serieDeTasas, textoPeriodo } from "@/lib/contabilidad/gastos";
 import { ESTADOS_ABIERTOS, estaAbierta, pendienteDe } from "@/lib/cuotas";
 import { IconoCategoria } from "@/components/ui/icono";
 import { usd } from "@/lib/format";
@@ -19,6 +21,9 @@ interface ExpenseRow {
   id: string;
   description: string;
   amount: number;
+  currency?: string | null;
+  /** Monto en la moneda original, si no era dólares. */
+  monto_original?: number | null;
   expense_date: string;
   receipt_url: string | null;
   voided_at: string | null;
@@ -49,7 +54,7 @@ export default async function FinanzasPage() {
     supabase
       .from("expense_records")
       .select(
-        "id, description, amount, expense_date, receipt_url, voided_at, voided_reason, category_id, vendor_id, expense_categories(id, code, label, icon), vendors(id, name)",
+        "id, description, amount, currency, expense_date, receipt_url, voided_at, voided_reason, category_id, vendor_id, expense_categories(id, code, label, icon), vendors(id, name)",
       )
       .eq("organization_id", profile.organization_id)
       .order("expense_date", { ascending: false }),
@@ -58,6 +63,7 @@ export default async function FinanzasPage() {
       .select("amount, paid_at, invoices!inner(organization_id)")
       .eq("invoices.organization_id", profile.organization_id)
       .eq("status", "approved")
+      .neq("payment_method", "credit")
       .order("paid_at", { ascending: false }),
     getExpenseCategories(profile.organization_id),
     getCurrentBudget(profile.organization_id, currentYear),
@@ -67,8 +73,12 @@ export default async function FinanzasPage() {
   // El bucket es privado (migration 030): `receipt_url` guarda una referencia
   // `bucket/path`, no una URL navegable. Se firma en el servidor.
   const firmasRecibos = await signStorageRefs(expensesRaw.map((e) => e.receipt_url));
+  // Todo en dólares: un gasto en bolívares se convierte a la tasa BCV de su día.
+  const tasas = await serieDeTasas(supabase, profile.organization_id);
   const expensesAll: ExpenseRow[] = expensesRaw.map((e, i) => ({
     ...e,
+    amount: gastoEnUsd(e, tasas),
+    monto_original: e.currency && e.currency !== "USD" ? Number(e.amount) : null,
     receipt_url: firmasRecibos[i],
   }));
   // Filtrar voided (no cuentan en totales ni gráficos)
@@ -145,6 +155,9 @@ export default async function FinanzasPage() {
         {isAdmin && <NewExpenseDialog categories={categories} />}
       </div>
 
+      <p className="-mb-4 text-[13px] text-mute">
+        Acumulado: {textoPeriodo([...transactions.map((t) => t.paid_at as string), ...expenses.map((e) => e.expense_date)], todayInTimeZone())}. En dólares.
+      </p>
       {/* KPI cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <div className="rounded-2xl bg-card border border-border p-5">
@@ -294,6 +307,11 @@ export default async function FinanzasPage() {
                     )}
                     <span className={`text-[14px] font-medium text-marine-deep ${voided ? "line-through" : ""}`}>
                       −{usd(Number(expense.amount))}
+                      {expense.monto_original != null && (
+                        <span className="block text-right text-[11px] font-normal text-mute">
+                          Bs {expense.monto_original.toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </span>
+                      )}
                     </span>
                     {isAdmin && !voided && (
                       <VoidExpenseDialog
