@@ -9,10 +9,12 @@ import {
   getFeeTypeAmounts,
 } from "@/lib/queries";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { signStorageRefs, signStorageRefRows } from "@/lib/storage";
 import { todayInTimeZone, isInvoiceOverdue } from "@/lib/utils";
 import { RequestManager } from "./request-manager";
 import { PaymentReviewer } from "./payment-reviewer";
+import { MorososLista } from "./morosos-lista";
 import { RateUpdater } from "./rate-updater";
 import { GenerateInvoicesDialog } from "./generate-invoices-dialog";
 import { VoidInvoiceRunDialog, type InvoiceRun } from "./void-invoice-run-dialog";
@@ -61,6 +63,7 @@ export default async function AdminPage() {
   ]);
 
   const org = orgRes.data;
+  const nombreCondominio = org?.name ?? "tu condominio";
   const units = (unitsRes.data ?? []).map((u) => ({
     id: u.id as string,
     unit_number: u.unit_number as string,
@@ -148,6 +151,24 @@ export default async function AdminPage() {
     morosMap[key].count += 1;
   }
   const morosos = Object.values(morosMap).sort((a, b) => b.total - a.total);
+
+  // Propietario y teléfono de cada unidad morosa, para el recordatorio por WhatsApp.
+  const { data: duenos } = morosos.length
+    ? // Admin client: la RLS de profiles con "ver como" da resultados vacíos (ver memoria).
+      await createAdminClient()
+        .from("unit_members")
+        .select("unit_id, profiles(full_name, phone)")
+        .in("unit_id", morosos.map((m) => m.id))
+        .eq("role", "owner")
+        .eq("active", true)
+    : { data: [] };
+  const contacto = new Map<string, { nombre: string | null; telefono: string | null }>();
+  for (const d of duenos ?? []) {
+    if (contacto.has(d.unit_id as string)) continue;
+    const pr = (Array.isArray(d.profiles) ? d.profiles[0] : d.profiles) as { full_name?: string; phone?: string } | null;
+    contacto.set(d.unit_id as string, { nombre: pr?.full_name || null, telefono: pr?.phone || null });
+  }
+  const morososConContacto = morosos.map((m) => ({ ...m, ...(contacto.get(m.id) ?? { nombre: null, telefono: null }) }));
 
   // Desglose de mantenimiento abierto (para que el KPI sea claro)
   const openMaintenance = maintenance.filter(
@@ -266,38 +287,7 @@ export default async function AdminPage() {
               <p className="font-meta text-cyan-ink">TODAS AL DÍA · GRACIAS</p>
             </div>
           ) : (
-            // Con 20+ morosos la tarjeta se estiraba más que la de comprobantes y
-            // empujaba todo lo demás fuera de la pantalla: se desplaza por dentro.
-            <div className="space-y-0 max-h-[34rem] overflow-y-auto pr-1">
-              {morosos.map((m) => (
-                <div
-                  key={m.id}
-                  className="flex items-center justify-between py-3.5 border-b border-border last:border-0 gap-3"
-                >
-                  <div className="min-w-0">
-                    <p className="text-[14px] font-medium text-marine-deep">Apto {m.unit}</p>
-                    <p className="mt-0.5 font-meta text-mute truncate">
-                      {m.count} CUOTA{m.count > 1 ? "S" : ""} ·{" "}
-                      DESDE{" "}
-                      {new Date(m.oldest)
-                        .toLocaleDateString("es", { month: "short", year: "numeric" })
-                        .toUpperCase()}
-                    </p>
-                  </div>
-                  <span className="text-[14px] font-medium text-destructive shrink-0">
-                    {usd(m.total)}
-                  </span>
-                </div>
-              ))}
-              <div className="mt-4 pt-4 border-t border-border">
-                <div className="flex items-center justify-between">
-                  <span className="font-meta text-mute">TOTAL POR COBRAR</span>
-                  <span className="font-display text-[20px] text-destructive">
-                    {usd(morosos.reduce((s, m) => s + m.total, 0))}
-                  </span>
-                </div>
-              </div>
-            </div>
+            <MorososLista morosos={morososConContacto} condominio={nombreCondominio} />
           )}
         </div>
       </div>
