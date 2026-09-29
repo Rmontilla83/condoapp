@@ -62,7 +62,7 @@ export function UnitsFilter({ filas }: { filas: FilaUnidad[] }) {
           value={q}
           onChange={(e) => setQ(e.target.value)}
           placeholder="Buscar apto, propietario o inquilino…"
-          className="h-9 min-w-0 flex-1 rounded-lg border border-border bg-background px-3 text-sm focus-visible:outline-2 focus-visible:outline-cyan"
+          className="h-9 min-w-[12rem] flex-1 rounded-lg border border-border bg-background px-3 text-sm focus-visible:outline-2 focus-visible:outline-cyan"
         />
       </div>
 

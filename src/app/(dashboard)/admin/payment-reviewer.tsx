@@ -179,7 +179,7 @@ export function PaymentReviewer({ payments }: { payments: PendingPayment[] }) {
           value={busqueda}
           onChange={(e) => setBusqueda(e.target.value)}
           placeholder="Apto o referencia…"
-          className="h-9 min-w-0 flex-1 rounded-lg border border-border bg-background px-3 text-sm focus-visible:outline-2 focus-visible:outline-cyan"
+          className="h-9 min-w-[12rem] flex-1 rounded-lg border border-border bg-background px-3 text-sm focus-visible:outline-2 focus-visible:outline-cyan"
         />
       </div>
 

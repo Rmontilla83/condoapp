@@ -28,7 +28,7 @@ function AreaIcon({ name, className }: { name: string; className?: string }) {
       </svg>
     );
   }
-  if (normalized.includes("bbq") || normalized.includes("parrilla") || normalized.includes("asado")) {
+  if (normalized.includes("bbq") || normalized.includes("parrill") || normalized.includes("asado")) {
     return (
       <svg className={common} fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
         <path strokeLinecap="round" strokeLinejoin="round" d="M15.362 5.214A8.252 8.252 0 0112 21 8.25 8.25 0 016.038 7.048 8.287 8.287 0 009 9.6a8.983 8.983 0 013.361-6.867 8.21 8.21 0 003 2.48z" />
