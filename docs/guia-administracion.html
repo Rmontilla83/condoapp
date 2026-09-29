@@ -335,6 +335,7 @@ ul.plain li { margin: 0.45rem 0; }
       <a href="#decidir">Encuestas y asambleas</a>
       <a href="#averias">Mantenimiento</a>
       <a href="#areas">Áreas comunes</a>
+      <a href="#cuentas">Cuentas y contabilidad</a>
       <a href="#caseta">Caseta y paquetes</a>
       <a href="#atri">Atri, el conserje</a>
       <a href="#permisos">Quién puede qué</a>
@@ -963,8 +964,34 @@ ul.plain li { margin: 0.45rem 0; }
 
     <!-- ══════════════════════════════════════════════════ -->
     <!-- novedades-2026-09-29 -->
+    <!-- contabilidad-2026-09-29 -->
+    <section id="cuentas">
+      <p class="meta">12 · Contabilidad</p>
+      <h2>Cuentas y contabilidad</h2>
+
+      <p>
+        En <strong>Admin → Cuentas por cobrar</strong> está todo lo que tiene que ver con plata: lo que debe
+        cada unidad, los recibos, los convenios, los intereses y el libro. Cada pantalla tiene su botón para
+        imprimir o guardar como PDF.
+      </p>
+
+      <ul class="plain">
+        <li><strong>Recibos con número.</strong> Cada recibo lleva un número correlativo del condominio y, una vez emitido, no se puede editar ni borrar: la ley le da fuerza ejecutiva (art. 14 de la Ley de Propiedad Horizontal). Si hubo un error, se <strong>anula con una nota de crédito</strong> numerada, que queda en el estado de cuenta.</li>
+        <li><strong>Abonos.</strong> Un vecino puede pagar una parte de una cuota; la cuota queda «abonada» con lo que falta. Si la administración recibe un pago directo (efectivo, una transferencia sin reportar), lo registra desde la ficha de la unidad: se aplica al recibo más antiguo y lo que sobre queda como saldo a favor.</li>
+        <li><strong>Antigüedad de saldos.</strong> La lista de unidades separa lo por vencer de lo vencido a 30, 60, 90 y más de 90 días, y se exporta a Excel.</li>
+        <li><strong>Convenios de pago.</strong> La deuda vencida se reparte en cuotas mensuales. Los recibos no cambian; el convenio es un calendario. Mientras se cumpla, la unidad figura al día: puede reservar y no recibe recordatorios de morosidad.</li>
+        <li><strong>Intereses de mora.</strong> Tasa anual del condominio (3 % es el interés legal; más requiere acta), interés simple por los días de atraso, sin interés sobre intereses. Se revisa unidad por unidad antes de emitir.</li>
+        <li><strong>Saldos de apertura.</strong> Lo que cada unidad debía o tenía a favor al empezar con Atryum, pegado desde la planilla de la junta. Se carga una sola vez.</li>
+        <li><strong>Documentos.</strong> Recibo de condominio, estado de cuenta por unidad (el vecino también lo ve desde Pagos) y relación de gastos del período para la asamblea, con espacio para las firmas.</li>
+        <li><strong>Libro diario, mayor y balance.</strong> Cada documento genera su asiento, siempre cuadrado, en dólares y en bolívares. La diferencia entre la tasa del día de emisión y la del cobro va a Diferencial cambiario. Nadie escribe el libro a mano: sale de los documentos, así que no puede desalinearse.</li>
+      </ul>
+    </section>
+
+    <hr class="rule">
+
+    <!-- ══════════════════════════════════════════════════ -->
     <section id="caseta">
-      <p class="meta">12 · Operación</p>
+      <p class="meta">13 · Operación</p>
       <h2>Caseta, visitas y paquetes</h2>
 
       <p>
@@ -985,7 +1012,7 @@ ul.plain li { margin: 0.45rem 0; }
     <!-- ══════════════════════════════════════════════════ -->
 
     <section id="atri">
-      <p class="meta">13 · Operación</p>
+      <p class="meta">14 · Operación</p>
       <h2>Atri, el conserje</h2>
 
       <p>
@@ -1014,7 +1041,7 @@ ul.plain li { margin: 0.45rem 0; }
 
     <!-- ══════════════════════════════════════════════════ -->
     <section id="permisos">
-      <p class="meta">14 · Gobierno</p>
+      <p class="meta">15 · Gobierno</p>
       <h2>Quién puede qué</h2>
 
       <div class="tablewrap">
@@ -1061,7 +1088,7 @@ ul.plain li { margin: 0.45rem 0; }
 
     <!-- ══════════════════════════════════════════════════ -->
     <section id="mes">
-      <p class="meta">15 · Rutina</p>
+      <p class="meta">16 · Rutina</p>
       <h2>El mes tipo</h2>
 
       <p>Cuando el condominio ya está cargado, un mes completo de administración se ve así:</p>
@@ -1091,7 +1118,7 @@ ul.plain li { margin: 0.45rem 0; }
 
     <!-- ══════════════════════════════════════════════════ -->
     <section id="limites">
-      <p class="meta">16 · Honestidad</p>
+      <p class="meta">17 · Honestidad</p>
       <h2>Lo que Atryum no hace</h2>
 
       <p>Conviene decirlo antes de firmar, no después.</p>
