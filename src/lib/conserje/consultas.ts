@@ -2,6 +2,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { isInvoiceOverdue, todayInTimeZone, zonedToISO } from "@/lib/utils";
 import { saldosPorUnidad } from "@/lib/saldos";
 import { PAYMENT_METHOD_LABELS } from "@/lib/labels";
+import { NOMBRE_CATEGORIA } from "@/lib/servicios";
 import type { BankAccount } from "@/types/database";
 
 /**
@@ -341,7 +342,30 @@ export function consultasDelConserje(ctx: ConserjeContexto) {
     };
   }
 
+  async function directorioDeServicios(categoria?: string | null) {
+    let q = db
+      .from("service_providers")
+      .select("category, name, phone, whatsapp, notes, recommended_by")
+      .eq("organization_id", ctx.orgId)
+      .eq("active", true)
+      .order("name");
+    if (categoria) q = q.eq("category", categoria);
+    const { data } = await q.limit(30);
+    return {
+      aviso: "Proveedores recomendados, no contratados por el condominio: precio y garantía se acuerdan con ellos.",
+      servicios: (data ?? []).map((s) => ({
+        categoria: NOMBRE_CATEGORIA[s.category as string] ?? (s.category as string),
+        nombre: s.name as string,
+        telefono: (s.phone as string) ?? null,
+        whatsapp: (s.whatsapp as string) || (s.phone as string) || null,
+        detalle: (s.notes as string) ?? null,
+        recomendado_por: (s.recommended_by as string) ?? null,
+      })),
+    };
+  }
+
   return {
+    directorioDeServicios,
     tasaBcv, estadoDeCuenta, historialDePagos, miUnidad, comoPagar, areasComunes,
     disponibilidad, condominio, comunicados, misSolicitudes,
   };

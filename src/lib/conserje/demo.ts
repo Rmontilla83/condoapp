@@ -1,5 +1,6 @@
 import { todayInTimeZone } from "@/lib/utils";
 import { consultasDelConserje, type ConserjeContexto } from "./consultas";
+import { PALABRAS_SERVICIO, NOMBRE_CATEGORIA, enlaceWhatsApp, type CategoriaServicio } from "@/lib/servicios";
 import type { Turno } from "./conserje";
 
 /**
@@ -80,11 +81,14 @@ function armar(dia: number, mes: number, hoy: Date): string | null {
 }
 
 type Intencion =
+  | "emergencia" | "servicio"
   | "privacidad" | "saludo" | "gracias" | "disponibilidad" | "saldo_favor" | "revision"
   | "historial" | "deuda" | "pagar" | "areas" | "contacto" | "normas" | "comunicados"
   | "alicuota" | "tasa" | "mantenimiento";
 
 const REGLAS: [Intencion, RegExp][] = [
+  ["emergencia", /\b(emergencia\w*|incendio|fuego|humo|ambulancia|herid\w*|infarto|desmay\w*|robo|asalto|ladron\w*|policia|bomberos)\b/],
+  ["servicio", /\b(tecnico\w*|proveedor\w*|servicio\w*|recomienda\w*|conoces (a )?(un|una|algun\w*)|quien (arregla|repara)|se (me )?dano|se (me )?rompio)\b/],
   ["privacidad", /\b(vecino|vecina|morosos|quien(es)? debe|cuanto debe (el|la)|deuda de(l| la| otro)|otro apartamento)\b/],
   ["saldo_favor", /\b(saldo a favor|a mi favor|credito|abono|pague de mas)\b/],
   ["revision", /\b(aprob\w*|en revision|comprobante|ya report\w*|lo recibieron)\b/],
@@ -103,9 +107,25 @@ const REGLAS: [Intencion, RegExp][] = [
   ["gracias", /\b(gracias|muchas gracias|perfecto|listo|excelente)\b/],
 ];
 
+/** La categoría de servicio que menciona el texto, si alguna. */
+function categoriaServicio(texto: string): CategoriaServicio | null {
+  const t = norm(texto);
+  for (const [cat, re] of Object.entries(PALABRAS_SERVICIO)) {
+    if (re.test(t)) return cat as CategoriaServicio;
+  }
+  return null;
+}
+
 function detectar(texto: string): Intencion[] {
   const t = norm(texto);
   const encontradas = REGLAS.filter(([, re]) => re.test(t)).map(([i]) => i);
+  if (encontradas.includes("emergencia")) return ["emergencia"];
+  // "Se me dañó el aire", "necesito un plomero": pedir un técnico le gana a la
+  // lista de áreas o a las normas, que también matchean palabras como "piso".
+  const cat = categoriaServicio(texto);
+  if ((cat && !encontradas.includes("deuda") && !encontradas.includes("disponibilidad")) || (encontradas.includes("servicio") && !encontradas.includes("deuda"))) {
+    return ["servicio"];
+  }
   // "¿Está libre la parrillera?" es disponibilidad, no la lista de áreas.
   if (encontradas.includes("disponibilidad")) return ["disponibilidad"];
   if (encontradas.includes("privacidad")) return ["privacidad"];
@@ -120,6 +140,7 @@ function detectar(texto: string): Intencion[] {
 }
 
 const MENU = `Puedo ayudarte con:
+• Técnicos recomendados: aires, plomería, electricidad, cerrajería…
 • Cuánto debes y cuándo vence
 • Cómo y dónde pagar
 • Si tu pago ya fue aprobado
@@ -167,6 +188,42 @@ async function responderIntencion(
   const primerNombre = nombre.trim().split(/\s+/)[0] ?? "";
 
   switch (i) {
+    case "emergencia": {
+      const c = await q.condominio();
+      return [
+        "Si es una emergencia, primero lo urgente:",
+        "• Llama al 911 (emergencias).",
+        "• Avisa a la vigilancia del edificio.",
+        c.telefono ? `• Después, a la administración: ${c.telefono}.` : "• Después, avisa a la administración.",
+        "Si es un daño en un área común (ascensor, bomba, tubería del pasillo), repórtalo también en Mantenimiento para que quede registrado.",
+      ].join("\n");
+    }
+
+    case "servicio": {
+      const cat = categoriaServicio(texto);
+      const d = await q.directorioDeServicios(cat);
+      if (d.servicios.length === 0) {
+        const todos = cat ? await q.directorioDeServicios(null) : d;
+        if (todos.servicios.length === 0) {
+          return "El directorio de servicios todavía está vacío. Pídele a la administración que agregue los técnicos de confianza del edificio.";
+        }
+        const cats = [...new Set(todos.servicios.map((s) => s.categoria))];
+        return `No tengo ${cat ? `proveedores de ${NOMBRE_CATEGORIA[cat].toLowerCase()}` : "ese servicio"} en el directorio. Sí tengo: ${cats.join(", ")}. Míralos en la sección Servicios.`;
+      }
+      const lineas = [cat ? `Técnicos de ${NOMBRE_CATEGORIA[cat].toLowerCase()} recomendados en el edificio:` : "Directorio de servicios del edificio:"];
+      for (const s of d.servicios.slice(0, 4)) {
+        const wa = enlaceWhatsApp(s.whatsapp);
+        lineas.push(
+          `• ${s.nombre}${cat ? "" : ` (${s.categoria})`}${s.detalle ? ` — ${s.detalle.replace(/[.\s]+$/, "")}` : ""}. ${s.telefono ?? s.whatsapp ?? ""}${wa ? ` · WhatsApp: ${wa}` : ""}`,
+        );
+      }
+      lineas.push(d.aviso);
+      if (cat === "plomeria" || cat === "electricidad" || cat === "albanileria") {
+        lineas.push("Si el daño viene de un área común (bajante, tablero o pared del pasillo), repórtalo también en Mantenimiento.");
+      }
+      return lineas.join("\n");
+    }
+
     case "saludo":
       return `¡Hola${primerNombre ? `, ${primerNombre}` : ""}! Soy el conserje virtual. ${MENU}`;
 

@@ -45,6 +45,7 @@ const mainItems = [
 
 const moreItemsBase = [
   { href: "/conserje", label: "Conserje", adminOnly: false },
+  { href: "/servicios", label: "Servicios", adminOnly: false },
   { href: "/comunicados", label: "Comunicados", adminOnly: false },
   { href: "/finanzas", label: "Finanzas", adminOnly: false },
   { href: "/reservas", label: "Reservas", adminOnly: false },

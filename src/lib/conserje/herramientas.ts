@@ -73,6 +73,18 @@ export function herramientasDelConserje(ctx: ConserjeContexto) {
       run: async () => json(await q.comunicados()),
     }),
     betaZodTool({
+      name: "directorio_de_servicios",
+      description:
+        "Técnicos y proveedores recomendados por el condominio: aires acondicionados, plomería, electricidad, albañilería, pintura, cerrajería, fumigación, línea blanca, internet y cámaras, herrería, vidrios, limpieza, jardinería, piscinas, mudanzas. Para 'se me dañó el aire', 'necesito un plomero', '¿conoces un cerrajero?'. Si el daño es en un área común (ascensor, bomba, pasillo), además sugiere reportarlo en Mantenimiento.",
+      inputSchema: z.object({
+        categoria: z
+          .enum(["aire_acondicionado", "plomeria", "electricidad", "albanileria", "pintura", "cerrajeria", "fumigacion", "jardineria", "piscina", "limpieza", "mudanzas", "tecnologia", "linea_blanca", "herreria", "vidrieria", "otro"])
+          .optional()
+          .describe("Categoría; omítela para ver todo el directorio"),
+      }),
+      run: async ({ categoria }) => json(await q.directorioDeServicios(categoria ?? null)),
+    }),
+    betaZodTool({
       name: "mis_solicitudes_de_mantenimiento",
       description: "Las solicitudes de mantenimiento que reportó esta persona y en qué estado están.",
       inputSchema: sinArgs,
