@@ -89,7 +89,6 @@ export function NewExpenseDialog({ categories }: Props) {
               </option>
               {categories.map((c) => (
                 <option key={c.id} value={c.id}>
-                  {c.icon ? `${c.icon} ` : ""}
                   {c.label}
                 </option>
               ))}

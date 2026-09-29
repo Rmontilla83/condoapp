@@ -1,3 +1,4 @@
+import { IconoCategoria } from "@/components/ui/icono";
 import type { ExpenseCategory, OrgBudget, OrgBudgetItem } from "@/types/database";
 import { computeYearlyAmount } from "@/lib/budget";
 
@@ -67,7 +68,7 @@ export function BudgetProgressCard({ budget, items, executedByCategoryId, catego
             <div key={item.id}>
               <div className="flex items-center justify-between mb-1">
                 <span className="text-[14px] text-marine-deep">
-                  <span className="mr-2">{category?.icon ?? "·"}</span>
+                  <IconoCategoria icono={category?.icon} className="mr-2 inline h-4 w-4 align-[-2px] text-cyan-ink" />
                   {category?.label ?? "Sin categoría"}
                 </span>
                 <div className="text-right">

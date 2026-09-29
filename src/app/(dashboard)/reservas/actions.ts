@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getCurrentProfile } from "@/lib/queries";
 import { canTenantAct } from "@/lib/permissions";
 import { revalidatePath } from "next/cache";
+import { deudaQueImpideReservar, mensajeDeudaReserva } from "@/lib/reservas/deuda";
 import { DEFAULT_TIME_ZONE, zonedToISO } from "@/lib/utils";
 
 export async function createReservation(formData: FormData) {
@@ -16,6 +17,10 @@ export async function createReservation(formData: FormData) {
   if (!gate.allowed) {
     return { error: gate.reason ?? "No puedes reservar en este condominio." };
   }
+
+  // Con cuotas vencidas no se reserva (la pantalla ya lo avisa; esto es el candado).
+  const deuda = await deudaQueImpideReservar(profile);
+  if (deuda) return { error: mensajeDeudaReserva(deuda) };
 
   const areaId = formData.get("area_id") as string;
   const date = formData.get("date") as string;

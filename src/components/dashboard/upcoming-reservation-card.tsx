@@ -1,3 +1,4 @@
+import { hora12 } from "@/lib/format";
 import Link from "next/link";
 
 interface Props {
@@ -15,8 +16,7 @@ const DAY_LABELS = ["DOM", "LUN", "MAR", "MIÉ", "JUE", "VIE", "SÁB"];
 function formatHourRange(startIso: string, endIso: string): string {
   const s = new Date(startIso);
   const e = new Date(endIso);
-  const fmt = (d: Date) =>
-    d.toLocaleTimeString("es", { hour: "2-digit", minute: "2-digit", hour12: false });
+  const fmt = (d: Date) => hora12(d);
   return `${fmt(s)}–${fmt(e)}`;
 }
 

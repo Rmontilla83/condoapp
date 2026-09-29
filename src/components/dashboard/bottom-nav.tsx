@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 const mainItems = [
   {
@@ -64,8 +64,12 @@ const moreItemsBase = [
 ];
 
 export function BottomNav({ isAdmin = false }: { isAdmin?: boolean }) {
-  const pathname = usePathname();
+  const actual = usePathname();
   const [showMore, setShowMore] = useState(false);
+  // Se marca al tocar, sin esperar a que llegue la página.
+  const [destino, setDestino] = useState<string | null>(null);
+  useEffect(() => setDestino(null), [actual]);
+  const pathname = destino ?? actual;
 
   const moreItems = moreItemsBase.filter((item) => !item.adminOnly || isAdmin);
 
@@ -87,7 +91,10 @@ export function BottomNav({ isAdmin = false }: { isAdmin?: boolean }) {
                   <Link
                     key={item.href}
                     href={item.href}
-                    onClick={() => setShowMore(false)}
+                    onClick={() => {
+                      setShowMore(false);
+                      setDestino(item.href);
+                    }}
                     aria-current={isActive ? "page" : undefined}
                     className={`flex items-center justify-center rounded-lg px-3 py-3 text-[12px] font-medium transition-colors ${
                       isActive ? "bg-marine-deep text-frost" : "text-marine-deep/70 hover:bg-cloud/50"
@@ -116,6 +123,7 @@ export function BottomNav({ isAdmin = false }: { isAdmin?: boolean }) {
               <Link
                 key={item.href}
                 href={item.href}
+                onClick={() => setDestino(item.href)}
                 aria-current={isActive ? "page" : undefined}
                 className={`flex flex-col items-center gap-1 px-2 py-1.5 text-[10px] font-medium whitespace-nowrap transition-colors ${
                   isActive ? "text-ember" : "text-sidebar-foreground/60"

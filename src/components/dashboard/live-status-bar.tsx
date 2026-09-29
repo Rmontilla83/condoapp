@@ -1,6 +1,6 @@
 "use client";
 
-import { bs } from "@/lib/format";
+import { bs, hora12 } from "@/lib/format";
 import { useEffect, useState } from "react";
 
 interface LiveStatusBarProps {
@@ -11,12 +11,7 @@ interface LiveStatusBarProps {
 // Venezuela: UTC-4, sin DST. Usamos Intl con timezone "America/Caracas"
 // que siempre devuelve la hora correcta sin depender del offset local.
 function getVenezuelaTime(): string {
-  return new Intl.DateTimeFormat("es-VE", {
-    timeZone: "America/Caracas",
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
-  }).format(new Date());
+  return hora12(new Date());
 }
 
 function formatBsRate(rate: number | null): string {

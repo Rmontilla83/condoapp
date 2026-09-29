@@ -449,3 +449,16 @@
 @media (prefers-reduced-motion: reduce) {
   .atri-ojos { animation: none; }
 }
+
+/* Quien pidió menos movimiento en su teléfono no ve animaciones en ninguna
+   parte de la app (antes solo se respetaba en el parpadeo de Atri). */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

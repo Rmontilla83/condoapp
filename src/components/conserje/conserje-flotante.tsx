@@ -2,7 +2,14 @@
 
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
-import { Chat } from "@/app/(dashboard)/conserje/chat";
+import dynamic from "next/dynamic";
+
+// El chat (y el formulario de avería) se descargan recién al abrir el panel:
+// la burbuja está en todas las pantallas y casi siempre cerrada.
+const Chat = dynamic(() => import("@/app/(dashboard)/conserje/chat").then((m) => m.Chat), {
+  ssr: false,
+  loading: () => <p className="p-6 text-center text-[14px] text-mute">Abriendo…</p>,
+});
 import { CaraConserje, NOMBRE_CONSERJE } from "./cara";
 
 /**

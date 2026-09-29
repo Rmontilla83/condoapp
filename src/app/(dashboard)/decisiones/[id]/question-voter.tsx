@@ -114,7 +114,7 @@ export function QuestionVoter({
                   </span>
                 </div>
                 <div className="h-2 rounded-full bg-cloud overflow-hidden">
-                  <div className="h-full rounded-full bg-cyan transition-all duration-500" style={{ width: `${pct}%` }} />
+                  <div className="h-full rounded-full bg-cyan transition-[border-color,box-shadow,transform,background-color] duration-200" style={{ width: `${pct}%` }} />
                 </div>
               </div>
             );

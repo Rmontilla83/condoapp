@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { AtryumLogo } from "@/components/brand/atryum-logo";
+import { CondoMarca } from "@/components/brand/condo-marca";
 import { Campana, type AvisoFila } from "./campana";
 
 export function Header({
@@ -25,7 +26,7 @@ export function Header({
   isSuperAdmin?: boolean;
   viewingAs?: string | null;
   /** En escritorio la franja superior estaba vacía salvo el avatar. */
-  condominio?: { nombre: string; ciudad: string | null } | null;
+  condominio?: { nombre: string; ciudad: string | null; logoUrl?: string | null } | null;
   avisos?: AvisoFila[];
 }) {
   const router = useRouter();
@@ -39,12 +40,23 @@ export function Header({
 
   return (
     <header className="flex h-16 md:h-14 items-center justify-between border-b border-border bg-background px-4 md:px-10">
-      <div className="flex items-center md:hidden">
-        <AtryumLogo variant="horizontal" tone="color" className="text-[20px]" />
+      {/* En el teléfono no hay menú lateral: aquí va la marca del condominio. */}
+      <div className="flex min-w-0 items-center gap-2.5 md:hidden">
+        {condominio ? (
+          <>
+            <CondoMarca nombre={condominio.nombre} logoUrl={condominio.logoUrl} tam={36} />
+            <span className="truncate font-display text-[17px] font-semibold tracking-[-0.02em] text-marine-deep">
+              {condominio.nombre}
+            </span>
+          </>
+        ) : (
+          <AtryumLogo variant="horizontal" tone="color" className="text-[20px]" />
+        )}
       </div>
-      <div className="hidden md:flex items-baseline gap-2 min-w-0">
+      <div className="hidden md:flex items-center gap-2.5 min-w-0">
         {condominio && (
           <>
+            <CondoMarca nombre={condominio.nombre} logoUrl={condominio.logoUrl} tam={28} className="rounded-lg" />
             <span className="text-[15px] font-semibold text-marine-deep truncate">{condominio.nombre}</span>
             {condominio.ciudad && (
               <span className="font-meta text-mute">{condominio.ciudad.toUpperCase()}</span>

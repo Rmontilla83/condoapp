@@ -1,3 +1,4 @@
+import { Icono } from "@/components/ui/icono";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { GrantAccessButton } from "./grant-access-button";
 import { puedeRegistrarEntrada } from "@/lib/caseta";
@@ -62,7 +63,7 @@ export default async function VerificarPage({
     <VerificarShell status={status}>
       <div className="mt-6 space-y-4">
         <div className="rounded-xl bg-cloud/40 border border-border p-4">
-          <p className="font-meta text-mute">{kindMeta.icon} {kindMeta.label.toUpperCase()}</p>
+          <p className="flex items-center gap-2 font-meta text-mute"><Icono nombre={kindMeta.icon} className="h-4 w-4" /> {kindMeta.label.toUpperCase()}</p>
           <p className="mt-2 font-display text-[20px] text-marine-deep leading-tight">
             {pass.visitor_name}
           </p>
@@ -90,7 +91,7 @@ export default async function VerificarPage({
           <div className="rounded-xl bg-cloud/40 border border-border p-4">
             <p className="font-meta text-mute">VEHÍCULO</p>
             <p className="mt-2 text-[15px] font-mono font-medium text-marine-deep">
-              🚗 {pass.vehicle_plate}
+              {pass.vehicle_plate}
             </p>
           </div>
         )}

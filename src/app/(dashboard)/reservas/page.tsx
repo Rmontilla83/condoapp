@@ -1,6 +1,7 @@
 import { getCurrentProfile } from "@/lib/queries";
 import { createClient } from "@/lib/supabase/server";
 import { ReserveDialog } from "./reserve-dialog";
+import { deudaQueImpideReservar } from "@/lib/reservas/deuda";
 import { CancelButton } from "./cancel-button";
 import {
   DEFAULT_TIME_ZONE,
@@ -63,7 +64,7 @@ export default async function ReservasPage() {
 
   const supabase = await createClient();
 
-  const [orgRes, areasRes, reservationsRes] = await Promise.all([
+  const [orgRes, areasRes, reservationsRes, deuda] = await Promise.all([
     supabase
       .from("organizations")
       .select("timezone")
@@ -83,6 +84,7 @@ export default async function ReservasPage() {
       .eq("status", "confirmed")
       .gte("end_time", new Date().toISOString())
       .order("start_time", { ascending: true }),
+    deudaQueImpideReservar(profile),
   ]);
 
   // Sin zona explícita, el servidor formateaba en UTC y el navegador en la hora
@@ -126,7 +128,14 @@ export default async function ReservasPage() {
             Reserva <em className="font-editorial text-cyan">espacios</em>
           </h1>
         </div>
-        {areas.length > 0 && <ReserveDialog areas={areas} manana={primerDiaReservable} />}
+        {areas.length > 0 && (
+          <ReserveDialog
+            areas={areas}
+            manana={primerDiaReservable}
+            deuda={deuda}
+            primerNombre={(profile.full_name ?? "").trim().split(/\s+/)[0] ?? ""}
+          />
+        )}
       </div>
 
       {/* Sin áreas cargadas, esta pantalla era un título y nada debajo, con un

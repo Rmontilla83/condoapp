@@ -1,20 +1,21 @@
 import type { VisitorKind } from "@/types/database";
+import type { NombreIcono } from "@/components/ui/icono";
 
 interface VisitorKindMeta {
   id: VisitorKind;
   label: string;
-  icon: string;
+  icon: NombreIcono;
   defaultHours: number;
 }
 
 export const VISITOR_KINDS: readonly VisitorKindMeta[] = [
-  { id: "family",    label: "Familia",     icon: "👨‍👩‍👧", defaultHours: 12 },
-  { id: "delivery",  label: "Delivery",    icon: "📦",  defaultHours: 2 },
-  { id: "rideshare", label: "Uber/Taxi",   icon: "🚗",  defaultHours: 1 },
-  { id: "service",   label: "Técnico",     icon: "🔧",  defaultHours: 4 },
-  { id: "moving",    label: "Mudanza",     icon: "📦",  defaultHours: 8 },
-  { id: "guest",     label: "Genérico",    icon: "👤",  defaultHours: 24 },
-  { id: "other",     label: "Otro",        icon: "·",   defaultHours: 24 },
+  { id: "family",    label: "Familia",     icon: "familia", defaultHours: 12 },
+  { id: "delivery",  label: "Delivery",    icon: "paquete",  defaultHours: 2 },
+  { id: "rideshare", label: "Uber/Taxi",   icon: "auto",  defaultHours: 1 },
+  { id: "service",   label: "Técnico",     icon: "herramienta",  defaultHours: 4 },
+  { id: "moving",    label: "Mudanza",     icon: "paquete",  defaultHours: 8 },
+  { id: "guest",     label: "Genérico",    icon: "persona",  defaultHours: 24 },
+  { id: "other",     label: "Otro",        icon: "punto",   defaultHours: 24 },
 ] as const;
 
 export const VISITOR_KIND_BY_ID: Record<VisitorKind, VisitorKindMeta> = Object.fromEntries(

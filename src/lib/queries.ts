@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
 import { todayInTimeZone, isInvoiceOverdue } from "@/lib/utils";
 import type {
@@ -13,12 +14,23 @@ import type {
 
 // ── User & Profile ──────────────────────────────────────
 
-export async function getCurrentProfile() {
+/**
+ * El usuario de la sesión, una sola vez por request. Antes cada
+ * getCurrentProfile volvía a preguntarle a Auth (una ida y vuelta HTTP) y una
+ * página del dashboard lo hacía cinco veces antes de pintar.
+ */
+export const getAuthUser = cache(async () => {
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
+  return user;
+});
+
+export const getCurrentProfile = cache(async () => {
+  const user = await getAuthUser();
   if (!user) return null;
+  const supabase = await createClient();
 
   const { data } = await supabase
     .from("profiles")
@@ -27,7 +39,7 @@ export async function getCurrentProfile() {
     .single();
 
   return data as (Profile & { view_as?: string | null }) | null;
-}
+});
 
 export function getEffectiveRole(profile: Profile & { view_as?: string | null }): string {
   // Super admin can impersonate other roles for testing
@@ -531,7 +543,7 @@ export async function getCommonAreas(orgId: string) {
 
 // ── Organization ────────────────────────────────────────
 
-export async function getOrganization(orgId: string) {
+export const getOrganization = cache(async (orgId: string) => {
   const supabase = await createClient();
   const { data } = await supabase
     .from("organizations")
@@ -540,11 +552,11 @@ export async function getOrganization(orgId: string) {
     .single();
 
   return data;
-}
+});
 
 // ── Exchange Rate ───────────────────────────────────────
 
-export async function getCurrentRate(orgId: string) {
+export const getCurrentRate = cache(async (orgId: string) => {
   const supabase = await createClient();
   const { data } = await supabase
     .from("exchange_rates")
@@ -555,7 +567,7 @@ export async function getCurrentRate(orgId: string) {
     .single();
 
   return data ?? { rate: 0, effective_date: "", source: "bcv" };
-}
+});
 
 // ── Pending invoices (light query for layout-level FAB) ──
 

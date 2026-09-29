@@ -1,3 +1,4 @@
+import { IconoCategoria } from "@/components/ui/icono";
 import { usd } from "@/lib/format";
 import {
   getCurrentProfile,
@@ -212,7 +213,7 @@ export default async function FinanzasPage() {
                   </div>
                   <div className="h-1.5 rounded-full bg-cloud overflow-hidden">
                     <div
-                      className="h-full rounded-full bg-cyan transition-all duration-500"
+                      className="h-full rounded-full bg-cyan transition-[border-color,box-shadow,transform,background-color] duration-200"
                       style={{ width: `${pct}%` }}
                     />
                   </div>
@@ -249,7 +250,7 @@ export default async function FinanzasPage() {
                   className={`flex items-center justify-between py-3.5 border-b border-border last:border-0 ${voided ? "opacity-60" : ""}`}
                 >
                   <div className="flex items-center gap-3 min-w-0">
-                    <span className="text-[16px] shrink-0">{cat?.icon ?? "·"}</span>
+                    <IconoCategoria icono={cat?.icon} className="h-4 w-4 shrink-0 text-cyan-ink" />
                     <div className="min-w-0">
                       <p
                         className={`text-[14px] font-medium text-marine-deep truncate ${voided ? "line-through" : ""}`}

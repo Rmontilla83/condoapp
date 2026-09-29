@@ -140,7 +140,7 @@ export function DecisionCard({ decision, questions, userId, isAdmin, quorumStats
                     <span className="font-meta text-mute">{count} ({pct.toFixed(0)}%)</span>
                   </div>
                   <div className="h-2 rounded-full bg-cloud overflow-hidden">
-                    <div className="h-full rounded-full bg-cyan transition-all duration-500" style={{ width: `${pct}%` }} />
+                    <div className="h-full rounded-full bg-cyan transition-[border-color,box-shadow,transform,background-color] duration-200" style={{ width: `${pct}%` }} />
                   </div>
                 </div>
               );
@@ -243,12 +243,12 @@ export function DecisionCard({ decision, questions, userId, isAdmin, quorumStats
             <span className="font-meta text-mute">QUÓRUM</span>
             <span className="font-meta text-marine-deep">
               {Math.min(quorumStats.achieved_pct, 100).toFixed(1)}% · REQUIERE {quorumStats.required_pct.toFixed(0)}%
-              {quorumStats.met && " ✓"}
+              {quorumStats.met && " · alcanzado"}
             </span>
           </div>
           <div className="h-2 rounded-full bg-cloud overflow-hidden">
             <div
-              className={`h-full rounded-full transition-all duration-500 ${quorumStats.met ? "bg-cyan" : "bg-ember"}`}
+              className={`h-full rounded-full transition-[border-color,box-shadow,transform,background-color] duration-200 ${quorumStats.met ? "bg-cyan" : "bg-ember"}`}
               style={{ width: `${Math.min(quorumStats.achieved_pct, 100)}%` }}
             />
           </div>
@@ -260,7 +260,7 @@ export function DecisionCard({ decision, questions, userId, isAdmin, quorumStats
         <div className="flex items-center justify-between gap-3 pt-3 border-t border-border">
           <p className="font-meta text-mute">
             {allVoted
-              ? `VOTASTE LAS ${totalQuestions} PREGUNTAS ✓`
+              ? `VOTASTE LAS ${totalQuestions} PREGUNTAS`
               : partial
               ? `VOTASTE ${myVotedQuestions.size} DE ${totalQuestions} — COMPLETAR`
               : `${totalQuestions} PREGUNTA${totalQuestions !== 1 ? "S" : ""} POR VOTAR`}

@@ -1,5 +1,6 @@
 "use client";
 
+import { Icono } from "@/components/ui/icono";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { QRModal } from "./qr-modal";
@@ -67,13 +68,13 @@ export function PassList({ passes, orgName, showUnit = false, hideShareButton = 
                   className="flex h-10 w-10 items-center justify-center rounded-lg bg-marine-deep/5 border border-marine-deep/10 shrink-0 text-[18px]"
                   title={kindMeta.label}
                 >
-                  {kindMeta.icon}
+                  <Icono nombre={kindMeta.icon} className="h-5 w-5 text-marine-deep" />
                 </span>
                 <div className="min-w-0">
                   <p className="text-[14px] font-medium text-marine-deep truncate">
                     {pass.visitor_name}
                     {pass.vehicle_plate && (
-                      <span className="ml-2 font-meta text-cyan-ink">🚗 {pass.vehicle_plate}</span>
+                      <span className="ml-2 font-meta text-cyan-ink">PLACA {pass.vehicle_plate}</span>
                     )}
                   </p>
                   <p className="mt-0.5 font-meta text-mute truncate">

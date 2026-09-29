@@ -4,6 +4,7 @@ import { saldosPorUnidad } from "@/lib/saldos";
 import { PAYMENT_METHOD_LABELS } from "@/lib/labels";
 import { NOMBRE_CATEGORIA } from "@/lib/servicios";
 import type { BankAccount } from "@/types/database";
+import { hora12 } from "@/lib/format";
 
 /**
  * Lo que el conserje sabe de QUIÉN pregunta. Se arma en el servidor a partir de
@@ -207,7 +208,30 @@ export function consultasDelConserje(ctx: ConserjeContexto) {
       .eq("organization_id", ctx.orgId)
       .eq("is_active", true)
       .order("name");
-    return { areas: data ?? [], como_reservar: "En la sección Reservas de la app." };
+    return {
+      areas: data ?? [],
+      como_reservar: "En la sección Reservas de la app.",
+      reservas_bloqueadas_por_deuda: await bloqueoPorDeuda(),
+    };
+  }
+
+  /**
+   * Cuotas vencidas de sus unidades (sin pago reportado): con ellas no puede
+   * reservar. Misma regla que src/lib/reservas/deuda.ts. Decírselo con tacto.
+   */
+  async function bloqueoPorDeuda(): Promise<{ cuotas: number; monto: number } | null> {
+    const ids = ctx.unidades.map((u) => u.id);
+    if (ids.length === 0) return null;
+    const { data } = await db
+      .from("invoices")
+      .select("amount, transactions(status)")
+      .in("unit_id", ids)
+      .in("status", ["pending", "overdue"])
+      .lt("due_date", todayInTimeZone(ctx.timezone));
+    const vencidas = (data ?? []).filter(
+      (c) => !((c.transactions ?? []) as { status: string }[]).some((t) => t.status === "pending"),
+    );
+    return vencidas.length ? { cuotas: vencidas.length, monto: r2(vencidas.reduce((s, c) => s + Number(c.amount), 0)) } : null;
   }
 
   async function disponibilidad(area: string, fecha: string) {
@@ -246,15 +270,13 @@ export function consultasDelConserje(ctx: ConserjeContexto) {
       .gt("end_time", desde)
       .order("start_time");
 
-    const hora = (iso: string) =>
-      new Intl.DateTimeFormat("es-VE", {
-        timeZone: ctx.timezone, hour: "2-digit", minute: "2-digit", hour12: false,
-      }).format(new Date(iso));
+    const hora = (iso: string) => hora12(new Date(iso), ctx.timezone);
 
     return {
       encontrada: true as const,
       area: encontrada.name as string,
       fecha,
+      reservas_bloqueadas_por_deuda: await bloqueoPorDeuda(),
       bloques_ocupados: (reservas ?? []).map((r) => ({
         desde: hora(r.start_time as string),
         hasta: hora(r.end_time as string),
@@ -388,7 +410,7 @@ export function consultasDelConserje(ctx: ConserjeContexto) {
     misPaquetes,
     directorioDeServicios,
     tasaBcv, estadoDeCuenta, historialDePagos, miUnidad, comoPagar, areasComunes,
-    disponibilidad, condominio, comunicados, misSolicitudes,
+    disponibilidad, condominio, comunicados, misSolicitudes, bloqueoPorDeuda,
   };
 }
 

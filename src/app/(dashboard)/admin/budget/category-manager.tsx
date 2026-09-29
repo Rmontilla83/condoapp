@@ -1,5 +1,6 @@
 "use client";
 
+import { Icono, NOMBRES_ICONO, iconoDeCategoria, type NombreIcono } from "@/components/ui/icono";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -26,7 +27,7 @@ export function CategoryManager({ categories }: { categories: ExpenseCategory[] 
 
   // edición inline por categoría
   const [edits, setEdits] = useState<Record<string, { label: string; icon: string }>>(() =>
-    Object.fromEntries(categories.map((c) => [c.id, { label: c.label, icon: c.icon ?? "·" }])),
+    Object.fromEntries(categories.map((c) => [c.id, { label: c.label, icon: iconoDeCategoria(c.icon) }])),
   );
 
   // nueva categoría
@@ -73,7 +74,7 @@ export function CategoryManager({ categories }: { categories: ExpenseCategory[] 
     }
     const fd = new FormData();
     fd.set("label", newLabel);
-    fd.set("icon", newIcon);
+    fd.set("icon", newIcon || "etiqueta");
     await run(() => createExpenseCategory(fd));
   }
 
@@ -93,17 +94,11 @@ export function CategoryManager({ categories }: { categories: ExpenseCategory[] 
 
         <div className="space-y-2">
           {categories.map((cat) => {
-            const e = edits[cat.id] ?? { label: cat.label, icon: cat.icon ?? "·" };
-            const dirty = e.label !== cat.label || e.icon !== (cat.icon ?? "·");
+            const e = edits[cat.id] ?? { label: cat.label, icon: iconoDeCategoria(cat.icon) };
+            const dirty = e.label !== cat.label || e.icon !== iconoDeCategoria(cat.icon);
             return (
               <div key={cat.id} className="flex items-center gap-2">
-                <Input
-                  value={e.icon}
-                  onChange={(ev) => setEdit(cat.id, { icon: ev.target.value })}
-                  className="w-14 text-center"
-                  maxLength={8}
-                  aria-label="Ícono"
-                />
+                <SelectorIcono value={e.icon} onChange={(v) => setEdit(cat.id, { icon: v })} label="Ícono" />
                 <Input
                   value={e.label}
                   onChange={(ev) => setEdit(cat.id, { label: ev.target.value })}
@@ -145,14 +140,7 @@ export function CategoryManager({ categories }: { categories: ExpenseCategory[] 
         <div className="mt-4 pt-4 border-t border-border space-y-2">
           <Label className="font-meta text-mute">NUEVA CATEGORÍA</Label>
           <div className="flex items-center gap-2">
-            <Input
-              value={newIcon}
-              onChange={(e) => setNewIcon(e.target.value)}
-              placeholder="🏷️"
-              className="w-14 text-center"
-              maxLength={8}
-              aria-label="Ícono nuevo"
-            />
+            <SelectorIcono value={newIcon || "etiqueta"} onChange={setNewIcon} label="Ícono nuevo" />
             <Input
               value={newLabel}
               onChange={(e) => setNewLabel(e.target.value)}
@@ -174,5 +162,29 @@ export function CategoryManager({ categories }: { categories: ExpenseCategory[] 
         )}
       </DialogContent>
     </Dialog>
+  );
+}
+
+/** Ícono de línea con su vista previa (antes era un campo para escribir un emoji). */
+function SelectorIcono({ value, onChange, label }: { value: string; onChange: (v: string) => void; label: string }) {
+  const actual = iconoDeCategoria(value);
+  return (
+    <div className="flex items-center gap-1.5">
+      <span className="flex h-9 w-9 items-center justify-center rounded-md border border-border text-cyan-ink">
+        <Icono nombre={actual} className="h-4 w-4" />
+      </span>
+      <select
+        value={actual}
+        onChange={(ev) => onChange(ev.target.value as NombreIcono)}
+        aria-label={label}
+        className="h-9 w-28 rounded-md border border-border bg-background px-2 text-[13px]"
+      >
+        {NOMBRES_ICONO.map((n) => (
+          <option key={n} value={n}>
+            {n}
+          </option>
+        ))}
+      </select>
+    </div>
   );
 }

@@ -1,11 +1,12 @@
 "use client";
 
+import { Icono, type NombreIcono } from "@/components/ui/icono";
 import { useState, type ReactNode } from "react";
 import { cn } from "@/lib/utils";
 
 interface AudienceTabsProps {
-  resident: { headline: string; benefits: { icon: string; title: string; desc: string }[] };
-  board: { headline: string; benefits: { icon: string; title: string; desc: string }[] };
+  resident: { headline: string; benefits: { icon: NombreIcono; title: string; desc: string }[] };
+  board: { headline: string; benefits: { icon: NombreIcono; title: string; desc: string }[] };
   cta: ReactNode;
 }
 
@@ -39,7 +40,7 @@ export function AudienceTabs({ resident, board, cta }: AudienceTabsProps) {
               active === "resident" ? "text-frost" : "text-mute hover:text-marine-deep",
             )}
           >
-            🏠 SOY RESIDENTE
+            SOY RESIDENTE
           </button>
           <button
             onClick={() => setActive("board")}
@@ -48,7 +49,7 @@ export function AudienceTabs({ resident, board, cta }: AudienceTabsProps) {
               active === "board" ? "text-frost" : "text-mute hover:text-marine-deep",
             )}
           >
-            👔 SOY JUNTA
+            SOY JUNTA
           </button>
         </div>
       </div>
@@ -71,8 +72,8 @@ export function AudienceTabs({ resident, board, cta }: AudienceTabsProps) {
             className="rounded-2xl bg-card border border-border p-6 hover-lift animate-[fadeUp_600ms_cubic-bezier(0.22,1,0.36,1)_both]"
             style={{ animationDelay: `${i * 80}ms` }}
           >
-            <span className="text-3xl block mb-3" aria-hidden="true">
-              {b.icon}
+            <span className="mb-4 flex h-11 w-11 items-center justify-center rounded-xl bg-cyan/10 text-cyan-ink">
+              <Icono nombre={b.icon} className="h-6 w-6" />
             </span>
             <p className="font-medium text-[14px] text-marine-deep mb-1.5">{b.title}</p>
             <p className="text-[13px] text-mute leading-relaxed">{b.desc}</p>

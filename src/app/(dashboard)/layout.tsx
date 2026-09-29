@@ -2,9 +2,11 @@ import { redirect } from "next/navigation";
 import { ExitViewAs } from "./exit-view-as";
 import { createClient } from "@/lib/supabase/server";
 import {
+  getAuthUser,
   getCurrentProfile,
   getEffectiveRole,
   getCurrentRate,
+  getOrganization,
   getPendingInvoicesForFAB,
 } from "@/lib/queries";
 import { Sidebar } from "@/components/dashboard/sidebar";
@@ -22,12 +24,12 @@ export default async function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  // getAuthUser y getCurrentProfile están en cache(): la página que se pinta
+  // debajo reusa estas mismas respuestas en vez de volver a pedirlas.
+  const [user, profile] = await Promise.all([getAuthUser(), getCurrentProfile()]);
 
   if (!user) redirect("/login");
-
-  const profile = await getCurrentProfile();
+  const supabase = await createClient();
 
   if (profile?.role === "super_admin" && !profile.organization_id) {
     redirect("/super-admin");
@@ -42,10 +44,10 @@ export default async function DashboardLayout({
   const isSuperAdmin = profile?.role === "super_admin";
   const viewingAs = profile?.view_as;
 
-  // Tasa inicial desde BD para evitar flash "—" al primer render.
-  const [rateData, { data: org }, { data: avisos }] = await Promise.all([
+  // Todo en paralelo: antes el FAB esperaba a que terminara este bloque.
+  const [rateData, org, { data: avisos }, fabData] = await Promise.all([
     getCurrentRate(profile.organization_id),
-    supabase.from("organizations").select("name, city").eq("id", profile.organization_id).maybeSingle(),
+    getOrganization(profile.organization_id),
     // Los propios, por RLS (migration 046).
     supabase
       .from("notifications")
@@ -53,17 +55,19 @@ export default async function DashboardLayout({
       .eq("profile_id", profile.id)
       .order("created_at", { ascending: false })
       .limit(20),
+    // FAB de pago pendiente: solo para residentes (los admins ven su panel).
+    !isAdmin ? getPendingInvoicesForFAB(profile.id) : Promise.resolve(null),
   ]);
   const initialRate = Number(rateData.rate) || null;
   const initialDate = rateData.effective_date || null;
 
-  // FAB de pago pendiente: solo aplica si el effectiveRole es residente.
-  // Admins ven el panel admin, no necesitan FAB.
-  const fabData = !isAdmin ? await getPendingInvoicesForFAB(profile.id) : null;
+  const condominio = org
+    ? { nombre: org.name as string, ciudad: (org.city as string) || null, logoUrl: (org.logo_url as string) || null }
+    : null;
 
   return (
     <div className="flex h-screen bg-background">
-      <Sidebar isAdmin={isAdmin} />
+      <Sidebar isAdmin={isAdmin} condominio={condominio} />
       <div className="flex flex-1 flex-col overflow-hidden">
         {/* Cintillo live: hora Venezuela + tasa BCV actualizada.
             data-print-hide: la constancia de pago se imprime, y la tasa de HOY
@@ -78,7 +82,7 @@ export default async function DashboardLayout({
           userEmail={user.email ?? ""}
           isSuperAdmin={isSuperAdmin}
           viewingAs={viewingAs ?? null}
-          condominio={org ? { nombre: org.name as string, ciudad: (org.city as string) || null } : null}
+          condominio={condominio}
           avisos={(avisos ?? []) as AvisoFila[]}
         />
         {isSuperAdmin && viewingAs && (

@@ -98,7 +98,7 @@ export default async function DashboardPage() {
 
       {/* Saldo card — con count-up dramático. Oculto si tenant sin can_see_fee. */}
       {ctx.canSeeFee && (
-        <div className="group rounded-2xl bg-card border border-border p-6 md:p-8 transition-all duration-500 hover:border-marine/25 hover:shadow-[0_18px_50px_-18px_rgb(15,46,90,0.18)]">
+        <div className="group rounded-2xl bg-card border border-border p-6 md:p-8 transition-[border-color,box-shadow,transform,background-color] duration-200 hover:border-marine/25 hover:shadow-[0_18px_50px_-18px_rgb(15,46,90,0.18)]">
           <div className="flex items-start justify-between gap-5">
             <div className="min-w-0">
               <p className="font-meta text-mute">SALDO PENDIENTE · USD</p>

@@ -66,7 +66,7 @@ export function RateUpdater({
         {loading
           ? "Sincronizando..."
           : synced
-          ? "✓ Actualizada"
+          ? "Actualizada"
           : "Sincronizar BCV"}
       </Button>
     </div>

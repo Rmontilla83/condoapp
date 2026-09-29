@@ -123,7 +123,7 @@ export function BankAccountCard({
                 dark ? "text-frost" : "text-marine-deep"
               }`}
             >
-              {copied === f.key ? "✓ Copiado" : f.value}
+              {copied === f.key ? "Copiado" : f.value}
             </span>
           </button>
         ))}

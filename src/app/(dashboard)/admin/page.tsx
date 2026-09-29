@@ -207,26 +207,26 @@ export default async function AdminPage() {
 
       {/* KPI cards — manual style con count-up */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <div className="group rounded-2xl bg-card border border-border p-5 transition-all duration-500 hover:border-cyan/40 hover:-translate-y-0.5 hover:shadow-[0_18px_50px_-18px_rgb(15,46,90,0.18)]">
+        <div className="group rounded-2xl bg-card border border-border p-5 transition-[border-color,box-shadow,transform,background-color] duration-200 hover:border-cyan/40 hover:-translate-y-0.5 hover:shadow-[0_18px_50px_-18px_rgb(15,46,90,0.18)]">
           <p className="font-meta text-mute">UNIDADES</p>
           <p className="mt-3 font-display text-[32px] leading-none tracking-[-0.02em] text-marine-deep tabular-nums">
             <AnimatedCounter animate={false} value={stats.totalUnits} duration={1200} />
           </p>
         </div>
-        <div className="group rounded-2xl bg-card border border-border p-5 transition-all duration-500 hover:border-cyan/40 hover:-translate-y-0.5 hover:shadow-[0_18px_50px_-18px_rgb(15,46,90,0.18)]">
+        <div className="group rounded-2xl bg-card border border-border p-5 transition-[border-color,box-shadow,transform,background-color] duration-200 hover:border-cyan/40 hover:-translate-y-0.5 hover:shadow-[0_18px_50px_-18px_rgb(15,46,90,0.18)]">
           <p className="font-meta text-mute">COBRANZA</p>
           <p className="mt-3 font-display text-[32px] leading-none tracking-[-0.02em] text-cyan tabular-nums">
             <AnimatedCounter animate={false} value={stats.paymentRate} duration={1500} />
             <span className="text-mute text-[20px]">%</span>
           </p>
         </div>
-        <div className="group rounded-2xl bg-card border border-border p-5 transition-all duration-500 hover:border-destructive/40 hover:-translate-y-0.5 hover:shadow-[0_18px_50px_-18px_rgb(15,46,90,0.18)]">
+        <div className="group rounded-2xl bg-card border border-border p-5 transition-[border-color,box-shadow,transform,background-color] duration-200 hover:border-destructive/40 hover:-translate-y-0.5 hover:shadow-[0_18px_50px_-18px_rgb(15,46,90,0.18)]">
           <p className="font-meta text-mute">MOROSOS</p>
           <p className="mt-3 font-display text-[32px] leading-none tracking-[-0.02em] text-destructive tabular-nums">
             <AnimatedCounter animate={false} value={morosos.length} duration={1100} />
           </p>
         </div>
-        <div className="group rounded-2xl bg-card border border-border p-5 transition-all duration-500 hover:border-ember/40 hover:-translate-y-0.5 hover:shadow-[0_18px_50px_-18px_rgb(15,46,90,0.18)]">
+        <div className="group rounded-2xl bg-card border border-border p-5 transition-[border-color,box-shadow,transform,background-color] duration-200 hover:border-ember/40 hover:-translate-y-0.5 hover:shadow-[0_18px_50px_-18px_rgb(15,46,90,0.18)]">
           <p className="font-meta text-mute">MANTENIMIENTO PENDIENTE</p>
           <p className="mt-3 font-display text-[32px] leading-none tracking-[-0.02em] text-ember tabular-nums">
             <AnimatedCounter animate={false} value={stats.openRequests} duration={1100} />

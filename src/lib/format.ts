@@ -36,3 +36,15 @@ export function bs(n: number | string | null | undefined): string {
 export function tasa(n: number | string | null | undefined): string {
   return monto(n);
 }
+
+/** Hora en formato de 12 horas: «6:43 AM», «2:05 PM». En la hora de Venezuela por defecto. */
+export function hora12(fecha: Date, timeZone = "America/Caracas"): string {
+  const partes = new Intl.DateTimeFormat("en-US", {
+    timeZone,
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
+  }).formatToParts(fecha);
+  const v = (t: string) => partes.find((p) => p.type === t)?.value ?? "";
+  return `${v("hour")}:${v("minute")} ${v("dayPeriod").toUpperCase()}`;
+}

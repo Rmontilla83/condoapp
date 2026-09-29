@@ -189,7 +189,7 @@ export function EditDecisionDialog({ decisionId, title: initialTitle, descriptio
 
           {hasVotes ? (
             <p className="text-[12px] text-amber-700 bg-amber-50 border border-amber-200 rounded p-2">
-              ⚠ Esta decisión ya tiene votos. Para no alterar resultados, las preguntas y opciones quedan bloqueadas.
+              Atención: esta decisión ya tiene votos. Para no alterar resultados, las preguntas y opciones quedan bloqueadas.
             </p>
           ) : (
             <div className="space-y-4 pt-2">

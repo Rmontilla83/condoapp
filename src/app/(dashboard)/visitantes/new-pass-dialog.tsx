@@ -1,5 +1,6 @@
 "use client";
 
+import { Icono } from "@/components/ui/icono";
 import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -124,7 +125,7 @@ export function NewPassDialog({ orgName }: { orgName: string }) {
                           : "border-border hover:border-primary/40 text-mute"
                       }`}
                     >
-                      <span className="text-[18px] leading-none">{k.icon}</span>
+                      <Icono nombre={k.icon} className="h-5 w-5" />
                       <span className="text-[11px] font-meta">{k.label.toUpperCase()}</span>
                     </button>
                   ))}

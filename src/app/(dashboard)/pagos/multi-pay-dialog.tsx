@@ -231,7 +231,7 @@ export function MultiPayDialog({ target, rate, onClose, bankAccounts = [] }: Pro
                   }}
                 />
                 {receiptName && (
-                  <p className="text-[12px] text-mute truncate">📎 {receiptName}</p>
+                  <p className="text-[12px] text-mute truncate">Adjunto: {receiptName}</p>
                 )}
                 <p className="text-xs text-muted-foreground">
                   JPG/PNG/WebP, hasta 5MB. Asegúrate de que se vea claro el monto y la referencia.

@@ -1,5 +1,6 @@
 "use client";
 
+import { IconoCategoria } from "@/components/ui/icono";
 import { usd } from "@/lib/format";
 import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -188,7 +189,7 @@ export function BudgetEditor({ year, budget, items, categories, executedByCatego
               className="grid grid-cols-[1fr_140px_140px_140px] gap-3 items-center"
             >
               <span className="text-[14px] text-marine-deep">
-                <span className="mr-2">{cat.icon}</span>
+                <IconoCategoria icono={cat.icon} className="mr-2 inline h-4 w-4 align-[-2px] text-cyan-ink" />
                 {cat.label}
               </span>
               <Input
@@ -236,7 +237,7 @@ export function BudgetEditor({ year, budget, items, categories, executedByCatego
 
       {isApproved && (
         <p className="font-meta text-cyan-ink">
-          ✓ APROBADO {budget?.approved_at && `EL ${new Date(budget.approved_at).toLocaleDateString("es")}`}
+          APROBADO {budget?.approved_at && `EL ${new Date(budget.approved_at).toLocaleDateString("es")}`}
         </p>
       )}
     </div>

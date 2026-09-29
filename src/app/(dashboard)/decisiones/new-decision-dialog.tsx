@@ -413,7 +413,7 @@ export function NewDecisionDialog() {
 
             {closesBeforeScheduled && (
               <p className="text-[12px] text-amber-700 bg-amber-50 border border-amber-200 rounded p-2">
-                ⚠ La votación cierra ANTES de la fecha de la asamblea. ¿Es intencional?
+                Atención: la votación cierra ANTES de la fecha de la asamblea. ¿Es intencional?
               </p>
             )}
           </div>

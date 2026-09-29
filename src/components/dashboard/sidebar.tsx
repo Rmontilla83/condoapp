@@ -1,8 +1,10 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import { AtryumLogo } from "@/components/brand/atryum-logo";
+import { CondoMarca } from "@/components/brand/condo-marca";
 
 const navItems = [
   { href: "/dashboard", label: "Inicio", icon: "home" },
@@ -101,21 +103,39 @@ const iconMap: Record<string, React.ReactNode> = {
   ),
 };
 
-export function Sidebar({ isAdmin = false }: { isAdmin?: boolean }) {
-  const pathname = usePathname();
+export function Sidebar({
+  isAdmin = false,
+  condominio,
+}: {
+  isAdmin?: boolean;
+  condominio?: { nombre: string; ciudad: string | null; logoUrl: string | null } | null;
+}) {
+  const actual = usePathname();
+  // El ítem se marca apenas se toca: la ruta cambia recién cuando llega la
+  // página, y mientras tanto parecía que el clic no había hecho nada.
+  const [destino, setDestino] = useState<string | null>(null);
+  useEffect(() => setDestino(null), [actual]);
+  const pathname = destino ?? actual;
 
   return (
     <aside className="hidden md:flex md:w-64 md:shrink-0 md:flex-col md:overflow-y-auto bg-sidebar text-sidebar-foreground [scrollbar-width:thin]">
-      {/* Logo hero: usamos el lockup apilado oficial del kit (PNG 1.3:1).
-          En el sidebar dark queda premium con colores originales (manual
-          "C Reversed" aprueba símbolo a color + wordmark blanco). */}
-      <div className="flex items-center justify-center px-5 pt-8 pb-6">
-        <AtryumLogo
-          variant="stacked"
-          tone="color"
-          className="w-40 h-auto"
-          priority
-        />
+      {/* Manda el condominio: su logo (o sus iniciales) y su nombre. */}
+      <div className="flex flex-col items-center gap-3 px-5 pt-8 pb-7 text-center">
+        {condominio ? (
+          <>
+            <CondoMarca nombre={condominio.nombre} logoUrl={condominio.logoUrl} tam={72} tono="oscuro" />
+            <div>
+              <p className="font-display text-[18px] font-semibold leading-tight tracking-[-0.02em] text-sidebar-foreground">
+                {condominio.nombre}
+              </p>
+              {condominio.ciudad && (
+                <p className="mt-1 font-meta text-sidebar-foreground/45">{condominio.ciudad.toUpperCase()}</p>
+              )}
+            </div>
+          </>
+        ) : (
+          <AtryumLogo variant="stacked" tone="color" className="w-40 h-auto" priority />
+        )}
       </div>
 
       <nav aria-label="Secciones" className="flex-1 space-y-0.5 px-3 pb-6">
@@ -125,6 +145,7 @@ export function Sidebar({ isAdmin = false }: { isAdmin?: boolean }) {
             <Link
               key={item.href}
               href={item.href}
+              onClick={() => setDestino(item.href)}
               aria-current={isActive ? 'page' : undefined}
               className={`flex items-center gap-3 rounded-lg px-3 py-2 text-[13.5px] font-medium transition-colors ${
                 isActive
@@ -149,6 +170,7 @@ export function Sidebar({ isAdmin = false }: { isAdmin?: boolean }) {
                 <Link
                   key={item.href}
                   href={item.href}
+                  onClick={() => setDestino(item.href)}
                   aria-current={isActive ? 'page' : undefined}
                   className={`flex items-center gap-3 rounded-lg px-3 py-2 text-[13.5px] font-medium transition-colors ${
                     isActive
@@ -165,10 +187,10 @@ export function Sidebar({ isAdmin = false }: { isAdmin?: boolean }) {
         )}
       </nav>
 
-      <div className="px-6 pb-6">
-        <p className="font-editorial text-sidebar-foreground/40 text-[13px]">
-          Un átrium dentro de cada A.
-        </p>
+      {/* Atryum firma abajo, en segundo plano. */}
+      <div className="flex items-center gap-2 px-6 pb-6 opacity-60">
+        <span className="font-meta text-sidebar-foreground/60">CON</span>
+        <AtryumLogo variant="horizontal" tone="white" className="text-[14px]" />
       </div>
     </aside>
   );

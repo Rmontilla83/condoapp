@@ -238,12 +238,12 @@ export default async function DecisionDetailPage({ params }: { params: Promise<{
             <p className="font-meta text-mute">QUÓRUM</p>
             <p className="font-meta text-marine-deep">
               {Math.min(quorumStats.achieved_pct, 100).toFixed(1)}% · REQUIERE {(quorumStats.required_pct ?? 0).toFixed(0)}%
-              {quorumStats.met && " ✓ ALCANZADO"}
+              {quorumStats.met && " · ALCANZADO"}
             </p>
           </div>
           <div className="h-3 rounded-full bg-cloud overflow-hidden">
             <div
-              className={`h-full rounded-full transition-all duration-500 ${quorumStats.met ? "bg-cyan" : "bg-ember"}`}
+              className={`h-full rounded-full transition-[border-color,box-shadow,transform,background-color] duration-200 ${quorumStats.met ? "bg-cyan" : "bg-ember"}`}
               style={{ width: `${Math.min(quorumStats.achieved_pct, 100)}%` }}
             />
           </div>

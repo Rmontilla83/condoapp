@@ -1,3 +1,4 @@
+import { Icono, type NombreIcono } from "@/components/ui/icono";
 import { TiltCard } from "@/components/ui/tilt-card";
 import { AnimatedCounter } from "@/components/ui/animated-counter";
 
@@ -85,7 +86,7 @@ export function IdentityVisual() {
         </div>
 
         <div className="pt-3 flex items-center gap-2 bg-ember text-marine-deep rounded-xl px-4 py-3 font-medium text-[14px] cursor-pointer">
-          <span className="text-lg">⚡</span>
+          <Icono nombre="rayo" className="h-5 w-5" />
           PAGAR $84.50 AHORA
         </div>
       </div>
@@ -103,10 +104,10 @@ export function QrVisual() {
           <p className="font-meta text-mute mb-3">¿QUÉ TIPO DE VISITA?</p>
           <div className="grid grid-cols-4 gap-1.5">
             {[
-              { e: "🚗", l: "Uber" },
-              { e: "📦", l: "Delivery" },
-              { e: "👨‍👩‍👧", l: "Familia", active: true },
-              { e: "📦", l: "Mudanza" },
+              { e: "auto" as NombreIcono, l: "Uber" },
+              { e: "paquete" as NombreIcono, l: "Delivery" },
+              { e: "familia" as NombreIcono, l: "Familia", active: true },
+              { e: "paquete" as NombreIcono, l: "Mudanza" },
             ].map((k) => (
               <div
                 key={k.l}
@@ -116,7 +117,7 @@ export function QrVisual() {
                     : "bg-cloud/50 text-mute"
                 }`}
               >
-                <div className="text-base">{k.e}</div>
+                <Icono nombre={k.e} className="mx-auto h-5 w-5" />
                 <div className="text-[10px] mt-1 font-meta">{k.l}</div>
               </div>
             ))}
@@ -182,7 +183,7 @@ export function DecisionVisual() {
           <div className="flex items-center justify-between mb-1.5">
             <span className="font-meta text-mute">QUÓRUM</span>
             <span className="font-meta text-marine-deep tabular-nums">
-              <AnimatedCounter value={67.4} decimals={1} suffix="%" duration={1800} /> · REQUIERE 50% ✓
+              <AnimatedCounter value={67.4} decimals={1} suffix="%" duration={1800} /> · REQUIERE 50%
             </span>
           </div>
           <div className="h-2.5 rounded-full bg-cloud overflow-hidden">
@@ -210,7 +211,7 @@ export function DecisionVisual() {
         </div>
 
         <div className="mt-5 pt-4 border-t border-border flex items-center justify-between">
-          <span className="font-meta text-cyan">VOTASTE 1 DE 1 ✓</span>
+          <span className="font-meta text-cyan">VOTASTE 1 DE 1</span>
           <span className="font-meta text-mute">CIERRA SAB 14 MAY</span>
         </div>
       </div>
@@ -234,15 +235,15 @@ export function BudgetVisual() {
         </div>
         <div className="space-y-4">
           {[
-            { label: "Vigilancia", icon: "🛡️", exec: 1740, plan: 6960, pct: 25, tone: "bg-cyan" },
-            { label: "Mantenimiento", icon: "🔧", exec: 4800, plan: 24000, pct: 20, tone: "bg-cyan" },
-            { label: "Aseo", icon: "✨", exec: 4400, plan: 4800, pct: 91.6, tone: "bg-ember" },
-            { label: "Servicios", icon: "⚡", exec: 6800, plan: 6000, pct: 113.3, tone: "bg-destructive" },
+            { label: "Vigilancia", icon: "escudo" as NombreIcono, exec: 1740, plan: 6960, pct: 25, tone: "bg-cyan" },
+            { label: "Mantenimiento", icon: "herramienta" as NombreIcono, exec: 4800, plan: 24000, pct: 20, tone: "bg-cyan" },
+            { label: "Aseo", icon: "brillo" as NombreIcono, exec: 4400, plan: 4800, pct: 91.6, tone: "bg-ember" },
+            { label: "Servicios", icon: "rayo" as NombreIcono, exec: 6800, plan: 6000, pct: 113.3, tone: "bg-destructive" },
           ].map((row) => (
             <div key={row.label}>
               <div className="flex items-center justify-between text-[13px] mb-1">
                 <span className="font-medium text-marine-deep flex items-center gap-2">
-                  <span className="text-base">{row.icon}</span>
+                  <Icono nombre={row.icon} className="h-4 w-4 text-cyan-ink" />
                   {row.label}
                 </span>
                 <span className="font-meta text-mute tabular-nums">
@@ -271,19 +272,19 @@ export function StepsVisual() {
       {[
         {
           n: "01",
-          icon: "✏️",
+          icon: "lapiz" as NombreIcono,
           title: "Registrá tu condominio",
           copy: "Nombre, dirección, número de unidades. 2 minutos.",
         },
         {
           n: "02",
-          icon: "👥",
+          icon: "familia" as NombreIcono,
           title: "Invitá a los residentes",
           copy: "Por email o código físico. Ellos crean su cuenta solos.",
         },
         {
           n: "03",
-          icon: "🚀",
+          icon: "cohete" as NombreIcono,
           title: "Empezás a usar",
           copy: "Cuotas, comunicados, visitantes, votos. Todo desde el primer día.",
         },
@@ -295,7 +296,7 @@ export function StepsVisual() {
           <div className="absolute top-6 right-6 font-display text-[40px] text-cyan/20 leading-none">
             {step.n}
           </div>
-          <span className="text-3xl block mb-4" aria-hidden="true">{step.icon}</span>
+          <span className="mb-4 flex h-11 w-11 items-center justify-center rounded-xl bg-cyan/10 text-cyan-ink"><Icono nombre={step.icon} className="h-6 w-6" /></span>
           <h3 className="font-display text-[20px] text-marine-deep leading-tight tracking-[-0.02em]">
             {step.title}
           </h3>

@@ -88,7 +88,7 @@ export function PayToBlock({
             className="min-h-11 rounded-md border border-border px-2.5 py-1 font-mono text-[13px] text-marine-deep tabular-nums hover:bg-cloud/60 transition"
             aria-label={`Copiar monto en ${currency}: ${usd(totalUsd)}`}
           >
-            {copiado === "usd" ? "✓ Copiado" : `${usd(totalUsd)}`}
+            {copiado === "usd" ? "Copiado" : `${usd(totalUsd)}`}
           </button>
           {totalBs > 0 && (
             <button
@@ -97,7 +97,7 @@ export function PayToBlock({
               className="min-h-11 rounded-md border border-border px-2.5 py-1 font-mono text-[13px] text-marine-deep tabular-nums hover:bg-cloud/60 transition"
               aria-label={`Copiar monto en bolívares: ${bs(totalBs)}`}
             >
-              {copiado === "bs" ? "✓ Copiado" : bs(totalBs)}
+              {copiado === "bs" ? "Copiado" : bs(totalBs)}
             </button>
           )}
         </div>

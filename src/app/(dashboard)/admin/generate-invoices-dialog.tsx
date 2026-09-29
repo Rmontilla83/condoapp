@@ -372,7 +372,7 @@ export function GenerateInvoicesDialog({ org, units, feeTypeAmounts, exchangeRat
               <div className="text-left text-[12px] bg-amber-50 border border-amber-200 rounded p-2 space-y-1">
                 {postWarnings.map((w, i) => (
                   <p key={i} className="text-amber-800">
-                    ⚠ {w}
+                    {w}
                   </p>
                 ))}
               </div>
@@ -911,7 +911,7 @@ function PreviewStep({
         <div className="rounded-lg bg-amber-50 border border-amber-200 p-3 space-y-1">
           {result.warnings.map((w, i) => (
             <p key={i} className="text-[12px] text-amber-800">
-              ⚠ {w}
+              {w}
             </p>
           ))}
         </div>

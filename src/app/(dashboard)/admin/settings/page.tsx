@@ -12,6 +12,7 @@ import { BankAccountsForm } from "./bank-accounts-form";
 import { FeeConfigForm } from "./fee-config-form";
 import { CommonAreasManager } from "./common-areas-manager";
 import { ContactForm } from "./contact-form";
+import { LogoForm } from "./logo-form";
 import { GuardStations, type CasetaFila } from "./guard-stations";
 import type {
   BankAccount,
@@ -72,6 +73,15 @@ export default async function AdminSettingsPage() {
           Datos bancarios, cómo se cobra, qué puede hacer un inquilino y qué áreas comunes
           se pueden reservar.
         </p>
+      </div>
+
+      <div className="rounded-2xl bg-card border border-border p-6 md:p-7">
+        <p className="font-meta text-mute mb-2">LOGO DEL CONDOMINIO</p>
+        <p className="text-[14px] text-marine-deep/80 leading-relaxed mb-6">
+          Aparece arriba en todas las pantallas de los vecinos, en lugar del de Atryum. Sin logo se
+          muestran las iniciales del condominio.
+        </p>
+        <LogoForm nombre={org.name} logoUrl={org.logo_url ?? null} />
       </div>
 
       <div className="rounded-2xl bg-card border border-border p-6 md:p-7">

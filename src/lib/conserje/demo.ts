@@ -363,12 +363,14 @@ async function responderIntencion(
       if (!fecha) return `¿Para qué día quieres ${conArticulo(area)}? Puedes decirme "el sábado" o "15 de octubre".`;
       const d = await q.disponibilidad(area, fecha);
       if (!d.encontrada) return "No encontré esa área.";
+      const aviso = d.reservas_bloqueadas_por_deuda ? `
+${avisoDeuda(d.reservas_bloqueadas_por_deuda)}` : "";
       if (d.bloques_ocupados.length === 0) {
-        return `${cap(conArticulo(d.area))} está libre todo el ${fechaLarga(fecha)}. Puedes reservarlo en la sección Reservas.`;
+        return `${cap(conArticulo(d.area))} está libre todo el ${fechaLarga(fecha)}.${aviso || " Puedes reservarlo en la sección Reservas."}`;
       }
       return `${cap(conArticulo(d.area))} el ${fechaLarga(fecha)} está ocupado de ${d.bloques_ocupados
         .map((b) => `${b.desde} a ${b.hasta}`)
-        .join(", ")}. El resto del día está libre; se reserva en la sección Reservas.`;
+        .join(", ")}. El resto del día está libre${aviso ? "." + aviso : "; se reserva en la sección Reservas."}`;
     }
 
     case "areas": {
@@ -383,6 +385,7 @@ async function responderIntencion(
         lineas.push(`• ${x.name}${pol.length ? ` (${pol.join(", ")})` : ""}${x.rules ? `. ${x.rules}` : ""}`);
       }
       lineas.push("Para saber si están libres, pregúntame por ejemplo: «¿está libre el caney el sábado?»");
+      if (a.reservas_bloqueadas_por_deuda) lineas.push(avisoDeuda(a.reservas_bloqueadas_por_deuda));
       return lineas.join("\n");
     }
 
@@ -449,4 +452,13 @@ async function responderIntencion(
       return lineas.join("\n");
     }
   }
+}
+
+/** Con tacto: el vecino preguntó por una reserva, no por su deuda. */
+function avisoDeuda(d: { cuotas: number; monto: number }): string {
+  const cuotas = d.cuotas === 1 ? "una cuota vencida" : `${d.cuotas} cuotas vencidas`;
+  return (
+    `Un detalle antes de reservar: tu apartamento tiene ${cuotas} por ${usd(d.monto)}, y las reservas se habilitan con el condominio al día. ` +
+    "Si ya pagaste, repórtalo en Pagos y mientras la administración lo revisa puedes reservar."
+  );
 }

@@ -93,8 +93,8 @@ export function QRModal({ pass, orgName, open, onClose }: Props) {
             </span>
           </DialogTitle>
           <DialogDescription>
-            {kindMeta.icon} {kindMeta.label}
-            {pass.vehicle_plate ? ` · 🚗 ${pass.vehicle_plate}` : ""}
+            {kindMeta.label}
+            {pass.vehicle_plate ? ` · Placa ${pass.vehicle_plate}` : ""}
             {pass.visitor_id_number ? ` · ${pass.visitor_id_number}` : ""}
             {" — Válido hasta "}
             {validUntil.toLocaleDateString("es", {
@@ -129,7 +129,7 @@ export function QRModal({ pass, orgName, open, onClose }: Props) {
                 </Button>
               </a>
               <Button variant="outline" onClick={handleCopy}>
-                {copied ? "✓ Enlace copiado" : "Copiar enlace"}
+                {copied ? "Enlace copiado" : "Copiar enlace"}
               </Button>
               <Button variant="ghost" onClick={onClose}>
                 Cerrar

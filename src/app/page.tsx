@@ -328,11 +328,11 @@ export default function HomePage() {
           <div className="mt-20 md:mt-28 pt-10 border-t border-marine/10">
             <p className="font-meta text-mute text-center mb-6">CONSTRUIDO SOBRE INFRAESTRUCTURA QUE NO SE CAE</p>
             <div className="flex items-center justify-center gap-8 md:gap-14 flex-wrap opacity-60">
-              <span className="font-display text-[18px] text-marine-deep">▲ Vercel</span>
-              <span className="font-display text-[18px] text-marine-deep">⚡ Supabase</span>
-              <span className="font-display text-[18px] text-marine-deep">✉ Resend</span>
-              <span className="font-display text-[18px] text-marine-deep">🔒 SSL · TLS 1.3</span>
-              <span className="font-display text-[18px] text-marine-deep">🛡 RLS Postgres</span>
+              <span className="font-display text-[18px] text-marine-deep">Vercel</span>
+              <span className="font-display text-[18px] text-marine-deep">Supabase</span>
+              <span className="font-display text-[18px] text-marine-deep">Resend</span>
+              <span className="font-display text-[18px] text-marine-deep">SSL · TLS 1.3</span>
+              <span className="font-display text-[18px] text-marine-deep">RLS Postgres</span>
             </div>
           </div>
         </div>
@@ -469,19 +469,19 @@ export default function HomePage() {
               resident={{
                 headline: "Pagás justo, sabés qué pasa, votás con peso",
                 benefits: [
-                  { icon: "💸", title: "Pagás lo que te toca", desc: "Cuotas calculadas con tu alícuota real, no por igualado." },
-                  { icon: "⚡", title: "Pagás en 30 segundos", desc: "Pago Móvil, Zelle, transferencia, Binance. Lo que uses." },
-                  { icon: "📲", title: "Compartís visitas", desc: "Generás QR y lo mandás por WhatsApp en un toque." },
-                  { icon: "🗳️", title: "Votás de verdad", desc: "Tu voto pesa lo que vale tu apto, no como en el Whatsapp." },
+                  { icon: "dinero", title: "Pagás lo que te toca", desc: "Cuotas calculadas con tu alícuota real, no por igualado." },
+                  { icon: "rayo", title: "Pagás en 30 segundos", desc: "Pago Móvil, Zelle, transferencia, Binance. Lo que uses." },
+                  { icon: "telefono", title: "Compartís visitas", desc: "Generás QR y lo mandás por WhatsApp en un toque." },
+                  { icon: "voto", title: "Votás de verdad", desc: "Tu voto pesa lo que vale tu apto, no como en el Whatsapp." },
                 ],
               }}
               board={{
                 headline: "Cobrás más, peleás menos, decidís con datos",
                 benefits: [
-                  { icon: "📈", title: "Subís recaudación", desc: "Recordatorios automáticos + transparencia bajan la morosidad." },
-                  { icon: "📊", title: "Asambleas con quórum real", desc: "Voto ponderado por alícuota = acta legalmente vinculante." },
-                  { icon: "🛡️", title: "Cero discusiones", desc: "Cada gasto tiene categoría, recibo y se puede anular con razón." },
-                  { icon: "⏱️", title: "Recuperás tiempo", desc: "Adiós al WhatsApp 24/7. Todo queda en su flujo correspondiente." },
+                  { icon: "grafica", title: "Subís recaudación", desc: "Recordatorios automáticos + transparencia bajan la morosidad." },
+                  { icon: "barras", title: "Asambleas con quórum real", desc: "Voto ponderado por alícuota = acta legalmente vinculante." },
+                  { icon: "escudo", title: "Cero discusiones", desc: "Cada gasto tiene categoría, recibo y se puede anular con razón." },
+                  { icon: "reloj", title: "Recuperás tiempo", desc: "Adiós al WhatsApp 24/7. Todo queda en su flujo correspondiente." },
                 ],
               }}
               cta={

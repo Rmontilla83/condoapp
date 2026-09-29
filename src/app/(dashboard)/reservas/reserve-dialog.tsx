@@ -6,7 +6,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import Link from "next/link";
 import { createReservation } from "./actions";
+import { usd } from "@/lib/format";
 
 interface Area {
   id: string;
@@ -34,6 +36,8 @@ function policyHints(a: Area): string[] {
 export function ReserveDialog({
   areas,
   manana,
+  deuda = null,
+  primerNombre = "",
 }: {
   areas: Area[];
   /**
@@ -45,6 +49,9 @@ export function ReserveDialog({
    * servidor rechazaba. La hora del condominio es la única que manda acá.
    */
   manana: string;
+  /** Cuotas vencidas que impiden reservar (null = puede reservar). */
+  deuda?: { cuotas: number; monto: number } | null;
+  primerNombre?: string;
 }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -90,7 +97,9 @@ export function ReserveDialog({
         Nueva reserva
       </DialogTrigger>
       <DialogContent className="sm:max-w-md">
-        {success ? (
+        {deuda ? (
+          <AvisoDeuda deuda={deuda} primerNombre={primerNombre} onClose={handleClose} />
+        ) : success ? (
           <>
             <DialogHeader>
               <DialogTitle>Reserva confirmada</DialogTitle>
@@ -189,5 +198,50 @@ export function ReserveDialog({
         )}
       </DialogContent>
     </Dialog>
+  );
+}
+
+/**
+ * Se muestra al tocar «Nueva reserva» si el apartamento tiene cuotas vencidas.
+ * Se lee en el momento en que el vecino quería algo: tono cálido, sin reproche,
+ * y con el camino para resolverlo a un toque.
+ */
+function AvisoDeuda({
+  deuda,
+  primerNombre,
+  onClose,
+}: {
+  deuda: { cuotas: number; monto: number };
+  primerNombre: string;
+  onClose: () => void;
+}) {
+  const cuotas = deuda.cuotas === 1 ? "una cuota vencida" : `${deuda.cuotas} cuotas vencidas`;
+  return (
+    <>
+      <DialogHeader>
+        <DialogTitle>{primerNombre ? `${primerNombre}, antes de reservar…` : "Antes de reservar…"}</DialogTitle>
+        <DialogDescription>Las áreas comunes se reservan con el condominio al día.</DialogDescription>
+      </DialogHeader>
+      <div className="space-y-4 pt-2">
+        <p className="text-[15px] leading-relaxed text-marine-deep">
+          Tu apartamento tiene <strong>{cuotas}</strong> por <strong>{usd(deuda.monto)}</strong>. Apenas te pongas al
+          día vas a poder reservar sin problema.
+        </p>
+        <p className="rounded-lg bg-cyan/10 px-3 py-2.5 text-[14px] leading-relaxed text-cyan-ink">
+          ¿Ya pagaste? Repórtalo en Pagos: mientras la administración lo revisa, las reservas quedan habilitadas.
+        </p>
+        <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+          <Button variant="outline" onClick={onClose}>
+            Ahora no
+          </Button>
+          <Link
+            href="/pagos"
+            className="inline-flex h-9 items-center justify-center rounded-lg bg-marine-deep px-4 text-sm font-medium text-frost hover:bg-marine"
+          >
+            Ir a Pagos
+          </Link>
+        </div>
+      </div>
+    </>
   );
 }

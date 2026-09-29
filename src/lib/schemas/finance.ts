@@ -26,7 +26,7 @@ export function validateCategoryDraft(input: unknown): {
   const label = typeof o.label === "string" ? o.label.trim().slice(0, 80) : "";
   if (!label) return { ok: false, error: "Label requerido" };
 
-  const icon = typeof o.icon === "string" && o.icon.length > 0 ? o.icon.trim().slice(0, 8) : null;
+  const icon = typeof o.icon === "string" && o.icon.length > 0 ? o.icon.trim().slice(0, 20) : null;
   const id = typeof o.id === "string" && o.id ? o.id : undefined;
   const is_active = o.is_active !== false;
   const position = typeof o.position === "number" ? Math.floor(o.position) : 0;

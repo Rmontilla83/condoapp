@@ -49,7 +49,7 @@ export async function createExpenseCategory(formData: FormData) {
     organization_id: profile.organization_id,
     code,
     label: label.slice(0, 60),
-    icon: icon.slice(0, 8),
+    icon: icon.slice(0, 20),
     is_system: false,
     position: nextPosition,
     is_active: true,
@@ -79,7 +79,7 @@ export async function updateExpenseCategory(formData: FormData) {
   // Renombrar label/icon es seguro (el code y los gastos asociados no cambian).
   const { error } = await supabase
     .from("expense_categories")
-    .update({ label: label.slice(0, 60), icon: icon.slice(0, 8) })
+    .update({ label: label.slice(0, 60), icon: icon.slice(0, 20) })
     .eq("id", id)
     .eq("organization_id", profile.organization_id);
 
