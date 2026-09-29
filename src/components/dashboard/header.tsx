@@ -26,7 +26,12 @@ export function Header({
   isSuperAdmin?: boolean;
   viewingAs?: string | null;
   /** En escritorio la franja superior estaba vacía salvo el avatar. */
-  condominio?: { nombre: string; ciudad: string | null; logoUrl?: string | null } | null;
+  condominio?: {
+    nombre: string;
+    ciudad: string | null;
+    logoUrl?: string | null;
+    logoCompactoUrl?: string | null;
+  } | null;
   avisos?: AvisoFila[];
 }) {
   const router = useRouter();
@@ -42,7 +47,15 @@ export function Header({
     <header className="flex h-16 md:h-14 items-center justify-between border-b border-border bg-background px-4 md:px-10">
       {/* En el teléfono no hay menú lateral: aquí va la marca del condominio. */}
       <div className="flex min-w-0 items-center gap-2.5 md:hidden">
-        {condominio ? (
+        {condominio && (condominio.logoCompactoUrl || condominio.logoUrl) ? (
+          // El logo ya dice el nombre: no se repite al lado.
+          // eslint-disable-next-line @next/next/no-img-element -- logo del condominio
+          <img
+            src={(condominio.logoCompactoUrl || condominio.logoUrl)!}
+            alt={condominio.nombre}
+            className="h-11 w-auto max-w-[190px] object-contain"
+          />
+        ) : condominio ? (
           <>
             <CondoMarca nombre={condominio.nombre} logoUrl={condominio.logoUrl} tam={36} />
             <span className="truncate font-display text-[17px] font-semibold tracking-[-0.02em] text-marine-deep">
@@ -56,7 +69,10 @@ export function Header({
       <div className="hidden md:flex items-center gap-2.5 min-w-0">
         {condominio && (
           <>
-            <CondoMarca nombre={condominio.nombre} logoUrl={condominio.logoUrl} tam={28} className="rounded-lg" />
+            {/* En escritorio el logo ya está en el menú: aquí basta el nombre. */}
+            {!condominio.logoUrl && (
+              <CondoMarca nombre={condominio.nombre} tam={28} className="rounded-lg" />
+            )}
             <span className="text-[15px] font-semibold text-marine-deep truncate">{condominio.nombre}</span>
             {condominio.ciudad && (
               <span className="font-meta text-mute">{condominio.ciudad.toUpperCase()}</span>

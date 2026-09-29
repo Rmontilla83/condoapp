@@ -36,11 +36,19 @@ export async function subirLogo(fd: FormData): Promise<Resultado> {
   if (error) return { error: `No se pudo subir: ${error.message}` };
 
   const url = db.storage.from(BUCKET).getPublicUrl(ruta).data.publicUrl;
-  const { data: previo } = await db.from("organizations").select("logo_url").eq("id", orgId).maybeSingle();
-  const { error: updError } = await db.from("organizations").update({ logo_url: url }).eq("id", orgId);
+  const { data: previo } = await db
+    .from("organizations")
+    .select("logo_url, logo_dark_url, logo_compact_url")
+    .eq("id", orgId)
+    .maybeSingle();
+  // Las variantes (oscura y compacta) eran del logo anterior: se descartan.
+  const { error: updError } = await db
+    .from("organizations")
+    .update({ logo_url: url, logo_dark_url: null, logo_compact_url: null })
+    .eq("id", orgId);
   if (updError) return { error: updError.message };
 
-  await borrarArchivo(previo?.logo_url as string | null, orgId);
+  for (const v of [previo?.logo_url, previo?.logo_dark_url, previo?.logo_compact_url]) await borrarArchivo(v as string | null, orgId);
   refrescar();
   return { success: true };
 }
@@ -51,10 +59,17 @@ export async function quitarLogo(): Promise<Resultado> {
   if (guard) return guard;
   const orgId = profile!.organization_id!;
   const db = createAdminClient();
-  const { data: previo } = await db.from("organizations").select("logo_url").eq("id", orgId).maybeSingle();
-  const { error } = await db.from("organizations").update({ logo_url: null }).eq("id", orgId);
+  const { data: previo } = await db
+    .from("organizations")
+    .select("logo_url, logo_dark_url, logo_compact_url")
+    .eq("id", orgId)
+    .maybeSingle();
+  const { error } = await db
+    .from("organizations")
+    .update({ logo_url: null, logo_dark_url: null, logo_compact_url: null })
+    .eq("id", orgId);
   if (error) return { error: error.message };
-  await borrarArchivo(previo?.logo_url as string | null, orgId);
+  for (const v of [previo?.logo_url, previo?.logo_dark_url, previo?.logo_compact_url]) await borrarArchivo(v as string | null, orgId);
   refrescar();
   return { success: true };
 }

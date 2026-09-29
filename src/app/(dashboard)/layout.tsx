@@ -62,7 +62,13 @@ export default async function DashboardLayout({
   const initialDate = rateData.effective_date || null;
 
   const condominio = org
-    ? { nombre: org.name as string, ciudad: (org.city as string) || null, logoUrl: (org.logo_url as string) || null }
+    ? {
+        nombre: org.name as string,
+        ciudad: (org.city as string) || null,
+        logoUrl: (org.logo_url as string) || null,
+        logoOscuroUrl: (org.logo_dark_url as string) || null,
+        logoCompactoUrl: (org.logo_compact_url as string) || null,
+      }
     : null;
 
   return (

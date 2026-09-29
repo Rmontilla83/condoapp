@@ -11,7 +11,12 @@ export function LogoForm({ nombre, logoUrl }: { nombre: string; logoUrl: string 
 
   return (
     <div className="flex flex-wrap items-center gap-5">
-      <CondoMarca nombre={nombre} logoUrl={logoUrl} tam={88} className="border border-border" />
+      {logoUrl ? (
+        // eslint-disable-next-line @next/next/no-img-element -- vista previa del logo subido
+        <img src={logoUrl} alt={`Logo de ${nombre}`} className="h-24 w-auto max-w-[260px] rounded-xl border border-border bg-white object-contain p-2" />
+      ) : (
+        <CondoMarca nombre={nombre} tam={88} className="border border-border" />
+      )}
       <div className="space-y-2">
         <div className="flex flex-wrap gap-2">
           <button
@@ -39,7 +44,7 @@ export function LogoForm({ nombre, logoUrl }: { nombre: string; logoUrl: string 
             </button>
           )}
         </div>
-        <p className="text-[12px] text-mute">PNG, JPG o WebP, hasta 2 MB. Mejor cuadrado y con fondo claro o transparente.</p>
+        <p className="text-[12px] text-mute">PNG, JPG o WebP, hasta 2 MB. Horizontal o cuadrado, con fondo transparente.</p>
         {error && <p className="text-[13px] text-destructive">{error}</p>}
         <input
           ref={input}

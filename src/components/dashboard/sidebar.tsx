@@ -108,7 +108,12 @@ export function Sidebar({
   condominio,
 }: {
   isAdmin?: boolean;
-  condominio?: { nombre: string; ciudad: string | null; logoUrl: string | null } | null;
+  condominio?: {
+    nombre: string;
+    ciudad: string | null;
+    logoUrl: string | null;
+    logoOscuroUrl?: string | null;
+  } | null;
 }) {
   const actual = usePathname();
   // El ítem se marca apenas se toca: la ruta cambia recién cuando llega la
@@ -121,7 +126,22 @@ export function Sidebar({
     <aside className="hidden md:flex md:w-64 md:shrink-0 md:flex-col md:overflow-y-auto bg-sidebar text-sidebar-foreground [scrollbar-width:thin]">
       {/* Manda el condominio: su logo (o sus iniciales) y su nombre. */}
       <div className="flex flex-col items-center gap-3 px-5 pt-8 pb-7 text-center">
-        {condominio ? (
+        {condominio?.logoOscuroUrl || condominio?.logoUrl ? (
+          <>
+            {condominio.logoOscuroUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element -- logo del condominio, subido por la administración
+              <img src={condominio.logoOscuroUrl} alt={condominio.nombre} className="h-auto w-[208px]" />
+            ) : (
+              <span className="rounded-2xl bg-white p-3">
+                {/* eslint-disable-next-line @next/next/no-img-element -- logo del condominio */}
+                <img src={condominio.logoUrl!} alt={condominio.nombre} className="h-auto w-[176px]" />
+              </span>
+            )}
+            {condominio.ciudad && (
+              <p className="font-meta text-sidebar-foreground/45">{condominio.ciudad.toUpperCase()}</p>
+            )}
+          </>
+        ) : condominio ? (
           <>
             <CondoMarca nombre={condominio.nombre} logoUrl={condominio.logoUrl} tam={72} tono="oscuro" />
             <div>

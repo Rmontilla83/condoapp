@@ -48,6 +48,8 @@ export interface Organization {
   currency: string;
   timezone: string;
   logo_url: string | null;
+  logo_dark_url?: string | null;
+  logo_compact_url?: string | null;
   invite_code: string | null;
   is_active: boolean;
   tenant_can_vote: boolean;
