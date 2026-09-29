@@ -53,7 +53,7 @@ export function Header({
           <img
             src={(condominio.logoCompactoUrl || condominio.logoUrl)!}
             alt={condominio.nombre}
-            className="h-11 w-auto max-w-[190px] object-contain"
+            className="h-12 w-auto max-w-[200px] object-contain"
           />
         ) : condominio ? (
           <>

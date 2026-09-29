@@ -125,12 +125,12 @@ export function Sidebar({
   return (
     <aside className="hidden md:flex md:w-64 md:shrink-0 md:flex-col md:overflow-y-auto bg-sidebar text-sidebar-foreground [scrollbar-width:thin]">
       {/* Manda el condominio: su logo (o sus iniciales) y su nombre. */}
-      <div className="flex flex-col items-center gap-3 px-5 pt-8 pb-7 text-center">
+      <div className="flex flex-col items-center gap-3 px-4 pt-7 pb-6 text-center">
         {condominio?.logoOscuroUrl || condominio?.logoUrl ? (
           <>
             {condominio.logoOscuroUrl ? (
               // eslint-disable-next-line @next/next/no-img-element -- logo del condominio, subido por la administración
-              <img src={condominio.logoOscuroUrl} alt={condominio.nombre} className="h-auto w-[208px]" />
+              <img src={condominio.logoOscuroUrl} alt={condominio.nombre} className="h-auto w-[228px]" />
             ) : (
               <span className="rounded-2xl bg-white p-3">
                 {/* eslint-disable-next-line @next/next/no-img-element -- logo del condominio */}
