@@ -10,6 +10,7 @@ import {
   validateFeeBreakdownItems,
 } from "@/lib/schemas/fee-config";
 import { revalidatePath } from "next/cache";
+import { headers } from "next/headers";
 
 type ActionResult = { error: string } | { success: true };
 
@@ -481,6 +482,53 @@ export async function updateOrgContact(formData: FormData): Promise<ActionResult
     })
     .eq("id", profile!.organization_id!);
 
+  if (error) return { error: error.message };
+  revalidatePath("/admin/settings");
+  return { success: true };
+}
+
+/**
+ * Crea una caseta de vigilancia y devuelve su enlace. El token se muestra UNA
+ * vez: en la base solo queda el hash, así que si se pierde se crea otra caseta.
+ */
+export async function crearCaseta(
+  formData: FormData,
+): Promise<{ error: string } | { success: true; enlace: string }> {
+  const profile = await getCurrentProfile();
+  const guard = requireAdmin(profile);
+  if (guard) return guard;
+
+  const nombre = String(formData.get("nombre") ?? "").trim().slice(0, 60);
+  if (nombre.length < 2) return { error: "Ponle un nombre: «Garita principal», «Entrada marina»…" };
+
+  const { nuevoToken, hashToken } = await import("@/lib/caseta");
+  const token = nuevoToken();
+  const { error } = await createAdminClient().from("guard_stations").insert({
+    organization_id: profile!.organization_id!,
+    name: nombre,
+    token_hash: hashToken(token),
+    created_by: profile!.id,
+  });
+  if (error) return { error: error.message };
+
+  revalidatePath("/admin/settings");
+  // El host de la petición y no uno fijo: así el enlace sirve también en un preview.
+  const host = (await headers()).get("host") ?? "portal.atryum.net";
+  const protocolo = host.startsWith("localhost") ? "http" : "https";
+  return { success: true, enlace: `${protocolo}://${host}/caseta/${token}` };
+}
+
+/** Revoca una caseta: su enlace deja de funcionar al instante. */
+export async function revocarCaseta(id: string): Promise<ActionResult> {
+  const profile = await getCurrentProfile();
+  const guard = requireAdmin(profile);
+  if (guard) return guard;
+
+  const { error } = await createAdminClient()
+    .from("guard_stations")
+    .update({ active: false })
+    .eq("id", id)
+    .eq("organization_id", profile!.organization_id!);
   if (error) return { error: error.message };
   revalidatePath("/admin/settings");
   return { success: true };

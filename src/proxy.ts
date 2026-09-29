@@ -19,6 +19,7 @@ export async function proxy(request: NextRequest) {
       pathname.startsWith("/login") ||
       pathname.startsWith("/auth") ||
       pathname.startsWith("/verificar") ||
+      pathname.startsWith("/caseta") ||
       pathname.startsWith("/join")
     ) {
       return NextResponse.next();

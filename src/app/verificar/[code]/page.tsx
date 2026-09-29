@@ -1,5 +1,6 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { GrantAccessButton } from "./grant-access-button";
+import { puedeRegistrarEntrada } from "@/lib/caseta";
 import { AtryumLogo } from "@/components/brand/atryum-logo";
 import { computeDisplayStatus } from "@/app/(dashboard)/visitantes/pass-list-helpers";
 import { VISITOR_KIND_BY_ID } from "@/app/(dashboard)/visitantes/visitor-kinds";
@@ -48,6 +49,12 @@ export default async function VerificarPage({
       : "expired";
 
   const ownerName = pass.profiles?.full_name ?? "Propietario";
+  // Con casetas, solo la caseta ve el botón. El visitante que abre su propio
+  // enlace ve el pase, pero no puede marcarse la entrada.
+  const { permitido, caseta } =
+    status === "valid"
+      ? await puedeRegistrarEntrada(pass.organization_id as string)
+      : { permitido: false, caseta: null };
   const visitorKind = (pass.visitor_kind as VisitorKind | null) ?? "guest";
   const kindMeta = VISITOR_KIND_BY_ID[visitorKind] ?? VISITOR_KIND_BY_ID.guest;
 
@@ -97,11 +104,25 @@ export default async function VerificarPage({
               month: "long",
               hour: "2-digit",
               minute: "2-digit",
+              // El servidor corre en UTC: sin zona, "hasta las 6 p.m." salía "10 p.m.".
+              timeZone: "America/Caracas",
             })}
           </p>
         </div>
 
-        {status === "valid" && <GrantAccessButton qrCode={pass.qr_code} />}
+        {status === "valid" &&
+          (permitido ? (
+            <>
+              {caseta && (
+                <p className="text-center font-meta text-mute">CASETA · {caseta.name.toUpperCase()}</p>
+              )}
+              <GrantAccessButton qrCode={pass.qr_code} />
+            </>
+          ) : (
+            <p className="rounded-xl border border-cyan/30 bg-cyan/5 p-4 text-center text-[14px] text-marine-deep">
+              Muéstrale este pase al vigilante en la entrada. Él registra tu llegada desde la caseta.
+            </p>
+          ))}
       </div>
     </VerificarShell>
   );

@@ -12,6 +12,7 @@ import { BankAccountsForm } from "./bank-accounts-form";
 import { FeeConfigForm } from "./fee-config-form";
 import { CommonAreasManager } from "./common-areas-manager";
 import { ContactForm } from "./contact-form";
+import { GuardStations, type CasetaFila } from "./guard-stations";
 import type {
   BankAccount,
   CommonArea,
@@ -38,7 +39,7 @@ export default async function AdminSettingsPage() {
 
   if (!org) return null;
 
-  const [feeTypeAmounts, breakdownAll, unitTypes, amenitiesRes] = await Promise.all([
+  const [feeTypeAmounts, breakdownAll, unitTypes, amenitiesRes, casetasRes] = await Promise.all([
     getFeeTypeAmounts(org.id),
     getFeeBreakdownAll(org.id),
     getOrgUnitTypes(org.id),
@@ -50,6 +51,11 @@ export default async function AdminSettingsPage() {
       .eq("organization_id", org.id)
       .order("is_active", { ascending: false })
       .order("name"),
+    supabase
+      .from("guard_stations")
+      .select("id, name, active, created_at, last_seen_at")
+      .eq("organization_id", org.id)
+      .order("created_at"),
   ]);
 
   const amenities = (amenitiesRes.data ?? []) as CommonArea[];
@@ -83,6 +89,15 @@ export default async function AdminSettingsPage() {
             concierge_notes: org.concierge_notes ?? "",
           }}
         />
+      </div>
+
+      <div className="rounded-2xl bg-card border border-border p-6 md:p-7">
+        <p className="font-meta text-mute mb-2">CASETA DE VIGILANCIA</p>
+        <p className="text-[14px] text-marine-deep/80 leading-relaxed mb-6">
+          El teléfono o la tablet de la garita. Desde ahí el vigilante ve las visitas esperadas del
+          día, busca por nombre o cédula y registra cada entrada. El vigilante no necesita cuenta.
+        </p>
+        <GuardStations casetas={(casetasRes.data ?? []) as CasetaFila[]} />
       </div>
 
       <div className="rounded-2xl bg-card border border-border p-6 md:p-7">
