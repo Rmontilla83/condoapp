@@ -134,7 +134,7 @@ export default async function FinanzasPage() {
       return {
         id,
         label: cat?.label ?? "Sin categoría",
-        icon: cat?.icon ?? "·",
+        icon: cat?.icon ?? null,
         amount,
       };
     })
@@ -155,7 +155,7 @@ export default async function FinanzasPage() {
         {isAdmin && <NewExpenseDialog categories={categories} />}
       </div>
 
-      <p className="-mb-4 text-[13px] text-mute">
+      <p className="-mt-4 text-[13px] text-mute">
         Acumulado: {textoPeriodo([...transactions.map((t) => t.paid_at as string), ...expenses.map((e) => e.expense_date)], todayInTimeZone())}. En dólares.
       </p>
       {/* KPI cards */}
@@ -217,7 +217,7 @@ export default async function FinanzasPage() {
                 <div key={id}>
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-[14px] font-medium text-marine-deep">
-                      <span className="mr-2">{icon}</span>
+                      <IconoCategoria icono={icon} className="mr-2 inline h-4 w-4 align-[-2px] text-cyan-ink" />
                       {label}
                     </span>
                     <div>
