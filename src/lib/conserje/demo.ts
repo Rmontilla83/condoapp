@@ -306,6 +306,10 @@ async function responderIntencion(
             `• ${c.concepto}${ctx.unidades.length > 1 ? ` (${c.unidad})` : ""}: ${usd(c.monto)} — ${c.vencida ? "vencida el" : "vence el"} ${fechaLarga(c.vence)}`,
           );
         }
+        if (porPagar.length > 6) {
+          const resto = porPagar.length - 6;
+          lineas.push(`• y ${resto} cuota${resto !== 1 ? "s" : ""} más: el detalle completo está en Pagos.`);
+        }
         if (vencidas.length) lineas.push(`Ojo: ${vencidas.length} ya ${vencidas.length === 1 ? "está vencida" : "están vencidas"}.`);
         const enRev = e.cuotas.length - porPagar.length;
         if (enRev) lineas.push(`Además, ${enRev} cuota${enRev !== 1 ? "s tienen" : " tiene"} un comprobante en revisión.`);
