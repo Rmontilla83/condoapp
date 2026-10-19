@@ -136,7 +136,10 @@ export function BudgetEditor({ year, budget, items, categories, executedByCatego
                     : "text-ember"
               }
             >
-              {budget?.status?.toUpperCase() ?? "BORRADOR (sin guardar)"}
+              {budget?.status
+                ? ({ draft: "Borrador", approved: "Aprobado", archived: "Archivado" } as Record<string, string>)[budget.status] ??
+                  budget.status
+                : "Borrador (sin guardar)"}
             </span>
           </p>
         </div>
