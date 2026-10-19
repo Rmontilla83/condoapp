@@ -6,7 +6,8 @@
 
 Qué hace:
  1. Borra toda la operación de demo del condominio (cuotas, pagos, saldos,
-    notas, convenios, gastos, avisos, reservas, pases, averías, paquetes).
+    notas, convenios, gastos, avisos, reservas, pases, averías, paquetes, y
+    el presupuesto y la encuesta de demo-extra.sql).
  2. Vuelve a emitir las cuotas REALES de septiembre y de la marina, con la
     numeración desde 1, y carga los saldos a favor reales (A 3-5 y C PB-2).
  3. Devuelve a cada propietario su nombre, correo y teléfono reales.
@@ -73,6 +74,9 @@ BEGIN
   DELETE FROM expense_records WHERE organization_id = v_org;
   DELETE FROM vendors WHERE organization_id = v_org;
   DELETE FROM maintenance_requests WHERE organization_id = v_org;
+  -- Ejemplos de demo-extra.sql (presupuesto 2026 y encuesta): no hay versión real de ellos.
+  DELETE FROM org_budgets WHERE organization_id = v_org;
+  DELETE FROM decisions WHERE organization_id = v_org;
   DELETE FROM access_passes WHERE organization_id = v_org;
   DELETE FROM reservations r USING common_areas a WHERE a.id = r.common_area_id AND a.organization_id = v_org;
   DELETE FROM announcements WHERE organization_id = v_org;
