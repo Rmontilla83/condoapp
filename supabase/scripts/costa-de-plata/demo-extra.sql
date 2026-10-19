@@ -59,13 +59,19 @@ BEGIN
     UPDATE org_budgets SET status = 'approved', approved_at = COALESCE(approved_at, '2026-06-15 10:00-04') WHERE id = v_bud;
   END IF;
   -- Monto mensual: lo gastado de junio a septiembre entre 4, redondeado a la decena y con 8 % de holgura.
+  -- Los gastos en bolívares pasan a dólares con la tasa del día del gasto.
   INSERT INTO org_budget_items (budget_id, category_id, monthly_amount)
-  SELECT v_bud, e.category_id, round(sum(e.amount) / 4 * 1.08 / 10) * 10
-    FROM expense_records e
-   WHERE e.organization_id = v_org AND e.voided_at IS NULL
-     AND (e.currency IS NULL OR e.currency = 'USD')
-     AND e.expense_date BETWEEN '2026-06-01' AND '2026-09-30'
-   GROUP BY e.category_id
+  SELECT v_bud, g.category_id, round(g.usd / 4 * 1.08 / 10) * 10
+    FROM (SELECT e.category_id,
+                 sum(CASE WHEN e.currency IS NULL OR e.currency = 'USD' THEN e.amount
+                          ELSE e.amount / NULLIF((SELECT r.rate FROM exchange_rates r
+                                                   WHERE r.organization_id = e.organization_id AND r.effective_date <= e.expense_date
+                                                   ORDER BY r.effective_date DESC LIMIT 1), 0) END) AS usd
+            FROM expense_records e
+           WHERE e.organization_id = v_org AND e.voided_at IS NULL
+             AND e.expense_date BETWEEN '2026-06-01' AND '2026-09-30'
+           GROUP BY e.category_id) g
+   WHERE g.usd > 0
   ON CONFLICT (budget_id, category_id) DO UPDATE SET monthly_amount = EXCLUDED.monthly_amount;
 
   -- 3. Averías del apartamento de la vista residente
