@@ -82,7 +82,7 @@ BEGIN
   DELETE FROM announcements WHERE organization_id = v_org;
   DELETE FROM service_providers WHERE organization_id = v_org;
   DELETE FROM unit_members um USING units u WHERE u.id = um.unit_id AND u.organization_id = v_org
-     AND um.profile_id = v_actor AND um.role = 'tenant';
+     AND um.profile_id = v_actor;  -- inquilino de A 1-1 o propietario de A 4-2 (demo-maria.sql)
   UPDATE organizations SET receipt_seq = 0, credit_note_seq = 0, late_fee_pct = NULL, late_fee_acta = NULL,
          contact_phone = NULL, contact_email = NULL, office_hours = NULL, concierge_notes = NULL, bank_accounts = '[]'::jsonb
    WHERE id = v_org;
