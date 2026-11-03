@@ -17,9 +17,14 @@ import type { ExpenseCategory } from "@/types/database";
 
 interface Props {
   categories: ExpenseCategory[];
+  /** Centros de costo activos. Si hay alguno, cada gasto debe decir el suyo. */
+  centros?: { id: string; name: string }[];
+  /** Saldo disponible del fondo de reserva. */
+  saldoFondo?: number;
 }
 
-export function NewExpenseDialog({ categories }: Props) {
+export function NewExpenseDialog({ categories, centros = [], saldoFondo = 0 }: Props) {
+  const [conFondo, setConFondo] = useState(false);
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -52,6 +57,7 @@ export function NewExpenseDialog({ categories }: Props) {
         if (!v) {
           setError("");
           setVendorMode("none");
+          setConFondo(false);
         }
       }}
     >
@@ -94,6 +100,27 @@ export function NewExpenseDialog({ categories }: Props) {
               ))}
             </select>
           </div>
+          {centros.length > 0 && (
+            <div className="space-y-2">
+              <Label htmlFor="cost_center_id">Centro de costo</Label>
+              <select
+                id="cost_center_id"
+                name="cost_center_id"
+                className="flex h-11 w-full rounded-md border border-input bg-background px-3 py-2 text-base md:text-sm"
+                required
+                defaultValue=""
+              >
+                <option value="" disabled>
+                  Selecciona…
+                </option>
+                {centros.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
           <div className="space-y-2">
             <Label htmlFor="description">Descripción</Label>
             <Input
@@ -158,6 +185,27 @@ export function NewExpenseDialog({ categories }: Props) {
             <p className="text-xs text-muted-foreground">
               Adjunta foto del recibo para total transparencia
             </p>
+          </div>
+          <div className="space-y-2 rounded-lg border border-border p-3">
+            <label className="flex cursor-pointer items-start gap-2 text-[14px]">
+              <input
+                type="checkbox"
+                name="paid_from_reserve"
+                checked={conFondo}
+                onChange={(e) => setConFondo(e.target.checked)}
+                className="mt-0.5 h-4 w-4 cursor-pointer"
+              />
+              <span>
+                Se paga con el fondo de reserva
+                <span className="block text-[12px] text-mute">Saldo disponible: ${saldoFondo.toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+              </span>
+            </label>
+            {conFondo && (
+              <div className="space-y-2">
+                <Label htmlFor="reserve_acta">Acta o acuerdo que lo aprueba</Label>
+                <Input id="reserve_acta" name="reserve_acta" required minLength={5} maxLength={200} placeholder="Asamblea del 15/03/2026" />
+              </div>
+            )}
           </div>
           {error && <p className="text-sm text-destructive">{error}</p>}
           <div className="flex gap-3 pt-2">

@@ -5,6 +5,8 @@ import { getCurrentProfile } from "@/lib/queries";
 import { isAdminRole } from "@/lib/permissions";
 import { validateVoidReason } from "@/lib/schemas/finance";
 import { revalidatePath } from "next/cache";
+import { resumenFondo } from "@/lib/contabilidad/fondo-reserva";
+import { usd } from "@/lib/format";
 
 export async function createExpense(formData: FormData) {
   const profile = await getCurrentProfile();
@@ -19,6 +21,10 @@ export async function createExpense(formData: FormData) {
   const expenseDate =
     (formData.get("expense_date") as string) || new Date().toISOString().split("T")[0];
   const photo = formData.get("receipt") as File;
+
+  const costCenterId = (formData.get("cost_center_id") as string)?.trim() || null;
+  const conFondo = formData.get("paid_from_reserve") === "on";
+  const actaFondo = (formData.get("reserve_acta") as string)?.trim().slice(0, 200) || null;
 
   // Vendor: id existente OR quick-create por nombre
   const vendorIdRaw = (formData.get("vendor_id") as string)?.trim();
@@ -38,6 +44,23 @@ export async function createExpense(formData: FormData) {
     .eq("organization_id", profile.organization_id)
     .single();
   if (!cat) return { error: "Categoría inválida" };
+
+  // Si el condominio usa centros de costo, cada gasto debe decir el suyo.
+  const { data: centros } = await supabase
+    .from("cost_centers")
+    .select("id")
+    .eq("organization_id", profile.organization_id)
+    .eq("active", true);
+  if ((centros ?? []).length > 0 && !costCenterId) return { error: "Elige el centro de costo" };
+  if (costCenterId && !(centros ?? []).some((c) => c.id === costCenterId)) {
+    return { error: "Centro de costo inválido" };
+  }
+
+  if (conFondo) {
+    if (!actaFondo || actaFondo.length < 5) return { error: "Indica el acta o acuerdo que aprueba usar el fondo de reserva" };
+    const { saldo } = await resumenFondo(supabase, profile.organization_id);
+    if (amount > saldo) return { error: `El fondo de reserva tiene ${usd(saldo)}: no alcanza para este gasto` };
+  }
 
   // Resolver vendor_id: id existente o quick-create
   let vendorId: string | null = vendorIdRaw || null;
@@ -83,6 +106,9 @@ export async function createExpense(formData: FormData) {
     organization_id: profile.organization_id,
     category_id: categoryId,
     vendor_id: vendorId,
+    cost_center_id: costCenterId,
+    paid_from_reserve: conFondo,
+    reserve_acta: conFondo ? actaFondo : null,
     description,
     amount,
     currency: "USD",
@@ -131,6 +157,88 @@ export async function voidExpense(expenseId: string, reason: string) {
     .eq("organization_id", profile.organization_id);
 
   if (error) return { error: error.message };
+
+  revalidatePath("/finanzas");
+  revalidatePath("/admin");
+  revalidatePath("/dashboard");
+  return { success: true };
+}
+
+/** Dinero que entra sin ser el pago de una cuota (migration 059). */
+export async function createOtherIncome(formData: FormData) {
+  const profile = await getCurrentProfile();
+  if (!profile?.organization_id) return { error: "No tienes organización asignada" };
+  if (!isAdminRole(profile)) return { error: "Solo administradores pueden registrar ingresos" };
+
+  const description = (formData.get("description") as string)?.trim().slice(0, 200);
+  const source = (formData.get("source") as string)?.trim().slice(0, 120) || null;
+  const amount = parseFloat(formData.get("amount") as string);
+  const incomeDate = formData.get("income_date") as string;
+  const method = formData.get("payment_method") === "cash" ? "cash" : "bank";
+  const costCenterId = (formData.get("cost_center_id") as string)?.trim() || null;
+  const photo = formData.get("receipt") as File | null;
+
+  if (!description || description.length < 3) return { error: "Escribe el concepto" };
+  if (!amount || amount <= 0) return { error: "Indica un monto mayor que cero" };
+  if (!incomeDate || !/^\d{4}-\d{2}-\d{2}$/.test(incomeDate)) return { error: "Indica la fecha" };
+
+  const supabase = createAdminClient();
+  if (costCenterId) {
+    const { data: centro } = await supabase
+      .from("cost_centers")
+      .select("id")
+      .eq("id", costCenterId)
+      .eq("organization_id", profile.organization_id)
+      .maybeSingle();
+    if (!centro) return { error: "Centro de costo inválido" };
+  }
+
+  let receiptUrl: string | null = null;
+  if (photo && photo.size > 0) {
+    const ext = photo.name.split(".").pop() ?? "jpg";
+    const path = `incomes/${profile.organization_id}/${Date.now()}.${ext}`;
+    const { error: uploadError } = await supabase.storage
+      .from("maintenance-photos")
+      .upload(path, photo, { contentType: photo.type });
+    if (!uploadError) receiptUrl = `maintenance-photos/${path}`;
+  }
+
+  const { error } = await supabase.from("other_incomes").insert({
+    organization_id: profile.organization_id,
+    income_date: incomeDate,
+    description,
+    source,
+    amount,
+    payment_method: method,
+    receipt_url: receiptUrl,
+    cost_center_id: costCenterId,
+    recorded_by: profile.id,
+  });
+  if (error) return { error: error.message };
+
+  revalidatePath("/finanzas");
+  revalidatePath("/admin");
+  revalidatePath("/dashboard");
+  return { success: true };
+}
+
+export async function voidOtherIncome(id: string, reason: string) {
+  const profile = await getCurrentProfile();
+  if (!profile?.organization_id) return { error: "No autenticado" };
+  if (!isAdminRole(profile)) return { error: "Solo administradores pueden anular ingresos" };
+
+  const check = validateVoidReason(reason);
+  if (!check.ok || !check.reason) return { error: check.error ?? "Razón inválida" };
+
+  const { data, error } = await createAdminClient()
+    .from("other_incomes")
+    .update({ voided_at: new Date().toISOString(), voided_reason: check.reason })
+    .eq("id", id)
+    .eq("organization_id", profile.organization_id)
+    .is("voided_at", null)
+    .select("id");
+  if (error) return { error: error.message };
+  if (!data?.length) return { error: "Ese ingreso no existe o ya está anulado" };
 
   revalidatePath("/finanzas");
   revalidatePath("/admin");

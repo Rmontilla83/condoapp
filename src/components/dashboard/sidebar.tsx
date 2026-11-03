@@ -25,6 +25,7 @@ const adminItems = [
   { href: "/admin/contactos", label: "Contactos", icon: "contactos" },
   { href: "/admin/cuentas", label: "Cuentas por cobrar", icon: "payments" },
   { href: "/admin/libro", label: "Libro contable", icon: "finanzas" },
+  { href: "/admin/fondo-reserva", label: "Fondo de reserva", icon: "finanzas" },
   { href: "/admin/budget", label: "Presupuesto", icon: "finanzas" },
   { href: "/admin/saldos", label: "Saldos a favor", icon: "payments" },
   { href: "/admin/grupos", label: "Grupos de prorrateo", icon: "units" },

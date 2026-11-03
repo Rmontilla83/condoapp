@@ -40,6 +40,8 @@ export async function updateSession(request: NextRequest) {
     !request.nextUrl.pathname.startsWith("/verificar") &&
     // La garita no tiene sesión: su identidad es la cookie de caseta.
     !request.nextUrl.pathname.startsWith("/caseta") &&
+    request.nextUrl.pathname !== "/terminos" &&
+    request.nextUrl.pathname !== "/privacidad" &&
     request.nextUrl.pathname !== "/"
   ) {
     const url = request.nextUrl.clone();

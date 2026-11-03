@@ -58,7 +58,7 @@ export async function lineasDelLibro(orgId: string, desde: string | null, hasta:
 
 /** Agrupa las líneas en asientos numerados en orden cronológico. */
 export function asientos(lineas: LineaLibro[]): Asiento[] {
-  const orden = ["apertura", "recibo", "anticipo", "aplicacion", "pago", "nota_credito", "gasto"];
+  const orden = ["apertura", "fondo", "recibo", "anticipo", "aplicacion", "pago", "otro_ingreso", "nota_credito", "gasto"];
   const mapa = new Map<string, Asiento>();
   for (const l of lineas) {
     const k = `${l.doc_tipo}:${l.doc_id}`;

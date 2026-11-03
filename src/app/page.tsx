@@ -441,6 +441,8 @@ export default async function HomePage() {
           <nav className="flex flex-wrap gap-x-6 gap-y-2" aria-label="Guías">
             <Link href="/guias/propietario" className="hover:text-marine-deep">Guía del propietario</Link>
             <Link href="/guias/administracion" className="hover:text-marine-deep">Guía de la administración</Link>
+            <Link href="/terminos" className="hover:text-marine-deep">Condiciones de uso</Link>
+            <Link href="/privacidad" className="hover:text-marine-deep">Privacidad</Link>
             <a href="mailto:hola@atryum.net" className="hover:text-marine-deep">hola@atryum.net</a>
           </nav>
           <p>

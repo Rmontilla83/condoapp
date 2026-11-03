@@ -5,6 +5,10 @@ const LANDING_APEX = "atryum.net";
 const LANDING_WWW = "www.atryum.net";
 const PORTAL_HOST = "portal.atryum.net";
 
+/** Páginas públicas en cualquier dominio: se leen antes de tener cuenta. */
+const esPublica = (pathname: string) =>
+  pathname.startsWith("/guias") || pathname === "/terminos" || pathname === "/privacidad";
+
 export async function proxy(request: NextRequest) {
   const hostname = (request.headers.get("host") ?? "").toLowerCase();
   const { pathname, search } = request.nextUrl;
@@ -20,7 +24,8 @@ export async function proxy(request: NextRequest) {
       pathname.startsWith("/auth") ||
       pathname.startsWith("/verificar") ||
       pathname.startsWith("/caseta") ||
-      pathname.startsWith("/join")
+      pathname.startsWith("/join") ||
+      esPublica(pathname)
     ) {
       return NextResponse.next();
     }
@@ -39,7 +44,7 @@ export async function proxy(request: NextRequest) {
     // La landing y las guías de uso son las dos cosas públicas del apex. Las
     // guías se le mandan por link a un condominio que todavía no es cliente,
     // así que no pueden pasar por `updateSession` ni redirigir al portal.
-    if (pathname === "/" || pathname.startsWith("/guias")) {
+    if (pathname === "/" || esPublica(pathname)) {
       return NextResponse.next();
     }
     return NextResponse.redirect(
@@ -50,7 +55,7 @@ export async function proxy(request: NextRequest) {
 
   if (hostname === PORTAL_HOST) {
     // Que el link funcione también si alguien lo comparte con el host del portal.
-    if (pathname.startsWith("/guias")) {
+    if (esPublica(pathname)) {
       return NextResponse.next();
     }
     if (pathname === "/") {

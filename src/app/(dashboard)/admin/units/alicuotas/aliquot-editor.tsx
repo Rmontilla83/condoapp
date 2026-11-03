@@ -31,6 +31,8 @@ interface Props {
   currency: string;
   /** Cuotas ya emitidas y sin pagar: cambiar la alícuota NO las recalcula. */
   cuotasPendientes: number;
+  /** Grupos que se cobran aparte, como la marina: explican la suma, no reparten nada. */
+  gruposAparte?: { nombre: string; aliquot: number }[];
 }
 
 const TONE_CLASS: Record<string, string> = {
@@ -45,7 +47,9 @@ export function AliquotEditor({
   feeBaseAmount,
   currency,
   cuotasPendientes,
+  gruposAparte = [],
 }: Props) {
+  const totalGrupos = gruposAparte.reduce((s, g) => s + g.aliquot, 0);
   // Borradores como texto: lo que el admin ve es exactamente lo que tecleó,
   // hasta que guarda. Vacío = sin configurar (NULL), que no es lo mismo que 0.
   const [drafts, setDrafts] = useState<Record<string, string>>(() => {
@@ -75,8 +79,8 @@ export function AliquotEditor({
 
   const hayErrores = parsed.some((p) => p.error);
   const cobertura = useMemo(
-    () => computeCoverage(parsed.map((p) => ({ aliquot: p.value }))),
-    [parsed],
+    () => computeCoverage(parsed.map((p) => ({ aliquot: p.value })), totalGrupos),
+    [parsed, totalGrupos],
   );
   const estado = useMemo(() => aliquotStatus(cobertura), [cobertura]);
 
@@ -106,8 +110,8 @@ export function AliquotEditor({
   /** Lo que pagaría cada unidad con el reparto actual. El preview que convierte
    *  un porcentaje abstracto en la cifra que el vecino va a ver. */
   function cuotaDe(valor: number | null): string | null {
-    if (!porAlicuota || base <= 0 || cobertura.sum <= 0 || valor === null) return null;
-    return ((base * valor) / cobertura.sum).toFixed(2);
+    if (!porAlicuota || base <= 0 || cobertura.sumUnits <= 0 || valor === null) return null;
+    return ((base * valor) / cobertura.sumUnits).toFixed(2);
   }
 
   function aplicarSemilla(map: Map<string, number>, etiqueta: string) {
@@ -201,6 +205,11 @@ export function AliquotEditor({
             <span className="text-ember-ink">{cobertura.unset} SIN CONFIGURAR</span>
           )}
           {cobertura.atZero > 0 && <span>{cobertura.atZero} EXENTAS (0%)</span>}
+          {gruposAparte.map((g) => (
+            <span key={g.nombre}>
+              {g.nombre.toUpperCase()} {g.aliquot.toFixed(2).replace(".", ",")}% · SE COBRA APARTE
+            </span>
+          ))}
         </div>
 
         <div className="mt-4 flex flex-wrap gap-2">
@@ -209,7 +218,7 @@ export function AliquotEditor({
             variant="outline"
             size="sm"
             onClick={() =>
-              aplicarSemilla(seedEqual(units.map((u) => u.id)), "Repartir en partes iguales")
+              aplicarSemilla(seedEqual(units.map((u) => u.id), 100 - totalGrupos), "Repartir en partes iguales")
             }
             disabled={loading}
           >
@@ -221,7 +230,7 @@ export function AliquotEditor({
             size="sm"
             onClick={() =>
               aplicarSemilla(
-                seedScaleTo100(parsed.map((p) => ({ ...p.unit, aliquot: p.value }))),
+                seedScaleTo100(parsed.map((p) => ({ ...p.unit, aliquot: p.value })), 100 - totalGrupos),
                 "Escalar lo cargado a 100%",
               )
             }

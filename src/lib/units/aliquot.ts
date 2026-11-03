@@ -105,16 +105,24 @@ export interface AliquotCoverage {
   atZero: number;
   /** Todavía sin cargar. */
   unset: number;
+  /** Suma de las unidades más los grupos que se cobran aparte. */
   sum: number;
+  /** Solo las unidades: es la base del reparto de la cuota y del voto. */
+  sumUnits: number;
+  /** Porcentaje de los grupos que se cobran aparte, como la marina. */
+  grupos: number;
 }
 
-export function computeCoverage(rows: Array<{ aliquot: number | null }>): AliquotCoverage {
+export function computeCoverage(rows: Array<{ aliquot: number | null }>, grupos: number = 0): AliquotCoverage {
+  const sumUnits = sumAliquots(rows);
   return {
     totalUnits: rows.length,
     configured: rows.filter((r) => r.aliquot !== null).length,
     atZero: rows.filter((r) => r.aliquot === 0).length,
     unset: rows.filter((r) => r.aliquot === null).length,
-    sum: sumAliquots(rows),
+    sum: sumAliquots([{ aliquot: sumUnits }, { aliquot: grupos }]),
+    sumUnits,
+    grupos,
   };
 }
 
@@ -161,7 +169,11 @@ export function aliquotStatus(cov: AliquotCoverage): AliquotStatus {
     return {
       tone: cov.unset > 0 ? "warn" : "ok",
       label: "CUADRA EN 100%",
-      detail: pendientes.trim() || "Las alícuotas suman exactamente 100%.",
+      detail:
+        pendientes.trim() ||
+        (cov.grupos > 0
+          ? `Las unidades suman ${cov.sumUnits.toFixed(2).replace(".", ",")}%. El otro ${cov.grupos.toFixed(2).replace(".", ",")}% se cobra aparte, solo a los miembros de su grupo.`
+          : "Las alícuotas suman exactamente 100%."),
       needsConfirm: false,
     };
   }
@@ -188,19 +200,19 @@ export function aliquotStatus(cov: AliquotCoverage): AliquotStatus {
  * repartiera con su propia regla, las alícuotas semilla podrían no cuadrar con
  * el reparto real de las cuotas.
  */
-export function seedEqual(ids: string[]): Map<string, number> {
-  return distributeExact(100, ids.map((id) => ({ id, w: 1 })), ALIQUOT_MAX_DECIMALS);
+export function seedEqual(ids: string[], objetivo: number = 100): Map<string, number> {
+  return distributeExact(objetivo, ids.map((id) => ({ id, w: 1 })), ALIQUOT_MAX_DECIMALS);
 }
 
 /**
  * Semilla: reescala lo ya cargado para que sume 100%, conservando las
  * proporciones relativas. Las unidades sin cargar quedan sin cargar.
  */
-export function seedScaleTo100(rows: AliquotRow[]): Map<string, number> {
+export function seedScaleTo100(rows: AliquotRow[], objetivo: number = 100): Map<string, number> {
   const conValor = rows.filter((r) => r.aliquot !== null && r.aliquot > 0);
   if (conValor.length === 0) return new Map();
   return distributeExact(
-    100,
+    objetivo,
     conValor.map((r) => ({ id: r.id, w: r.aliquot as number })),
     ALIQUOT_MAX_DECIMALS,
   );

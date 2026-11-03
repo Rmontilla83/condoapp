@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState, useTransition } from "react";
-import { archivarGrupo, crearGrupo, guardarMiembros } from "./actions";
+import { archivarGrupo, crearGrupo, guardarMiembros, guardarPorcentajeGrupo } from "./actions";
 
 interface Unidad {
   id: string;
@@ -12,6 +12,7 @@ interface Grupo {
   id: string;
   name: string;
   description: string | null;
+  aliquot: number | null;
   weights: Record<string, number>;
 }
 
@@ -24,6 +25,7 @@ export function EditorGrupos({ grupos, unidades }: { grupos: Grupo[]; unidades: 
   const [pesos, setPesos] = useState<Record<string, string>>(() =>
     Object.fromEntries(Object.entries(grupo?.weights ?? {}).map(([k, v]) => [k, String(v)])),
   );
+  const [porcentaje, setPorcentaje] = useState(grupo?.aliquot == null ? "" : String(grupo.aliquot).replace(".", ","));
   const [torre, setTorre] = useState("");
   const [aviso, setAviso] = useState<{ ok: boolean; msg: string } | null>(null);
   const [pending, start] = useTransition();
@@ -37,6 +39,7 @@ export function EditorGrupos({ grupos, unidades }: { grupos: Grupo[]; unidades: 
     setSel(id);
     const g = grupos.find((x) => x.id === id);
     setPesos(Object.fromEntries(Object.entries(g?.weights ?? {}).map(([k, v]) => [k, String(v)])));
+    setPorcentaje(g?.aliquot == null ? "" : String(g.aliquot).replace(".", ","));
     setAviso(null);
   }
 
@@ -83,6 +86,34 @@ export function EditorGrupos({ grupos, unidades }: { grupos: Grupo[]; unidades: 
                 </p>
                 <p className="text-[13px] text-mute">
                   El peso es la proporción de cada unidad: puede ser su cuota de referencia, sus metros o un 1 para partes iguales.
+                </p>
+              </div>
+              <div className="flex flex-wrap items-end gap-2 rounded-xl bg-frost p-3">
+                <label className="text-[13px] text-marine-deep">
+                  Porcentaje que representa el grupo (opcional)
+                  <input
+                    inputMode="decimal"
+                    value={porcentaje}
+                    onChange={(e) => setPorcentaje(e.target.value)}
+                    placeholder="5,6973"
+                    className={`${campo} mt-1 block w-32 text-right tabular-nums`}
+                  />
+                </label>
+                <button
+                  type="button"
+                  disabled={pending}
+                  onClick={() =>
+                    start(async () => {
+                      const r = await guardarPorcentajeGrupo(grupo.id, porcentaje);
+                      setAviso("error" in r ? { ok: false, msg: r.error } : { ok: true, msg: "Porcentaje guardado." });
+                    })
+                  }
+                  className="rounded-lg border border-border bg-card px-3 py-2 text-[13px] font-medium text-marine-deep disabled:opacity-50"
+                >
+                  Guardar porcentaje
+                </button>
+                <p className="min-w-[14rem] flex-1 text-[12px] text-mute">
+                  Solo explica la suma en la hoja de alícuotas. No cambia lo que paga nadie ni el peso de ningún voto.
                 </p>
               </div>
               <div className="flex flex-wrap gap-1">

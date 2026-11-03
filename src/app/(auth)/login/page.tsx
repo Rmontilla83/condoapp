@@ -474,6 +474,11 @@ export default function LoginPage() {
           <p className="mt-8 text-center font-editorial text-mute text-[15px]">
             Un átrium dentro de cada A.
           </p>
+          <p className="mt-3 text-center text-[13px] text-mute">
+            <a href="/terminos" className="hover:text-marine-deep">Condiciones de uso</a>
+            {" · "}
+            <a href="/privacidad" className="hover:text-marine-deep">Privacidad</a>
+          </p>
         </div>
       </main>
     </div>

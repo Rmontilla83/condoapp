@@ -1,3 +1,4 @@
+import { resumenFondo } from "@/lib/contabilidad/fondo-reserva";
 import { conveniosActivos } from "@/lib/contabilidad/cobranza";
 import { ESTADOS_ABIERTOS, estaAbierta, pendienteDe } from "@/lib/cuotas";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -298,6 +299,7 @@ export function consultasDelConserje(ctx: ConserjeContexto) {
         .single(),
       db.from("units").select("id", { count: "exact", head: true }).eq("organization_id", ctx.orgId),
     ]);
+    const fondo = await resumenFondo(db, ctx.orgId);
     return {
       condominio: org?.name as string,
       direccion: [org?.address, org?.city].filter(Boolean).join(", ") || null,
@@ -314,6 +316,7 @@ export function consultasDelConserje(ctx: ConserjeContexto) {
             : "Según el tipo de unidad o montos definidos por la administración.",
       recargo_por_mora_pct: org?.late_fee_pct ? Number(org.late_fee_pct) : null,
       moneda: org?.currency as string,
+      fondo_de_reserva_disponible_usd: fondo.saldo,
     };
   }
 

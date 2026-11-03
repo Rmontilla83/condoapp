@@ -34,7 +34,7 @@ interface DialogProps {
   feeTypeAmounts: FeeTypeAmount[];
   exchangeRate: number | null;
   /** Grupos de prorrateo (migration 047): la marina, etc. */
-  groups?: Array<{ id: string; name: string; weights: Record<string, number> }>;
+  groups?: Array<{ id: string; name: string; aliquot?: number | null; weights: Record<string, number> }>;
 }
 
 interface FormState {
@@ -54,6 +54,10 @@ interface FormState {
   manual_amounts: Record<string, string>; // unit_id -> string
   group_id: string;
   group_total: string;
+  /** Sumar a la cuota mensual el aporte al fondo de reserva. */
+  incluir_fondo: boolean;
+  /** La derrama completa va al fondo de reserva. */
+  fondo_todo: boolean;
 }
 
 function defaultMonthYear() {
@@ -93,6 +97,8 @@ export function GenerateInvoicesDialog({ org, units, feeTypeAmounts, exchangeRat
     manual_amounts: Object.fromEntries(units.map((u) => [u.id, ""])),
     group_id: groups[0]?.id ?? "",
     group_total: "",
+    incluir_fondo: Number(org.reserve_fund_pct ?? 0) > 0,
+    fondo_todo: false,
   }));
 
   const typeAmountsMap = useMemo(
@@ -141,8 +147,11 @@ export function GenerateInvoicesDialog({ org, units, feeTypeAmounts, exchangeRat
           : undefined,
       group_weights: form.mode === "by_group" ? groups.find((g) => g.id === form.group_id)?.weights : undefined,
       group_total: form.mode === "by_group" && form.group_total ? parseFloat(form.group_total) : undefined,
+      group_aliquot_sum: groups.reduce((s, g) => s + Number(g.aliquot ?? 0), 0),
+      reserve_pct: form.kind === "monthly" && form.incluir_fondo ? Number(org.reserve_fund_pct ?? 0) : 0,
+      reserve_all: form.kind === "extraordinary" && form.fondo_todo,
     });
-  }, [step, org.id, org.currency, form, dueDateResolved, descriptionResolved, units, exchangeRate, typeAmountsMap, groups]);
+  }, [step, org.reserve_fund_pct, org.id, org.currency, form, dueDateResolved, descriptionResolved, units, exchangeRate, typeAmountsMap, groups]);
 
   function reset() {
     const d = defaultMonthYear();
@@ -164,6 +173,8 @@ export function GenerateInvoicesDialog({ org, units, feeTypeAmounts, exchangeRat
       manual_amounts: Object.fromEntries(units.map((u) => [u.id, ""])),
       group_id: groups[0]?.id ?? "",
       group_total: "",
+      incluir_fondo: Number(org.reserve_fund_pct ?? 0) > 0,
+      fondo_todo: false,
     });
   }
 
@@ -237,6 +248,8 @@ export function GenerateInvoicesDialog({ org, units, feeTypeAmounts, exchangeRat
     fd.set("kind", form.kind);
     fd.set("mode", form.mode);
     fd.set("description", descriptionResolved);
+    if (form.kind === "monthly" && form.incluir_fondo) fd.set("incluir_fondo", "on");
+    if (form.kind === "extraordinary" && form.fondo_todo) fd.set("fondo_todo", "on");
     if (form.kind === "extraordinary") {
       fd.set("due_date", form.due_date);
     } else {
@@ -331,6 +344,7 @@ export function GenerateInvoicesDialog({ org, units, feeTypeAmounts, exchangeRat
             feeTypeAmounts={feeTypeAmounts}
             unitsTypes={[...new Set(units.map((u) => u.type))]}
             groups={groups}
+            pctFondo={Number(org.reserve_fund_pct ?? 0)}
           />
         )}
 
@@ -618,12 +632,14 @@ function ModeStep({
   feeTypeAmounts,
   unitsTypes,
   groups,
+  pctFondo,
 }: {
   form: FormState;
   onChange: (f: FormState | ((p: FormState) => FormState)) => void;
   feeTypeAmounts: FeeTypeAmount[];
   unitsTypes: string[];
-  groups: Array<{ id: string; name: string; weights: Record<string, number> }>;
+  groups: Array<{ id: string; name: string; aliquot?: number | null; weights: Record<string, number> }>;
+  pctFondo: number;
 }) {
   return (
     <div className="space-y-4">
@@ -639,7 +655,8 @@ function ModeStep({
               type="radio"
               name="mode"
               checked={form.mode === m}
-              onChange={() => onChange((p) => ({ ...p, mode: m }))}
+              // Un grupo como la marina no lleva aporte al fondo salvo que lo marquen.
+              onChange={() => onChange((p) => ({ ...p, mode: m, incluir_fondo: m !== "by_group" && pctFondo > 0 }))}
               className="mt-1 h-4 w-4 cursor-pointer"
             />
             <div className="flex-1">
@@ -720,7 +737,7 @@ function ModeStep({
 
       {form.mode === "by_aliquot" && (
         <div className="space-y-2 rounded-lg bg-cyan/5 border border-cyan/20 p-3">
-          <Label htmlFor="base-amount">Total a cobrar</Label>
+          <Label htmlFor="base-amount">Total a repartir entre las unidades</Label>
           <Input
             id="base-amount"
             type="number"
@@ -732,6 +749,8 @@ function ModeStep({
           />
           <p className="text-[12px] text-mute">
             Se reparte proporcional a la alícuota de cada unidad. El total cobrado siempre es exacto.
+            {groups.some((g) => Number(g.aliquot ?? 0) > 0) &&
+              ` No incluyas aquí ${groups.filter((g) => Number(g.aliquot ?? 0) > 0).map((g) => g.name).join(", ")}: se emite aparte, por grupo.`}
           </p>
         </div>
       )}
@@ -764,6 +783,45 @@ function ModeStep({
             .
           </p>
         </div>
+      )}
+
+      {form.kind === "monthly" && pctFondo > 0 && (
+        <label className="flex items-start gap-3 rounded-lg border border-border p-3 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={form.incluir_fondo}
+            onChange={(e) => onChange((p) => ({ ...p, incluir_fondo: e.target.checked }))}
+            className="mt-1 h-4 w-4 cursor-pointer"
+          />
+          <span>
+            <span className="block text-sm font-semibold">Sumar el aporte al fondo de reserva ({pctFondo.toLocaleString("es-VE")} %)</span>
+            <span className="block text-xs text-muted-foreground mt-0.5">
+              Se suma al monto que escribiste, y en la vista previa ves cuánto va al fondo.
+            </span>
+          </span>
+        </label>
+      )}
+      {form.kind === "monthly" && pctFondo <= 0 && (
+        <p className="text-[12px] text-mute">
+          Este condominio no tiene porcentaje de fondo de reserva. Se define en{" "}
+          <a href="/admin/fondo-reserva" className="text-cyan underline">Fondo de reserva</a>.
+        </p>
+      )}
+      {form.kind === "extraordinary" && (
+        <label className="flex items-start gap-3 rounded-lg border border-border p-3 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={form.fondo_todo}
+            onChange={(e) => onChange((p) => ({ ...p, fondo_todo: e.target.checked }))}
+            className="mt-1 h-4 w-4 cursor-pointer"
+          />
+          <span>
+            <span className="block text-sm font-semibold">Esta derrama va completa al fondo de reserva</span>
+            <span className="block text-xs text-muted-foreground mt-0.5">
+              Márcalo solo si la Asamblea la aprobó para el fondo.
+            </span>
+          </span>
+        </label>
       )}
     </div>
   );
@@ -865,6 +923,7 @@ function PreviewStep({
 }) {
   const total = result.invoices.reduce((s, i) => s + i.amount, 0);
   const totalBs = result.invoices.reduce((s, i) => s + (i.amount_bs ?? 0), 0);
+  const totalFondo = result.invoices.reduce((s, i) => s + (i.reserve_amount ?? 0), 0);
 
   const unitsById = useMemo(() => new Map(units.map((u) => [u.id, u])), [units]);
 
@@ -893,6 +952,12 @@ function PreviewStep({
           <div className="flex justify-between text-mute text-[12px]">
             <span>Equivalente</span>
             <span>{bs(totalBs)}</span>
+          </div>
+        )}
+        {totalFondo > 0 && (
+          <div className="flex justify-between text-[12px]">
+            <span className="text-mute">De ese total, al fondo de reserva</span>
+            <span className="font-medium">{usd(totalFondo)}</span>
           </div>
         )}
       </div>

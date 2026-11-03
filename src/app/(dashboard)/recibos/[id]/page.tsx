@@ -21,7 +21,7 @@ export default async function ReciboPage({ params }: { params: Promise<{ id: str
   const db = createAdminClient();
   const { data: r } = await db
     .from("invoices")
-    .select("id, organization_id, unit_id, receipt_number, description, kind, amount, paid_amount, currency, exchange_rate, amount_bs, due_date, status, created_at, units(unit_number, block, aliquot)")
+    .select("id, organization_id, unit_id, receipt_number, description, kind, amount, reserve_amount, paid_amount, currency, exchange_rate, amount_bs, due_date, status, created_at, units(unit_number, block, aliquot)")
     .eq("id", id)
     .maybeSingle();
   if (!r || !(await puedeVerUnidad(profile, r.unit_id as string))) notFound();
@@ -91,7 +91,12 @@ export default async function ReciboPage({ params }: { params: Promise<{ id: str
         </thead>
         <tbody>
           <tr className="border-b border-border">
-            <td className="py-3">{r.description as string}</td>
+            <td className="py-3">
+              {r.description as string}
+              {Number(r.reserve_amount ?? 0) > 0 && (
+                <span className="block text-[12px] text-mute">Incluye {usd(Number(r.reserve_amount))} para el fondo de reserva</span>
+              )}
+            </td>
             <td className="py-3 text-right tabular-nums">{usd(Number(r.amount))}</td>
           </tr>
         </tbody>

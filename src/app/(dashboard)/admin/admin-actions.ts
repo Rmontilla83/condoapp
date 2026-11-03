@@ -127,6 +127,10 @@ export async function generateMonthlyInvoices(formData: FormData) {
   let group_weights: Record<string, number> | undefined;
   let group_total: number | undefined;
 
+  // Fondo de reserva: el porcentaje sale de la base, no del formulario.
+  const fondoTodo = kind === "extraordinary" && formData.get("fondo_todo") === "on";
+  const pctFondo = kind === "monthly" && formData.get("incluir_fondo") === "on" ? Number(org.reserve_fund_pct ?? 0) : 0;
+
   if (mode === "flat") {
     const raw =
       (formData.get("flat_amount") as string) ?? (formData.get("amount") as string);
@@ -201,6 +205,13 @@ export async function generateMonthlyInvoices(formData: FormData) {
   const rateData = await getCurrentRate(profile!.organization_id!);
   const exchange_rate = Number(rateData.rate) || null;
 
+  const { data: gruposAparte } = await supabase
+    .from("charge_groups")
+    .select("aliquot")
+    .eq("organization_id", profile!.organization_id!)
+    .eq("active", true)
+    .not("aliquot", "is", null);
+
   const result = computeInvoiceAmounts({
     organization_id: profile!.organization_id!,
     fee_mode: mode,
@@ -217,6 +228,9 @@ export async function generateMonthlyInvoices(formData: FormData) {
     manual_amounts,
     group_weights,
     group_total,
+    group_aliquot_sum: (gruposAparte ?? []).reduce((s, g) => s + Number(g.aliquot), 0),
+    reserve_pct: pctFondo,
+    reserve_all: fondoTodo,
   });
 
   if (result.errors.length > 0) {

@@ -15,6 +15,8 @@ export interface InvoiceInsert {
   kind: InvoiceKind;
   exchange_rate: number | null;
   amount_bs: number | null;
+  /** Parte del monto que va al fondo de reserva (migration 058). */
+  reserve_amount: number;
 }
 
 export interface ComputeUnit {
@@ -45,6 +47,15 @@ export interface ComputeInput {
   manual_amounts?: Record<string, number>; // unit_id -> amount
   group_weights?: Record<string, number>; // by_group: unit_id -> peso (solo miembros)
   group_total?: number; // by_group: total a repartir entre los miembros
+  /**
+   * Porcentaje de los grupos que se cobran aparte (la marina). NO cambia el
+   * reparto: solo evita avisar que «falta» un porcentaje que ya tiene explicación.
+   */
+  group_aliquot_sum?: number;
+  /** % de aporte al fondo de reserva que se SUMA al monto de la emisión. */
+  reserve_pct?: number;
+  /** La emisión completa va al fondo de reserva (una derrama para el fondo). */
+  reserve_all?: boolean;
 }
 
 export interface ComputeResult {
@@ -144,6 +155,12 @@ export function computeInvoiceAmounts(input: ComputeInput): ComputeResult {
 
   let perUnit: Map<string, number>;
 
+  // El aporte al fondo se suma sobre lo que escribió la administración: cada
+  // monto de entrada se multiplica antes de repartir, para que el total siga
+  // exacto al centavo.
+  const pctFondo = !input.reserve_all && (input.reserve_pct ?? 0) > 0 ? (input.reserve_pct as number) : 0;
+  const factor = 1 + pctFondo / 100;
+
   switch (input.fee_mode) {
     case "flat": {
       const amt = input.flat_amount;
@@ -151,7 +168,7 @@ export function computeInvoiceAmounts(input: ComputeInput): ComputeResult {
         errors.push("Modo plano requiere monto > 0.");
         return { invoices: [], warnings, errors };
       }
-      const rounded = round2(amt);
+      const rounded = round2(amt * factor);
       perUnit = new Map(input.units.map((u) => [u.id, rounded]));
       break;
     }
@@ -164,7 +181,7 @@ export function computeInvoiceAmounts(input: ComputeInput): ComputeResult {
       }
       // Reparto en partes iguales (peso 1 por unidad), exacto al centavo.
       perUnit = distributeExact(
-        total,
+        round2(total * factor),
         input.units.map((u) => ({ id: u.id, w: 1 })),
       );
       break;
@@ -203,14 +220,14 @@ export function computeInvoiceAmounts(input: ComputeInput): ComputeResult {
           `${exentas.length} unidad(es) están exentas (alícuota 0) y recibirán cuota de $0.`,
         );
       }
-      if (Math.abs(sumAliquot - 100) >= 0.01) {
+      if (Math.abs(sumAliquot + (input.group_aliquot_sum ?? 0) - 100) >= 0.01) {
         warnings.push(
           `Las alícuotas suman ${sumAliquot.toFixed(2)}% (no 100%). Se reparte el total de $${base.toFixed(2)} de forma proporcional para que el cobro sea exacto.`,
         );
       }
       // Reparto proporcional a la alícuota: Σ montos = base exacto.
       perUnit = distributeExact(
-        base,
+        round2(base * factor),
         input.units.map((u) => ({ id: u.id, w: u.aliquot ?? 0 })),
       );
       break;
@@ -231,7 +248,7 @@ export function computeInvoiceAmounts(input: ComputeInput): ComputeResult {
         );
         return { invoices: [], warnings, errors };
       }
-      perUnit = new Map(input.units.map((u) => [u.id, round2(types[u.type])]));
+      perUnit = new Map(input.units.map((u) => [u.id, round2(types[u.type] * factor)]));
       break;
     }
 
@@ -248,7 +265,7 @@ export function computeInvoiceAmounts(input: ComputeInput): ComputeResult {
         errors.push(`Faltan ${missing.length} monto(s) por configurar.`);
         return { invoices: [], warnings, errors };
       }
-      perUnit = new Map(input.units.map((u) => [u.id, round2(amounts[u.id])]));
+      perUnit = new Map(input.units.map((u) => [u.id, round2(amounts[u.id] * factor)]));
       break;
     }
 
@@ -265,7 +282,7 @@ export function computeInvoiceAmounts(input: ComputeInput): ComputeResult {
         return { invoices: [], warnings, errors };
       }
       // Solo los miembros reciben cuota; el total es exacto entre ellos.
-      perUnit = distributeExact(total, miembros.map((u) => ({ id: u.id, w: pesos[u.id] })));
+      perUnit = distributeExact(round2(total * factor), miembros.map((u) => ({ id: u.id, w: pesos[u.id] })));
       break;
     }
 
@@ -278,6 +295,10 @@ export function computeInvoiceAmounts(input: ComputeInput): ComputeResult {
   if (errors.length > 0) return { invoices: [], warnings, errors };
 
   const destinatarias = input.fee_mode === "by_group" ? input.units.filter((u) => perUnit.has(u.id)) : input.units;
+  // La parte del fondo se calcula recibo por recibo: el recibo es inmutable y lo
+  // lee el vecino, así que un residuo de redondeo no puede caer todo en uno solo.
+  const fondoDe = (amount: number) => (input.reserve_all ? amount : pctFondo > 0 ? round2(amount - amount / factor) : 0);
+
   const invoices: InvoiceInsert[] = destinatarias.map((u) => {
     const amount = perUnit.get(u.id) ?? 0;
     const amount_bs = input.exchange_rate
@@ -294,6 +315,7 @@ export function computeInvoiceAmounts(input: ComputeInput): ComputeResult {
       kind: input.kind,
       exchange_rate: input.exchange_rate,
       amount_bs,
+      reserve_amount: fondoDe(amount),
     };
   });
 

@@ -67,13 +67,14 @@ export default async function AdminPage() {
   // Grupos de prorrateo (migration 047) para el modo "por grupo" al emitir.
   const { data: gruposRaw } = await createAdminClient()
     .from("charge_groups")
-    .select("id, name, charge_group_members(unit_id, weight)")
+    .select("id, name, aliquot, charge_group_members(unit_id, weight)")
     .eq("organization_id", profile.organization_id)
     .eq("active", true)
     .order("name");
   const grupos = (gruposRaw ?? []).map((g) => ({
     id: g.id as string,
     name: g.name as string,
+    aliquot: g.aliquot === null || g.aliquot === undefined ? null : Number(g.aliquot),
     weights: Object.fromEntries(
       ((g.charge_group_members ?? []) as { unit_id: string; weight: number }[]).map((m) => [m.unit_id, Number(m.weight)]),
     ),

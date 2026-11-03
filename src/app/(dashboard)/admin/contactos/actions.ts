@@ -27,6 +27,31 @@ export interface ResultadoFila {
 
 type Resumen = { error: string } | { filas: ResultadoFila[]; aplicado: boolean };
 
+type Db = ReturnType<typeof createAdminClient>;
+
+/**
+ * Una cuenta vacía: alguien intentó entrar antes de estar cargado y quedó sin
+ * condominio ni unidad. Su correo es el del propietario de la planilla, así que
+ * no debe bloquearlo. Si cualquier consulta falla, se considera que no está
+ * vacía: ante la duda no se borra nada.
+ */
+async function esCuentaVacia(db: Db, p: { id: string; email: string; role: string; organization_id: string | null }): Promise<boolean> {
+  if (p.role !== "resident" || p.organization_id) return false;
+  const correo = p.email.toLowerCase();
+  const contar = (tabla: string, columna: string, valor: string) =>
+    db.from(tabla).select("*", { count: "exact", head: true }).eq(columna, valor);
+  const consultas = await Promise.all([
+    contar("unit_members", "profile_id", p.id),
+    contar("reservations", "reserved_by", p.id),
+    contar("access_passes", "created_by", p.id),
+    contar("maintenance_requests", "reported_by", p.id),
+    contar("decision_responses", "voter_id", p.id),
+    db.from("unit_invitations").select("*", { count: "exact", head: true }).eq("email", correo).is("accepted_at", null),
+    db.from("admin_invitations").select("*", { count: "exact", head: true }).eq("email", correo).is("accepted_at", null),
+  ]);
+  return consultas.every((c) => !c.error && (c.count ?? 0) === 0);
+}
+
 /**
  * Cruza la planilla con los propietarios cargados. Con `aplicar = false` solo
  * dice qué pasaría; con `true` lo escribe. No envía ningún correo: la
@@ -78,9 +103,16 @@ export async function procesarPlanilla(texto: string, aplicar: boolean): Promise
   // (otro condominio, un admin): se detectan antes de tocar Auth.
   const correos = [...new Set(filas.map((f) => f.correo).filter((c) => c && correoValido(c)))];
   const ajenos = new Map<string, string>();
+  // Las cuentas vacías no bloquean: se retiran al aplicar (ver esCuentaVacia).
+  const vacias = new Map<string, string>();
   for (let i = 0; i < correos.length; i += 200) {
-    const { data } = await db.from("profiles").select("id, email, full_name").in("email", correos.slice(i, i + 200));
-    for (const p of data ?? []) ajenos.set((p.email as string).toLowerCase(), p.id as string);
+    const { data, error: perfilesError } = await db.from("profiles").select("id, email, role, organization_id").in("email", correos.slice(i, i + 200));
+    if (perfilesError) return { error: `No se pudo revisar los correos: ${perfilesError.message}` };
+    for (const p of data ?? []) {
+      const correo = (p.email as string).toLowerCase();
+      if (await esCuentaVacia(db, p as { id: string; email: string; role: string; organization_id: string | null })) vacias.set(correo, p.id as string);
+      else ajenos.set(correo, p.id as string);
+    }
   }
 
   const resultados: ResultadoFila[] = [];
@@ -116,7 +148,7 @@ export async function procesarPlanilla(texto: string, aplicar: boolean): Promise
         detalle = `Ya entra con ${actual.correo}; ese correo se cambia desde su unidad`;
       else {
         patch.email = f.correo;
-        cambios.push(`correo → ${f.correo}`);
+        cambios.push(vacias.has(f.correo) ? `correo → ${f.correo} (se retira una cuenta vacía con ese correo)` : `correo → ${f.correo}`);
       }
     }
     if (f.telefono) {
@@ -157,6 +189,28 @@ export async function procesarPlanilla(texto: string, aplicar: boolean): Promise
         if (cuenta.user.last_sign_in_at && !esCorreoProvisional(cuenta.user.email)) {
           resultados.push({ ...base, estado: "error", cambios, detalle: `Ya entra con ${cuenta.user.email}; ese correo se cambia desde su unidad` });
           continue;
+        }
+        const vacia = vacias.get(patch.email);
+        if (vacia) {
+          // Se vuelve a mirar justo antes de borrar: pudo haberse unido a algo mientras tanto.
+          const { data: otra } = await db.from("profiles").select("id, email, role, organization_id").eq("id", vacia).maybeSingle();
+          if (!otra || !(await esCuentaVacia(db, otra as { id: string; email: string; role: string; organization_id: string | null }))) {
+            resultados.push({ ...base, estado: "error", cambios, detalle: `${patch.email} ya lo usa otra cuenta` });
+            continue;
+          }
+          const { error: vaciaError } = await db.auth.admin.deleteUser(vacia);
+          if (vaciaError) {
+            resultados.push({ ...base, estado: "error", cambios, detalle: `No se pudo liberar ${patch.email}: ${vaciaError.message}` });
+            continue;
+          }
+          vacias.delete(patch.email);
+          await db.from("auth_events").insert({
+            organization_id: orgId,
+            actor_id: profile!.id,
+            target_email: patch.email,
+            event: "empty_account_removed",
+            payload: { removed_id: vacia },
+          });
         }
         // email_confirm: el correo lo entregó la junta; así no sale ningún
         // correo de confirmación de Supabase.

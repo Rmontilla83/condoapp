@@ -14,7 +14,7 @@ export default async function GruposPage() {
   const [{ data: grupos }, { data: unidades }] = await Promise.all([
     db
       .from("charge_groups")
-      .select("id, name, description, charge_group_members(unit_id, weight)")
+      .select("id, name, description, aliquot, charge_group_members(unit_id, weight)")
       .eq("organization_id", profile.organization_id)
       .eq("active", true)
       .order("name"),
@@ -39,6 +39,7 @@ export default async function GruposPage() {
           id: g.id as string,
           name: g.name as string,
           description: (g.description as string) ?? null,
+          aliquot: g.aliquot === null || g.aliquot === undefined ? null : Number(g.aliquot),
           weights: Object.fromEntries(
             ((g.charge_group_members ?? []) as { unit_id: string; weight: number }[]).map((m) => [m.unit_id, Number(m.weight)]),
           ),

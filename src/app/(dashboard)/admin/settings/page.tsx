@@ -14,6 +14,7 @@ import { CommonAreasManager } from "./common-areas-manager";
 import { ContactForm } from "./contact-form";
 import { LogoForm } from "./logo-form";
 import { GuardStations, type CasetaFila } from "./guard-stations";
+import { CostCenters, type CentroFila } from "./cost-centers";
 import type {
   BankAccount,
   CommonArea,
@@ -40,7 +41,7 @@ export default async function AdminSettingsPage() {
 
   if (!org) return null;
 
-  const [feeTypeAmounts, breakdownAll, unitTypes, amenitiesRes, casetasRes] = await Promise.all([
+  const [feeTypeAmounts, breakdownAll, unitTypes, amenitiesRes, casetasRes, centrosRes] = await Promise.all([
     getFeeTypeAmounts(org.id),
     getFeeBreakdownAll(org.id),
     getOrgUnitTypes(org.id),
@@ -57,6 +58,13 @@ export default async function AdminSettingsPage() {
       .select("id, name, active, created_at, last_seen_at")
       .eq("organization_id", org.id)
       .order("created_at"),
+    supabase
+      .from("cost_centers")
+      .select("id, name, active")
+      .eq("organization_id", org.id)
+      .order("active", { ascending: false })
+      .order("position")
+      .order("name"),
   ]);
 
   const amenities = (amenitiesRes.data ?? []) as CommonArea[];
@@ -108,6 +116,14 @@ export default async function AdminSettingsPage() {
           día, busca por nombre o cédula y registra cada entrada. El vigilante no necesita cuenta.
         </p>
         <GuardStations casetas={(casetasRes.data ?? []) as CasetaFila[]} />
+      </div>
+
+      <div className="rounded-2xl bg-card border border-border p-6 md:p-7">
+        <p className="font-meta text-mute mb-2">CENTROS DE COSTO</p>
+        <p className="text-[14px] text-marine-deep/80 leading-relaxed mb-6">
+          A qué parte del condominio corresponde cada gasto: piscina, marina, una torre. Puedes agregarlos, cambiarles el nombre o retirarlos. Un centro retirado conserva sus gastos.
+        </p>
+        <CostCenters centros={(centrosRes.data ?? []) as CentroFila[]} />
       </div>
 
       <div className="rounded-2xl bg-card border border-border p-6 md:p-7">

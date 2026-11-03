@@ -18,6 +18,7 @@ import { PendingPayFab } from "@/components/dashboard/pending-pay-fab";
 import { ConserjeFlotante } from "@/components/conserje/conserje-flotante";
 import type { AvisoFila } from "@/components/dashboard/campana";
 import { modoDelConserje } from "@/lib/conserje/conserje";
+import { VERSION_CONDICIONES } from "@/lib/legal";
 
 export default async function DashboardLayout({
   children,
@@ -37,6 +38,14 @@ export default async function DashboardLayout({
 
   if (!profile?.organization_id) {
     return <Onboarding userEmail={user.email ?? ""} />;
+  }
+
+  // Cada persona acepta las condiciones al entrar. El equipo de Atryum no pasa
+  // por aquí: entra a dar soporte, no como usuario del condominio.
+  // Redirige en vez de pintar la pantalla aquí: un return del layout no impide que
+  // Next envíe la página de abajo en la respuesta.
+  if (profile.role !== "super_admin" && profile.terms_version !== VERSION_CONDICIONES) {
+    redirect("/aceptar-condiciones");
   }
 
   const effectiveRole = profile ? getEffectiveRole(profile) : "resident";

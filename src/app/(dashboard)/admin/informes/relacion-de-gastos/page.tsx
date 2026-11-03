@@ -37,10 +37,10 @@ export default async function RelacionDeGastosPage({ searchParams }: { searchPar
   const hastaFin = new Date(Date.parse(`${hasta}T12:00:00Z`) + 86_400_000).toISOString().slice(0, 10);
 
   const db = createAdminClient();
-  const [{ data: gastos }, { data: cats }, { data: tasas }, { data: cuotas }, { data: pagos }, { data: notas }] = await Promise.all([
+  const [{ data: gastos }, { data: cats }, { data: tasas }, { data: cuotas }, { data: pagos }, { data: notas }, { data: ingresos }] = await Promise.all([
     db
       .from("expense_records")
-      .select("id, description, amount, currency, expense_date, receipt_url, category_id, vendors(name)")
+      .select("id, description, amount, currency, expense_date, receipt_url, category_id, paid_from_reserve, reserve_acta, vendors(name), cost_centers(name)")
       .eq("organization_id", orgId)
       .is("voided_at", null)
       .gte("expense_date", desde)
@@ -64,6 +64,14 @@ export default async function RelacionDeGastosPage({ searchParams }: { searchPar
       .gte("paid_at", desde)
       .lt("paid_at", hastaFin),
     db.from("credit_notes").select("amount").eq("organization_id", orgId).gte("created_at", desde).lt("created_at", hastaFin),
+    db
+      .from("other_incomes")
+      .select("id, income_date, description, source, amount")
+      .eq("organization_id", orgId)
+      .is("voided_at", null)
+      .gte("income_date", desde)
+      .lte("income_date", hasta)
+      .order("income_date"),
   ]);
 
   const tasaEn = (fecha: string) => {
@@ -99,6 +107,19 @@ export default async function RelacionDeGastosPage({ searchParams }: { searchPar
   );
   const cobrado = r2((pagos ?? []).reduce((s, p) => s + Number(p.amount), 0));
   const sinSoporte = (gastos ?? []).filter((g) => !g.receipt_url).length;
+  const otros = r2((ingresos ?? []).reduce((s, i) => s + Number(i.amount), 0));
+  const conFondo = r2((gastos ?? []).filter((g) => g.paid_from_reserve).reduce((s, g) => s + enUsd(g), 0));
+  const nombreCentro = (g: { cost_centers?: unknown }) => {
+    const c = (Array.isArray(g.cost_centers) ? g.cost_centers[0] : g.cost_centers) as { name: string } | null | undefined;
+    return c?.name ?? null;
+  };
+  const porCentro = new Map<string, number>();
+  for (const g of gastos ?? []) {
+    const nombre = nombreCentro(g) ?? "Sin centro de costo";
+    porCentro.set(nombre, r2((porCentro.get(nombre) ?? 0) + enUsd(g)));
+  }
+  const centros = [...porCentro.entries()].sort((a, b) => b[1] - a[1]);
+  const hayCentros = centros.some(([n]) => n !== "Sin centro de costo");
 
   return (
     <div className="space-y-6">
@@ -116,16 +137,18 @@ export default async function RelacionDeGastosPage({ searchParams }: { searchPar
           <>
             Montos en dólares; los gastos en bolívares se convierten a la tasa BCV del día del gasto. Facturado: recibos emitidos en el
             período, menos notas de crédito. Cobrado: pagos aprobados en el período (sin saldo a favor aplicado).
+            {conFondo > 0 && ` Gastado incluye ${usd(conFondo)} pagados con el fondo de reserva.`}
             {sinSoporte > 0 && ` ${sinSoporte} gasto${sinSoporte !== 1 ? "s" : ""} sin factura adjunta.`}
           </>
         }
       >
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
           {[
             ["FACTURADO", facturado],
             ["COBRADO", cobrado],
+            ["OTROS INGRESOS", otros],
             ["GASTADO", gastado],
-            ["COBRADO − GASTADO", r2(cobrado - gastado)],
+            ["INGRESOS − GASTOS", r2(cobrado + otros - gastado)],
           ].map(([t, v]) => (
             <div key={t as string} className="rounded-xl bg-frost px-3 py-2.5">
               <p className="font-meta text-mute">{t}</p>
@@ -133,6 +156,25 @@ export default async function RelacionDeGastosPage({ searchParams }: { searchPar
             </div>
           ))}
         </div>
+
+        {hayCentros && (
+          <table className="mt-7 w-full max-w-md text-[12.5px]">
+            <thead>
+              <tr className="border-b border-marine-deep/30 text-left text-[10.5px] uppercase tracking-[0.06em] text-mute">
+                <th className="py-2 pr-2 font-medium">Centro de costo</th>
+                <th className="py-2 pl-2 text-right font-medium">Monto</th>
+              </tr>
+            </thead>
+            <tbody>
+              {centros.map(([nombre, monto]) => (
+                <tr key={nombre} className="border-b border-border">
+                  <td className="py-1.5 pr-2">{nombre}</td>
+                  <td className="py-1.5 pl-2 text-right tabular-nums">{usd(monto)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
 
         {grupos.length === 0 ? (
           <p className="mt-8 text-center text-[14px] text-mute">No hay gastos registrados en este período.</p>
@@ -142,6 +184,7 @@ export default async function RelacionDeGastosPage({ searchParams }: { searchPar
               <tr className="border-b border-marine-deep/30 text-left text-[10.5px] uppercase tracking-[0.06em] text-mute">
                 <th className="py-2 pr-2 font-medium">Fecha</th>
                 <th className="py-2 pr-2 font-medium">Concepto</th>
+                <th className="py-2 pr-2 font-medium">Centro</th>
                 <th className="py-2 pr-2 font-medium">Proveedor</th>
                 <th className="py-2 pr-2 text-center font-medium">Soporte</th>
                 <th className="py-2 pl-2 text-right font-medium">Monto</th>
@@ -150,7 +193,7 @@ export default async function RelacionDeGastosPage({ searchParams }: { searchPar
             {grupos.map((c) => (
               <tbody key={c.label} className="break-inside-avoid">
                 <tr>
-                  <td colSpan={4} className="pt-4 pb-1.5 font-semibold">
+                  <td colSpan={5} className="pt-4 pb-1.5 font-semibold">
                     <span className="inline-flex items-center gap-2">
                       <IconoCategoria icono={c.icon} className="h-4 w-4 text-cyan-ink" />
                       {c.label}
@@ -163,7 +206,15 @@ export default async function RelacionDeGastosPage({ searchParams }: { searchPar
                   return (
                     <tr key={g.id as string} className="border-b border-border">
                       <td className="py-1.5 pr-2 whitespace-nowrap">{corta(g.expense_date as string)}</td>
-                      <td className="py-1.5 pr-2">{g.description as string}</td>
+                      <td className="py-1.5 pr-2">
+                        {g.description as string}
+                        {!!g.paid_from_reserve && (
+                          <span className="block text-[10.5px] text-mute">
+                            Con el fondo de reserva{g.reserve_acta ? ` · ${g.reserve_acta as string}` : ""}
+                          </span>
+                        )}
+                      </td>
+                      <td className="py-1.5 pr-2 text-mute">{nombreCentro(g) ?? "—"}</td>
                       <td className="py-1.5 pr-2 text-mute">{v?.name ?? "—"}</td>
                       <td className="py-1.5 pr-2 text-center">{g.receipt_url ? "Sí" : <span className="text-ember-ink">No</span>}</td>
                       <td className="py-1.5 pl-2 text-right tabular-nums">
@@ -181,12 +232,35 @@ export default async function RelacionDeGastosPage({ searchParams }: { searchPar
             ))}
             <tfoot>
               <tr>
-                <td colSpan={4} className="pt-4 text-right font-meta text-mute">
+                <td colSpan={5} className="pt-4 text-right font-meta text-mute">
                   TOTAL DE GASTOS
                 </td>
                 <td className="pt-4 text-right font-display text-[18px] tabular-nums">{usd(gastado)}</td>
               </tr>
             </tfoot>
+          </table>
+        )}
+
+        {(ingresos ?? []).length > 0 && (
+          <table className="mt-7 w-full text-[12.5px]">
+            <thead>
+              <tr className="border-b border-marine-deep/30 text-left text-[10.5px] uppercase tracking-[0.06em] text-mute">
+                <th className="py-2 pr-2 font-medium">Fecha</th>
+                <th className="py-2 pr-2 font-medium">Otro ingreso</th>
+                <th className="py-2 pr-2 font-medium">De quién</th>
+                <th className="py-2 pl-2 text-right font-medium">Monto</th>
+              </tr>
+            </thead>
+            <tbody>
+              {(ingresos ?? []).map((i) => (
+                <tr key={i.id as string} className="border-b border-border">
+                  <td className="py-1.5 pr-2 whitespace-nowrap">{corta(i.income_date as string)}</td>
+                  <td className="py-1.5 pr-2">{i.description as string}</td>
+                  <td className="py-1.5 pr-2 text-mute">{(i.source as string) ?? "—"}</td>
+                  <td className="py-1.5 pl-2 text-right tabular-nums">{usd(Number(i.amount))}</td>
+                </tr>
+              ))}
+            </tbody>
           </table>
         )}
 

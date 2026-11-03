@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getCurrentProfile } from "@/lib/queries";
 import { requireAdmin } from "@/lib/permissions";
+import { parseAliquotInput } from "@/lib/units/aliquot";
 
 type Resultado = { error: string } | { success: true; id?: string };
 
@@ -69,6 +70,28 @@ export async function guardarMiembros(groupId: string, miembrosJson: string): Pr
   }
   revalidatePath("/admin/grupos");
   revalidatePath("/admin");
+  return { success: true };
+}
+
+/**
+ * El porcentaje que representa el grupo. Solo explica la suma de la hoja de
+ * alícuotas: no reparte dinero ni da votos.
+ */
+export async function guardarPorcentajeGrupo(groupId: string, valor: string): Promise<Resultado> {
+  const profile = await getCurrentProfile();
+  const guard = requireAdmin(profile);
+  if (guard) return guard;
+  const leido = parseAliquotInput(valor);
+  if (!leido.ok) return { error: leido.error };
+  const { error } = await createAdminClient()
+    .from("charge_groups")
+    .update({ aliquot: leido.value })
+    .eq("id", groupId)
+    .eq("organization_id", profile!.organization_id!);
+  if (error) return { error: error.message };
+  revalidatePath("/admin/grupos");
+  revalidatePath("/admin/units");
+  revalidatePath("/admin/units/alicuotas");
   return { success: true };
 }
 

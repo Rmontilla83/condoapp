@@ -208,6 +208,7 @@ export async function getCurrentMonthExpenseSummary(
     .select("amount")
     .eq("organization_id", orgId)
     .is("voided_at", null)
+    .eq("paid_from_reserve", false)
     .gte("expense_date", inicioMes)
     .lte("expense_date", today);
 
@@ -339,7 +340,7 @@ export async function getAnnouncements(orgId: string) {
 export async function getAdminStats(orgId: string) {
   const supabase = await createClient();
 
-  const [unitsRes, invoicesRes, maintenanceRes, expensesRes, transactionsRes] =
+  const [unitsRes, invoicesRes, maintenanceRes, expensesRes, transactionsRes, otrosRes, fondoRes] =
     await Promise.all([
       supabase
         .from("units")
@@ -370,8 +371,19 @@ export async function getAdminStats(orgId: string) {
         // El saldo a favor aplicado no es dinero nuevo: ya se contó al recibirlo.
         .neq("payment_method", "credit")
         .order("paid_at", { ascending: false }),
+      supabase
+        .from("other_incomes")
+        .select("amount, income_date")
+        .eq("organization_id", orgId)
+        .is("voided_at", null),
+      supabase
+        .from("reserve_fund_movements")
+        .select("amount")
+        .eq("organization_id", orgId)
+        .is("voided_at", null),
     ]);
   const tasas = await serieDeTasas(supabase, orgId);
+  const otrosIngresos = otrosRes.data ?? [];
 
   const totalUnits = unitsRes.count ?? 0;
   const invoices = invoicesRes.data ?? [];
@@ -404,10 +416,10 @@ export async function getAdminStats(orgId: string) {
     (m) => m.status !== "resolved" && m.status !== "cancelled"
   ).length;
 
-  const totalIncome = transactions.reduce(
-    (sum, t) => sum + Number(t.amount),
-    0
-  );
+  const totalIncome = Math.round(
+    (transactions.reduce((sum, t) => sum + Number(t.amount), 0) +
+      otrosIngresos.reduce((sum, o) => sum + Number(o.amount), 0)) * 100,
+  ) / 100;
   const totalExpenses = Math.round(
     expenses.reduce((sum, e) => sum + gastoEnUsd(e as { amount: number; currency: string; expense_date: string }, tasas), 0) * 100,
   ) / 100;
@@ -419,10 +431,16 @@ export async function getAdminStats(orgId: string) {
     openRequests,
     totalIncome,
     totalExpenses,
-    balance: totalIncome - totalExpenses,
+    // Un gasto con el fondo resta en totalExpenses: lo que el fondo trajo sin
+    // venir de cuotas tiene que sumar.
+    balance: totalIncome + (fondoRes.data ?? []).reduce((s, m) => s + Number(m.amount), 0) - totalExpenses,
     // Qué período cubre el acumulado: desde el primer movimiento hasta hoy.
     periodo: textoPeriodo(
-      [...transactions.map((t) => t.paid_at as string), ...expenses.map((e) => e.expense_date as string)],
+      [
+        ...transactions.map((t) => t.paid_at as string),
+        ...otrosIngresos.map((o) => o.income_date as string),
+        ...expenses.map((e) => e.expense_date as string),
+      ],
       today,
     ),
     recentTransactions: transactions.slice(0, 5),
@@ -530,6 +548,7 @@ export async function getExpensesForYear(orgId: string, year: number) {
     .from("expense_records")
     .select("id, category_id, amount, currency, expense_date, voided_at")
     .eq("organization_id", orgId)
+    .eq("paid_from_reserve", false)
     .gte("expense_date", `${year}-01-01`)
     .lte("expense_date", `${year}-12-31`);
 

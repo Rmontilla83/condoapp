@@ -41,10 +41,17 @@ export default async function AdminUnitsPage() {
 
   // Semáforo de alícuotas. Es el punto de entrada a la hoja: sin esto, la
   // pantalla no da ninguna pista de que la alícuota existe ni de que hace falta.
+  const { data: gruposAparte } = await supabase
+    .from("charge_groups")
+    .select("aliquot")
+    .eq("organization_id", profile.organization_id)
+    .eq("active", true)
+    .not("aliquot", "is", null);
   const cobertura = computeCoverage(
     (units ?? []).map((u) => ({
       aliquot: u.aliquot === null || u.aliquot === undefined ? null : Number(u.aliquot),
     })),
+    (gruposAparte ?? []).reduce((s, g) => s + Number(g.aliquot), 0),
   );
   const estadoAliquot = aliquotStatus(cobertura);
   const TONO_ALIQUOT: Record<string, string> = {

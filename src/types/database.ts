@@ -64,6 +64,9 @@ export interface Organization {
   contact_email: string | null;
   office_hours: string | null;
   concierge_notes: string | null;
+  // Fondo de reserva (migration 058). NULL = sin definir.
+  reserve_fund_pct?: number | null;
+  reserve_fund_acta?: string | null;
   created_at: string;
 }
 
@@ -170,6 +173,9 @@ export interface Profile {
   avatar_url: string | null;
   role: UserRole;
   organization_id: string | null;
+  /** Condiciones de uso aceptadas (migration 061). */
+  terms_version?: string | null;
+  terms_accepted_at?: string | null;
   created_at: string;
 }
 
@@ -190,6 +196,8 @@ export interface Invoice {
   receipt_number?: number | null;
   /** Lo abonado con pagos aprobados; lo mantiene la base. */
   paid_amount?: number;
+  /** Parte del monto que va al fondo de reserva (migration 058). */
+  reserve_amount?: number;
 }
 
 export interface Transaction {
@@ -284,6 +292,20 @@ export interface ExpenseRecord {
   recorded_by: string | null;
   voided_at: string | null;
   voided_reason: string | null;
+  /** Centro de costo (migration 057). */
+  cost_center_id?: string | null;
+  /** Pagado con el fondo de reserva, con el acta que lo aprueba (migration 058). */
+  paid_from_reserve?: boolean;
+  reserve_acta?: string | null;
+  created_at: string;
+}
+
+export interface CostCenter {
+  id: string;
+  organization_id: string;
+  name: string;
+  active: boolean;
+  position: number;
   created_at: string;
 }
 

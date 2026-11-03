@@ -24,7 +24,7 @@ export default async function AlicuotasPage() {
 
   const supabase = await createClient();
 
-  const [unitsRes, orgRes, cuotasRes] = await Promise.all([
+  const [unitsRes, orgRes, cuotasRes, gruposRes] = await Promise.all([
     supabase
       .from("units")
       .select("id, unit_number, floor, block, type, aliquot")
@@ -41,6 +41,12 @@ export default async function AlicuotasPage() {
       .select("id", { count: "exact", head: true })
       .eq("organization_id", profile.organization_id)
       .in("status", [...ESTADOS_ABIERTOS]),
+    supabase
+      .from("charge_groups")
+      .select("name, aliquot")
+      .eq("organization_id", profile.organization_id)
+      .eq("active", true)
+      .not("aliquot", "is", null),
   ]);
 
   const org = orgRes.data;
@@ -89,6 +95,7 @@ export default async function AlicuotasPage() {
           }
           currency={(org?.currency as string) ?? "USD"}
           cuotasPendientes={cuotasRes.count ?? 0}
+          gruposAparte={(gruposRes.data ?? []).map((g) => ({ nombre: g.name as string, aliquot: Number(g.aliquot) }))}
         />
       )}
     </div>
