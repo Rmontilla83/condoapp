@@ -104,7 +104,7 @@ const REGLAS: [Intencion, RegExp][] = [
   ["comunicados", /\b(comunicado\w*|aviso\w*|noticia\w*|asamblea\w*|anuncio\w*|corte de (agua|luz)|novedad\w*)\b/],
   ["alicuota", /\b(alicuota|porcentaje|mi unidad|mi apartamento|metros|por que pago)\b/],
   ["tasa", /\b(tasa|dolar|bcv|cambio|bolivares)\b/],
-  ["mantenimiento", /\b(mantenimiento|averia|dano|danad\w*|fuga|reparar|arreglar|ascensor|filtracion|reportar un problema|mi solicitud)\b/],
+  ["mantenimiento", /\b(mantenimiento|averia|dano|danad\w*|fuga|fundi\w*|reparar|arreglar|ascensor|filtracion|reportar un problema|mi solicitud)\b/],
   ["saludo", /^\s*(hola|buen(os|as)( dias| tardes| noches)?|hey|saludos|que tal)\b/],
   ["gracias", /\b(gracias|muchas gracias|perfecto|listo|excelente)\b/],
 ];
@@ -127,10 +127,10 @@ function detectar(texto: string): Intencion[] {
   // lista de áreas o a las normas, que también matchean palabras como "piso".
   const cat = categoriaServicio(texto);
   if ((cat && !encontradas.includes("deuda") && !encontradas.includes("disponibilidad")) || (encontradas.includes("servicio") && !encontradas.includes("deuda"))) {
-    // "Se me dañó el aire": los técnicos Y el reporte listo. Si es un área
-    // común ("se dañó el ascensor"), lo primero es avisarle a la administración.
+    // "Se me dañó el aire" es asunto de cada propietario: solo los técnicos. Si es
+    // un área común ("se dañó el ascensor"), lo primero es avisarle a la administración.
     if (encontradas.includes("mantenimiento") || /\b(se (me )?dano|se (me )?rompio)\b/.test(t)) {
-      return sugerirAveria(texto).lugar === "area_comun" ? ["mantenimiento", "servicio"] : ["servicio", "mantenimiento"];
+      return sugerirAveria(texto).lugar === "area_comun" ? ["mantenimiento", "servicio"] : ["servicio"];
     }
     return ["servicio"];
   }
@@ -443,11 +443,11 @@ ${avisoDeuda(d.reservas_bloqueadas_por_deuda)}` : "";
 
     case "mantenimiento": {
       const m = await q.misSolicitudes();
-      const propio = sugerirAveria(texto).lugar === "unidad" && categoriaServicio(texto) !== null;
+      const comun = sugerirAveria(texto).lugar === "area_comun";
       const lineas = [
-        propio
-          ? "Si prefieres que lo vea la administración, te dejé el reporte listo abajo: revísalo, agrega una foto si puedes y toca «Enviar reporte»."
-          : "Lo reporto por ti a la administración: revisa el formulario de abajo, agrega una foto si puedes y toca «Enviar reporte».",
+        comun
+          ? "Lo reporto por ti a la administración: revisa el formulario de abajo, agrega una foto si puedes y toca «Enviar reporte»."
+          : "Si es de un área común, revisa el formulario de abajo, agrega una foto si puedes y toca «Enviar reporte». Si es dentro de tu apartamento, lo resuelve cada propietario: pídeme un técnico y te paso los de confianza del condominio.",
       ];
       if (m.solicitudes.length) {
         lineas.push("Tus solicitudes:");

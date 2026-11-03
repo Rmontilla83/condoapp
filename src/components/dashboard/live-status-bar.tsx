@@ -1,6 +1,7 @@
 "use client";
 
 import { bs, hora12 } from "@/lib/format";
+import { todayInTimeZone } from "@/lib/utils";
 import { useEffect, useState } from "react";
 
 interface LiveStatusBarProps {
@@ -23,11 +24,16 @@ export function LiveStatusBar({ initialRate, initialDate }: LiveStatusBarProps) 
   const [time, setTime] = useState(() => getVenezuelaTime());
   const [rate, setRate] = useState<number | null>(initialRate);
   const [rateDate, setRateDate] = useState<string | null>(initialDate);
+  // Se calcula al montar: en el servidor y en el navegador puede dar otro día.
+  const [hoy, setHoy] = useState<string | null>(null);
 
   // Reloj: actualiza cada 30s para mantener los minutos al día sin
   // ser agresivo. El Intl.DateTimeFormat recalcula al cambiar el estado.
   useEffect(() => {
-    const tick = () => setTime(getVenezuelaTime());
+    const tick = () => {
+      setTime(getVenezuelaTime());
+      setHoy(todayInTimeZone());
+    };
     tick();
     const id = setInterval(tick, 30_000);
     return () => clearInterval(id);
@@ -61,13 +67,14 @@ export function LiveStatusBar({ initialRate, initialDate }: LiveStatusBarProps) 
     };
   }, [initialRate]);
 
-  const isToday = rateDate === new Date().toISOString().split("T")[0];
+  const isToday = hoy === null || rateDate === hoy;
 
   return (
     <div className="flex items-center gap-4 font-meta text-frost/80">
       <div className="flex items-center gap-2">
         <span className="text-ember">VE</span>
-        <span className="text-frost">{time}</span>
+        {/* El servidor y el navegador pueden estar en minutos distintos. El efecto de arriba lo corrige al montar. */}
+        <span className="text-frost" suppressHydrationWarning>{time}</span>
       </div>
       <span className="text-frost/30" aria-hidden="true">·</span>
       <div className="flex items-center gap-2">

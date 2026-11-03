@@ -97,7 +97,7 @@ export function herramientasDelConserje(
     betaZodTool({
       name: "proponer_reporte_de_averia",
       description:
-        "Prepara un reporte de avería para que la persona lo revise y lo envíe. NO lo envía: ella ve un formulario ya llenado debajo de tu respuesta y confirma. Úsala cuando cuente un daño: fuga, ascensor parado, luz del pasillo, portón dañado, filtración.",
+        "Prepara un reporte de avería de un ÁREA COMÚN para que la persona lo revise y lo envíe. NO lo envía: ella ve un formulario ya llenado debajo de tu respuesta y confirma. Úsala cuando cuente un daño de áreas comunes: ascensor parado, luz del pasillo, portón dañado, fuga en el estacionamiento. Lo de dentro de su apartamento no se reporta: recomienda técnicos con el directorio de servicios.",
       inputSchema: z.object({
         titulo: z.string().min(3).max(80).describe("Título corto: 'Fuga en el baño', 'Ascensor de la Torre B parado'"),
         descripcion: z.string().min(3).max(1000).describe("Qué pasa, con las palabras de la persona"),
@@ -105,6 +105,10 @@ export function herramientasDelConserje(
         lugar: z.enum(["unidad", "area_comun"]).describe("unidad = dentro de su apartamento; area_comun = pasillo, ascensor, piscina, etc."),
       }),
       run: async (p) => {
+        // Regla del condominio, no sugerencia al modelo: lo del apartamento no genera formulario.
+        if (p.lugar === "unidad") {
+          return "No se reporta: lo de dentro del apartamento lo resuelve cada propietario. Consulta el directorio de servicios y recomiéndale técnicos.";
+        }
         opciones.alProponerAveria?.({ tipo: "reportar_averia", ...p });
         return "Listo: la persona ve el formulario para confirmar el reporte.";
       },

@@ -24,7 +24,7 @@ const CATEGORIAS: [string, RegExp][] = [
   ["structural", /(grieta|pared|techo|piso|friso|ceramica)/],
 ];
 
-const AREAS_COMUNES = /(pasillo|ascensor|escalera|lobby|estacionamiento|piscina|parrillera|caney|playa|marina|muelle|porton|garita|bomba|tanque|jardin|area comun|areas comunes|fachada|azotea)/;
+const AREAS_COMUNES = /(pasillo|ascensor|escalera|lobby|estacionamiento|piscina|parrillera|caney|playa|marina|muelle|porton|garita|bomba|tanque|cisterna|hidroneumatico|planta electrica|jardin|area comun|areas comunes|fachada|azotea|terraza|sotano|gimnasio|salon|recepcion|cerco|cancha)/;
 
 const norm = (s: string) => s.normalize("NFD").replace(/\p{M}/gu, "").toLowerCase();
 
