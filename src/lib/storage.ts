@@ -10,7 +10,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
  * anon key (que viaja en el bundle) para enumerar las carpetas de todos los
  * condominios y descargar cualquier comprobante bancario sin sesión.
  */
-export const STORAGE_BUCKETS = ["payment-receipts", "maintenance-photos"] as const;
+export const STORAGE_BUCKETS = ["payment-receipts", "maintenance-photos", "announcement-photos"] as const;
 export type StorageBucket = (typeof STORAGE_BUCKETS)[number];
 
 const PUBLIC_MARKER = "/storage/v1/object/public/";

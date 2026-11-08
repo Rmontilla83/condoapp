@@ -1,5 +1,7 @@
 import { getCurrentProfile, getEffectiveRole, getAnnouncements } from "@/lib/queries";
+import { signStorageRefRows } from "@/lib/storage";
 import { NewAnnouncementDialog } from "./new-announcement-dialog";
+import { GaleriaFotos } from "./galeria-fotos";
 
 const priorityConfig = {
   normal: { label: "INFO", dot: "bg-cyan", tag: "bg-cyan/10 text-cyan-ink" },
@@ -12,6 +14,8 @@ export default async function ComunicadosPage() {
   if (!profile?.organization_id) return null;
 
   const announcements = await getAnnouncements(profile.organization_id);
+  // El bucket es privado: las que no se puedan firmar se descartan.
+  const fotos = await signStorageRefRows(announcements.map((a) => a.photo_urls as string[] | null));
 
   return (
     <div className="space-y-8">
@@ -33,7 +37,7 @@ export default async function ComunicadosPage() {
         </div>
       ) : (
         <div className="space-y-4">
-          {announcements.map((announcement) => {
+          {announcements.map((announcement, indice) => {
             const config =
               priorityConfig[announcement.priority as keyof typeof priorityConfig] ??
               priorityConfig.normal;
@@ -57,6 +61,7 @@ export default async function ComunicadosPage() {
                     <p className="text-[14.5px] text-marine-deep/80 leading-relaxed">
                       {announcement.content}
                     </p>
+                    {fotos[indice].length > 0 && <GaleriaFotos fotos={fotos[indice]} titulo={announcement.title} />}
                     <div className="mt-4 flex items-center gap-3 font-meta text-mute">
                       <span>{authorName.toUpperCase()}</span>
                       <span aria-hidden="true">·</span>

@@ -411,6 +411,7 @@ export interface Announcement {
   priority: "normal" | "important" | "urgent";
   target_audience: "all" | "owners" | "tenants" | "specific_block";
   target_block: string | null;
+  photo_urls: string[];
   published_at: string;
   created_at: string;
 }
