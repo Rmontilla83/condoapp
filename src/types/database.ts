@@ -297,6 +297,9 @@ export interface ExpenseRecord {
   /** Pagado con el fondo de reserva, con el acta que lo aprueba (migration 058). */
   paid_from_reserve?: boolean;
   reserve_acta?: string | null;
+  /** Cómo entra al libro y cuánto ISLR se retuvo, en la moneda del gasto (migration 066). */
+  tipo_contable?: "gasto" | "provision" | "pago_provision" | "entero_retencion";
+  retencion_islr?: number;
   created_at: string;
 }
 

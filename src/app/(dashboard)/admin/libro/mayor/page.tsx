@@ -7,7 +7,7 @@ import { todayInTimeZone } from "@/lib/utils";
 import { balanceDeComprobacion, GRUPOS_CUENTA, lineasDelLibro } from "@/lib/contabilidad/libro";
 import { bs, usd } from "@/lib/format";
 import { Documento } from "@/components/documentos/documento";
-import { Pestanas, PESTANAS_CUENTAS } from "@/components/contabilidad/ui";
+import { Pestanas, PESTANAS_CUENTAS, SelectorMoneda } from "@/components/contabilidad/ui";
 import { SelectorPeriodo } from "@/components/contabilidad/selector-periodo";
 
 const corta = (d: string) =>
@@ -33,10 +33,10 @@ export default async function MayorPage({
   const valida = (s?: string) => (s && /^\d{4}-\d{2}-\d{2}$/.test(s) ? s : null);
   const desde = valida(sp.desde) ?? `${y}-01-01`;
   const hasta = valida(sp.hasta) ?? hoy;
-  const enBs = sp.moneda === "bs";
+  const enBs = sp.moneda !== "usd";
   const fmt = enBs ? bs : usd;
   const q = (extra: Record<string, string | undefined>) => {
-    const p = new URLSearchParams({ desde, hasta, ...(enBs ? { moneda: "bs" } : {}) });
+    const p = new URLSearchParams({ desde, hasta, ...(enBs ? {} : { moneda: "usd" }) });
     for (const [k, v] of Object.entries(extra)) (v === undefined ? p.delete(k) : p.set(k, v));
     return `?${p.toString()}`;
   };
@@ -68,14 +68,7 @@ export default async function MayorPage({
         <Pestanas items={PESTANAS_CUENTAS} actual="/admin/libro/mayor" />
         <div className="flex flex-wrap items-end justify-between gap-3">
           <SelectorPeriodo desde={desde} hasta={hasta} hoy={hoy} />
-          <div className="flex rounded-full border border-border p-0.5 text-[13px]">
-            <Link href={q({ moneda: undefined })} className={`rounded-full px-3 py-1 ${!enBs ? "bg-marine-deep text-frost" : "text-marine-deep"}`}>
-              Dólares
-            </Link>
-            <Link href={q({ moneda: "bs" })} className={`rounded-full px-3 py-1 ${enBs ? "bg-marine-deep text-frost" : "text-marine-deep"}`}>
-              Bolívares
-            </Link>
-          </div>
+          <SelectorMoneda enBs={enBs} enlaceBs={q({ moneda: undefined })} enlaceUsd={q({ moneda: "usd" })} />
         </div>
       </div>
 

@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getCurrentProfile } from "@/lib/queries";
 import { isAdminRole } from "@/lib/permissions";
@@ -7,7 +6,7 @@ import { todayInTimeZone } from "@/lib/utils";
 import { asientos, lineasDelLibro } from "@/lib/contabilidad/libro";
 import { bs, usd } from "@/lib/format";
 import { Documento } from "@/components/documentos/documento";
-import { Pestanas, PESTANAS_CUENTAS } from "@/components/contabilidad/ui";
+import { Pestanas, PESTANAS_CUENTAS, SelectorMoneda } from "@/components/contabilidad/ui";
 import { SelectorPeriodo } from "@/components/contabilidad/selector-periodo";
 import { ExportarLibro } from "./exportar";
 
@@ -34,7 +33,7 @@ export default async function LibroPage({
   const valida = (s?: string) => (s && /^\d{4}-\d{2}-\d{2}$/.test(s) ? s : null);
   const desde = valida(sp.desde) ?? new Date(Date.UTC(y, m - 1, 1)).toISOString().slice(0, 10);
   const hasta = valida(sp.hasta) ?? hoy;
-  const enBs = sp.moneda === "bs";
+  const enBs = sp.moneda !== "usd";
   const fmt = enBs ? bs : usd;
 
   const lineas = await lineasDelLibro(profile.organization_id, desde, hasta);
@@ -42,7 +41,7 @@ export default async function LibroPage({
   const debe = lineas.reduce((s, l) => s + (enBs ? l.debe_bs : l.debe_usd), 0);
   const haber = lineas.reduce((s, l) => s + (enBs ? l.haber_bs : l.haber_usd), 0);
   const cuadra = Math.abs(debe - haber) < 0.005;
-  const enlaceMoneda = (b: boolean) => `?desde=${desde}&hasta=${hasta}${b ? "&moneda=bs" : ""}`;
+  const enlaceMoneda = (b: boolean) => `?desde=${desde}&hasta=${hasta}${b ? "" : "&moneda=usd"}`;
 
   return (
     <div className="space-y-6">
@@ -50,14 +49,7 @@ export default async function LibroPage({
         <Pestanas items={PESTANAS_CUENTAS} actual="/admin/libro" />
         <div className="flex flex-wrap items-end justify-between gap-3">
           <SelectorPeriodo desde={desde} hasta={hasta} hoy={hoy} />
-          <div className="flex rounded-full border border-border p-0.5 text-[13px]">
-            <Link href={enlaceMoneda(false)} className={`rounded-full px-3 py-1 ${!enBs ? "bg-marine-deep text-frost" : "text-marine-deep"}`}>
-              Dólares
-            </Link>
-            <Link href={enlaceMoneda(true)} className={`rounded-full px-3 py-1 ${enBs ? "bg-marine-deep text-frost" : "text-marine-deep"}`}>
-              Bolívares
-            </Link>
-          </div>
+          <SelectorMoneda enBs={enBs} enlaceBs={enlaceMoneda(true)} enlaceUsd={enlaceMoneda(false)} />
         </div>
       </div>
 

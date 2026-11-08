@@ -6,7 +6,10 @@ import { isAdminRole } from "@/lib/permissions";
 import { validateVoidReason } from "@/lib/schemas/finance";
 import { revalidatePath } from "next/cache";
 import { resumenFondo } from "@/lib/contabilidad/fondo-reserva";
+import { gastoEnUsd, hayTasaPara, saldosPorPagar, serieDeTasas, type TipoContable } from "@/lib/contabilidad/gastos";
 import { usd } from "@/lib/format";
+
+const TIPOS_CONTABLES: TipoContable[] = ["gasto", "provision", "pago_provision", "entero_retencion"];
 
 export async function createExpense(formData: FormData) {
   const profile = await getCurrentProfile();
@@ -23,8 +26,13 @@ export async function createExpense(formData: FormData) {
   const photo = formData.get("receipt") as File;
 
   const costCenterId = (formData.get("cost_center_id") as string)?.trim() || null;
-  const conFondo = formData.get("paid_from_reserve") === "on";
+  const tipoEntrada = formData.get("tipo_contable") as TipoContable;
+  const tipo: TipoContable = TIPOS_CONTABLES.includes(tipoEntrada) ? tipoEntrada : "gasto";
+  // Solo un gasto común puede salir del fondo o llevar retención.
+  const conFondo = tipo === "gasto" && formData.get("paid_from_reserve") === "on";
   const actaFondo = (formData.get("reserve_acta") as string)?.trim().slice(0, 200) || null;
+  const moneda = formData.get("currency") === "USD" ? "USD" : "VES";
+  const retencion = tipo === "gasto" ? parseFloat((formData.get("retencion_islr") as string) || "0") || 0 : 0;
 
   // Vendor: id existente OR quick-create por nombre
   const vendorIdRaw = (formData.get("vendor_id") as string)?.trim();
@@ -33,8 +41,19 @@ export async function createExpense(formData: FormData) {
   if (!categoryId || !description || !amount || amount <= 0) {
     return { error: "Completa todos los campos requeridos" };
   }
+  if (retencion < 0 || retencion >= amount) return { error: "La retención debe ser menor que el monto" };
 
   const supabase = createAdminClient();
+
+  // El libro valora cada gasto a la tasa BCV de su fecha, en las dos monedas.
+  const tasas = await serieDeTasas(supabase, profile.organization_id);
+  if (!hayTasaPara(tasas, expenseDate)) return { error: "No hay tasa BCV registrada para esa fecha. Cárgala primero." };
+
+  if (tipo === "pago_provision" || tipo === "entero_retencion") {
+    const { provisiones, retenciones } = await saldosPorPagar(supabase, profile.organization_id);
+    if (tipo === "pago_provision" && provisiones <= 0) return { error: "No hay provisiones por pagar." };
+    if (tipo === "entero_retencion" && retenciones <= 0) return { error: "No hay retenciones por enterar." };
+  }
 
   // Validar categoría pertenece a la org
   const { data: cat } = await supabase
@@ -59,7 +78,8 @@ export async function createExpense(formData: FormData) {
   if (conFondo) {
     if (!actaFondo || actaFondo.length < 5) return { error: "Indica el acta o acuerdo que aprueba usar el fondo de reserva" };
     const { saldo } = await resumenFondo(supabase, profile.organization_id);
-    if (amount > saldo) return { error: `El fondo de reserva tiene ${usd(saldo)}: no alcanza para este gasto` };
+    const enUsd = gastoEnUsd({ amount, currency: moneda, expense_date: expenseDate }, tasas);
+    if (enUsd > saldo) return { error: `El fondo de reserva tiene ${usd(saldo)}: no alcanza para este gasto` };
   }
 
   // Resolver vendor_id: id existente o quick-create
@@ -111,7 +131,9 @@ export async function createExpense(formData: FormData) {
     reserve_acta: conFondo ? actaFondo : null,
     description,
     amount,
-    currency: "USD",
+    currency: moneda,
+    tipo_contable: tipo,
+    retencion_islr: retencion,
     receipt_url: receiptUrl,
     expense_date: expenseDate,
     recorded_by: profile.id,

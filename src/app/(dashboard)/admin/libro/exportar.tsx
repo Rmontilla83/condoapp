@@ -5,15 +5,15 @@ import type { LineaLibro } from "@/lib/contabilidad/libro";
 
 const num = (n: number) => (n ? n.toFixed(2).replace(".", ",") : "");
 
-/** CSV con punto y coma (Excel en español) de todas las líneas del período, en las dos monedas. */
+/** CSV con punto y coma (Excel en español) de todas las líneas del período: bolívares primero, dólares como referencia. */
 export function ExportarLibro({ lineas, nombre }: { lineas: LineaLibro[]; nombre: string }) {
   return (
     <Button
       variant="outline"
       onClick={() => {
-        const enc = ["Fecha", "Documento", "Concepto", "Cuenta", "Nombre de la cuenta", "Debe USD", "Haber USD", "Debe Bs", "Haber Bs"];
+        const enc = ["Fecha", "Documento", "Concepto", "Cuenta", "Nombre de la cuenta", "Debe Bs", "Haber Bs", "Debe USD", "Haber USD"];
         const filas = lineas.map((l) =>
-          [l.fecha, l.documento, l.descripcion, l.cuenta, l.cuenta_nombre, num(l.debe_usd), num(l.haber_usd), num(l.debe_bs), num(l.haber_bs)]
+          [l.fecha, l.documento, l.descripcion, l.cuenta, l.cuenta_nombre, num(l.debe_bs), num(l.haber_bs), num(l.debe_usd), num(l.haber_usd)]
             .map((v) => (/[;"\n]/.test(v) ? `"${v.replace(/"/g, '""')}"` : v))
             .join(";"),
         );

@@ -109,6 +109,20 @@ export const tabla = {
   pie: "border-t-2 border-marine-deep/20 bg-frost/60 font-semibold",
 };
 
+/** La contabilidad se representa en bolívares; el dólar queda para relacionar. */
+export function SelectorMoneda({ enBs, enlaceBs, enlaceUsd }: { enBs: boolean; enlaceBs: string; enlaceUsd: string }) {
+  return (
+    <div className="flex rounded-full border border-border p-0.5 text-[13px]">
+      <Link href={enlaceBs} className={`rounded-full px-3 py-1 ${enBs ? "bg-marine-deep text-frost" : "text-marine-deep"}`}>
+        Bolívares
+      </Link>
+      <Link href={enlaceUsd} className={`rounded-full px-3 py-1 ${!enBs ? "bg-marine-deep text-frost" : "text-marine-deep"}`}>
+        Dólares
+      </Link>
+    </div>
+  );
+}
+
 export function Vacio({ children }: { children: React.ReactNode }) {
   return <p className="rounded-2xl border border-dashed border-border px-6 py-10 text-center text-[14px] text-mute">{children}</p>;
 }

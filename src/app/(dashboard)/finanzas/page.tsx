@@ -2,10 +2,10 @@ import Link from "next/link";
 import { todayInTimeZone } from "@/lib/utils";
 import { resumenFondo } from "@/lib/contabilidad/fondo-reserva";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { gastoEnUsd, serieDeTasas, textoPeriodo } from "@/lib/contabilidad/gastos";
+import { esGastoDelPeriodo, gastoEnUsd, saldosPorPagar, salidaEnUsd, serieDeTasas, textoPeriodo } from "@/lib/contabilidad/gastos";
 import { estaAbierta, pendienteDe } from "@/lib/cuotas";
 import { IconoCategoria } from "@/components/ui/icono";
-import { usd } from "@/lib/format";
+import { bs, usd } from "@/lib/format";
 import {
   getCurrentProfile,
   getEffectiveRole,
@@ -28,6 +28,10 @@ interface ExpenseRow {
   currency?: string | null;
   /** Monto en la moneda original, si no era dólares. */
   monto_original?: number | null;
+  /** Lo que sale del banco, en dólares. */
+  salida_usd?: number;
+  tipo_contable?: string | null;
+  retencion_islr?: number | string | null;
   expense_date: string;
   receipt_url: string | null;
   voided_at: string | null;
@@ -76,7 +80,7 @@ export default async function FinanzasPage({ searchParams }: { searchParams: Pro
     supabase
       .from("expense_records")
       .select(
-        "id, description, amount, currency, expense_date, receipt_url, voided_at, voided_reason, category_id, vendor_id, cost_center_id, paid_from_reserve, reserve_acta, expense_categories(id, code, label, icon), vendors(id, name), cost_centers(id, name)",
+        "id, description, amount, currency, expense_date, receipt_url, voided_at, voided_reason, category_id, vendor_id, cost_center_id, paid_from_reserve, reserve_acta, tipo_contable, retencion_islr, expense_categories(id, code, label, icon), vendors(id, name), cost_centers(id, name)",
       )
       .eq("organization_id", profile.organization_id)
       .order("expense_date", { ascending: false }),
@@ -114,11 +118,14 @@ export default async function FinanzasPage({ searchParams }: { searchParams: Pro
   const expensesAll: ExpenseRow[] = expensesRaw.map((e, i) => ({
     ...e,
     amount: gastoEnUsd(e, tasas),
+    salida_usd: salidaEnUsd(e, tasas),
     monto_original: e.currency && e.currency !== "USD" ? Number(e.amount) : null,
     receipt_url: firmasRecibos[i],
   }));
   // Filtrar voided (no cuentan en totales ni gráficos)
-  const expenses = expensesAll.filter((e) => e.voided_at === null);
+  const noAnulados = expensesAll.filter((e) => e.voided_at === null);
+  // Pagar una provisión o enterar retenciones salda una deuda: no es gasto del período.
+  const expenses = noAnulados.filter(esGastoDelPeriodo);
   const transactions = transactionsRes.data ?? [];
   const invoices = invoicesRes.data ?? [];
   const categories = (categoriesData ?? []) as ExpenseCategory[];
@@ -134,7 +141,10 @@ export default async function FinanzasPage({ searchParams }: { searchParams: Pro
   // Un gasto con el fondo resta aquí, así que lo que el fondo trajo tiene que
   // sumar: si no, el balance sale negativo con dinero en el banco.
   const aportesFondo = Math.round((fondo.inicial + fondo.aportes + fondo.ajustes) * 100) / 100;
-  const balance = totalIncome + aportesFondo - totalExpenses;
+  // El balance es dinero: una provisión todavía no sale del banco y lo retenido sale al enterarlo.
+  const totalSalidas = noAnulados.reduce((s, e) => s + Number(e.salida_usd ?? e.amount), 0);
+  const balance = totalIncome + aportesFondo - totalSalidas;
+  const porPagar = isAdmin ? await saldosPorPagar(createAdminClient(), profile.organization_id) : undefined;
   const totalPending = invoices
     .filter((i) => estaAbierta(i.status as string))
     .reduce((s, i) => s + pendienteDe(i), 0);
@@ -149,7 +159,7 @@ export default async function FinanzasPage({ searchParams }: { searchParams: Pro
   // lo ejecutado también tiene que filtrarse por año. `byCategoryId` suma todo el
   // histórico y se queda para el gráfico de distribución, que sí es acumulado.
   const ejecutadoDelAno = executedByCategory(
-    expensesAll.filter((e) => !e.paid_from_reserve).map((e) => ({
+    expensesAll.filter((e) => !e.paid_from_reserve && esGastoDelPeriodo(e)).map((e) => ({
       category_id: e.category_id as string,
       amount: Number(e.amount),
       expense_date: e.expense_date as string,
@@ -215,7 +225,7 @@ export default async function FinanzasPage({ searchParams }: { searchParams: Pro
         {isAdmin && (
           <div className="flex flex-wrap justify-end gap-2">
             <NewIncomeDialog centros={centros} hoy={hoy} />
-            <NewExpenseDialog categories={categories} centros={centros} saldoFondo={fondo.saldo} />
+            <NewExpenseDialog categories={categories} centros={centros} saldoFondo={fondo.saldo} tasas={tasas} porPagar={porPagar} />
           </div>
         )}
       </div>
@@ -422,6 +432,20 @@ export default async function FinanzasPage({ searchParams }: { searchParams: Pro
                       {expense.paid_from_reserve && (
                         <p className="mt-1 text-[12px] text-mute whitespace-normal">
                           Pagado con el fondo de reserva{expense.reserve_acta ? ` · ${expense.reserve_acta}` : ""}
+                        </p>
+                      )}
+                      {expense.tipo_contable && expense.tipo_contable !== "gasto" && (
+                        <p className="mt-1 text-[12px] text-mute whitespace-normal">
+                          {expense.tipo_contable === "provision"
+                            ? "Provisión: todavía no sale del banco"
+                            : expense.tipo_contable === "pago_provision"
+                              ? "Pago de una provisión"
+                              : "Entero de retenciones de ISLR"}
+                        </p>
+                      )}
+                      {Number(expense.retencion_islr ?? 0) > 0 && (
+                        <p className="mt-1 text-[12px] text-mute whitespace-normal">
+                          Retención de ISLR: {expense.monto_original != null ? bs(Number(expense.retencion_islr)) : usd(Number(expense.retencion_islr))}
                         </p>
                       )}
                       {voided && expense.voided_reason && (

@@ -1,4 +1,4 @@
-import { gastoEnUsd, serieDeTasas, textoPeriodo } from "@/lib/contabilidad/gastos";
+import { esGastoDelPeriodo, gastoEnUsd, salidaEnUsd, serieDeTasas, textoPeriodo } from "@/lib/contabilidad/gastos";
 import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
 import { todayInTimeZone, isInvoiceOverdue } from "@/lib/utils";
@@ -205,21 +205,22 @@ export async function getCurrentMonthExpenseSummary(
   const supabase = await createClient();
   const { data } = await supabase
     .from("expense_records")
-    .select("amount")
+    .select("amount, currency, expense_date, tipo_contable")
     .eq("organization_id", orgId)
     .is("voided_at", null)
     .eq("paid_from_reserve", false)
     .gte("expense_date", inicioMes)
     .lte("expense_date", today);
 
-  const filas = data ?? [];
+  const filas = (data ?? []).filter(esGastoDelPeriodo);
+  const tasas = await serieDeTasas(supabase, orgId);
   const monthLabel = new Date(`${inicioMes}T00:00:00Z`).toLocaleDateString("es", {
     month: "long",
     timeZone: "UTC",
   });
 
   return {
-    total: filas.reduce((s, e) => s + Number(e.amount), 0),
+    total: filas.reduce((s, e) => s + gastoEnUsd(e as { amount: number; currency: string; expense_date: string }, tasas), 0),
     count: filas.length,
     monthLabel,
   };
@@ -356,7 +357,7 @@ export async function getAdminStats(orgId: string) {
         .eq("organization_id", orgId),
       supabase
         .from("expense_records")
-        .select("amount, currency, expense_date")
+        .select("amount, currency, expense_date, tipo_contable, retencion_islr")
         .eq("organization_id", orgId)
         .is("voided_at", null),
       supabase
@@ -421,7 +422,11 @@ export async function getAdminStats(orgId: string) {
       otrosIngresos.reduce((sum, o) => sum + Number(o.amount), 0)) * 100,
   ) / 100;
   const totalExpenses = Math.round(
-    expenses.reduce((sum, e) => sum + gastoEnUsd(e as { amount: number; currency: string; expense_date: string }, tasas), 0) * 100,
+    expenses.filter(esGastoDelPeriodo).reduce((sum, e) => sum + gastoEnUsd(e as { amount: number; currency: string; expense_date: string }, tasas), 0) * 100,
+  ) / 100;
+  // El balance es dinero: una provisión todavía no sale del banco y lo retenido sale al enterarlo.
+  const totalSalidas = Math.round(
+    expenses.reduce((sum, e) => sum + salidaEnUsd(e as { amount: number; currency: string; expense_date: string; tipo_contable: string; retencion_islr: number }, tasas), 0) * 100,
   ) / 100;
 
   return {
@@ -433,7 +438,7 @@ export async function getAdminStats(orgId: string) {
     totalExpenses,
     // Un gasto con el fondo resta en totalExpenses: lo que el fondo trajo sin
     // venir de cuotas tiene que sumar.
-    balance: totalIncome + (fondoRes.data ?? []).reduce((s, m) => s + Number(m.amount), 0) - totalExpenses,
+    balance: totalIncome + (fondoRes.data ?? []).reduce((s, m) => s + Number(m.amount), 0) - totalSalidas,
     // Qué período cubre el acumulado: desde el primer movimiento hasta hoy.
     periodo: textoPeriodo(
       [
@@ -549,6 +554,7 @@ export async function getExpensesForYear(orgId: string, year: number) {
     .select("id, category_id, amount, currency, expense_date, voided_at")
     .eq("organization_id", orgId)
     .eq("paid_from_reserve", false)
+    .in("tipo_contable", ["gasto", "provision"])
     .gte("expense_date", `${year}-01-01`)
     .lte("expense_date", `${year}-12-31`);
 

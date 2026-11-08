@@ -4,10 +4,10 @@ import { isAdminRole } from "@/lib/permissions";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { fechaLarga, membreteDe } from "@/lib/documentos";
 import { todayInTimeZone } from "@/lib/utils";
-import { usd } from "@/lib/format";
+import { bs, usd } from "@/lib/format";
 import { Documento } from "@/components/documentos/documento";
 import { IconoCategoria } from "@/components/ui/icono";
-import { Pestanas, PESTANAS_CUENTAS } from "@/components/contabilidad/ui";
+import { Pestanas, PESTANAS_CUENTAS, SelectorMoneda } from "@/components/contabilidad/ui";
 import { SelectorPeriodo } from "@/components/contabilidad/selector-periodo";
 
 const r2 = (n: number) => Math.round(n * 100) / 100;
@@ -20,7 +20,7 @@ const corta = (d: string) =>
  * categoría con su soporte, y al lado lo facturado y lo cobrado, para que la
  * junta vea en una hoja de dónde salió y a dónde fue el dinero.
  */
-export default async function RelacionDeGastosPage({ searchParams }: { searchParams: Promise<{ desde?: string; hasta?: string }> }) {
+export default async function RelacionDeGastosPage({ searchParams }: { searchParams: Promise<{ desde?: string; hasta?: string; moneda?: string }> }) {
   const profile = await getCurrentProfile();
   if (!profile?.organization_id) return null;
   if (!isAdminRole(profile)) redirect("/dashboard");
@@ -35,14 +35,19 @@ export default async function RelacionDeGastosPage({ searchParams }: { searchPar
   const desde = valida(sp.desde) ?? iniMes;
   const hasta = valida(sp.hasta) ?? hoy;
   const hastaFin = new Date(Date.parse(`${hasta}T12:00:00Z`) + 86_400_000).toISOString().slice(0, 10);
+  const enBs = sp.moneda !== "usd";
+  const fmt = enBs ? bs : usd;
+  const enlaceMoneda = (b: boolean) => `?desde=${desde}&hasta=${hasta}${b ? "" : "&moneda=usd"}`;
 
   const db = createAdminClient();
   const [{ data: gastos }, { data: cats }, { data: tasas }, { data: cuotas }, { data: pagos }, { data: notas }, { data: ingresos }] = await Promise.all([
     db
       .from("expense_records")
-      .select("id, description, amount, currency, expense_date, receipt_url, category_id, paid_from_reserve, reserve_acta, vendors(name), cost_centers(name)")
+      .select("id, description, amount, currency, expense_date, receipt_url, category_id, paid_from_reserve, reserve_acta, tipo_contable, retencion_islr, vendors(name), cost_centers(name)")
       .eq("organization_id", orgId)
       .is("voided_at", null)
+      // Pagar una provisión o enterar retenciones salda una deuda: no es gasto del período.
+      .in("tipo_contable", ["gasto", "provision"])
       .gte("expense_date", desde)
       .lte("expense_date", hasta)
       .order("expense_date"),
@@ -50,20 +55,20 @@ export default async function RelacionDeGastosPage({ searchParams }: { searchPar
     db.from("exchange_rates").select("rate, effective_date").eq("organization_id", orgId).lte("effective_date", hasta).order("effective_date"),
     db
       .from("invoices")
-      .select("amount, kind, created_at, due_date")
+      .select("amount, amount_bs, exchange_rate, kind, created_at, due_date")
       .eq("organization_id", orgId)
       .neq("kind", "opening")
       .lt("created_at", hastaFin)
       .gte("due_date", desde),
     db
       .from("transactions")
-      .select("amount, payment_method, invoices!inner(organization_id)")
+      .select("amount, amount_bs, exchange_rate, payment_method, invoices!inner(organization_id, exchange_rate)")
       .eq("status", "approved")
       .neq("payment_method", "credit")
       .eq("invoices.organization_id", orgId)
       .gte("paid_at", desde)
       .lt("paid_at", hastaFin),
-    db.from("credit_notes").select("amount").eq("organization_id", orgId).gte("created_at", desde).lt("created_at", hastaFin),
+    db.from("credit_notes").select("amount, amount_bs, exchange_rate").eq("organization_id", orgId).gte("created_at", desde).lt("created_at", hastaFin),
     db
       .from("other_incomes")
       .select("id, income_date, description, source, amount")
@@ -85,12 +90,24 @@ export default async function RelacionDeGastosPage({ searchParams }: { searchPar
     return t > 0 ? r2(Number(g.amount) / t) : 0;
   };
 
+  const enBolivares = (g: { amount: unknown; currency: unknown; expense_date: unknown }) =>
+    g.currency === "USD" ? r2(Number(g.amount) * tasaEn(g.expense_date as string)) : Number(g.amount);
+  /** Monto de un gasto en la moneda de la hoja. */
+  const montoDe = (g: { amount: unknown; currency: unknown; expense_date: unknown }) => (enBs ? enBolivares(g) : enUsd(g));
+  /** Monto de un documento en la moneda de la hoja, con sus bolívares guardados (mismo criterio que el libro). */
+  const docEn = (d: { amount: unknown; amount_bs?: unknown; exchange_rate?: unknown }, tasaRespaldo: number) =>
+    enBs
+      ? d.amount_bs != null
+        ? Number(d.amount_bs)
+        : r2(Number(d.amount) * (Number(d.exchange_rate) || tasaRespaldo))
+      : Number(d.amount);
+
   const porCat = new Map<string, { label: string; icon: string | null; pos: number; items: typeof gastos; total: number }>();
   for (const c of cats ?? []) porCat.set(c.id as string, { label: c.label as string, icon: c.icon as string | null, pos: Number(c.position ?? 99), items: [], total: 0 });
   for (const g of gastos ?? []) {
     const c = porCat.get(g.category_id as string) ?? { label: "Sin categoría", icon: null, pos: 999, items: [], total: 0 };
     c.items!.push(g);
-    c.total = r2(c.total + enUsd(g));
+    c.total = r2(c.total + montoDe(g));
     porCat.set((g.category_id as string) ?? "x", c);
   }
   const grupos = [...porCat.values()].filter((c) => c.items!.length).sort((a, b) => a.pos - b.pos);
@@ -102,13 +119,19 @@ export default async function RelacionDeGastosPage({ searchParams }: { searchPar
     return emitido < (c.due_date as string) ? emitido : (c.due_date as string);
   };
   const facturado = r2(
-    (cuotas ?? []).filter((c) => { const f = fechaContable(c); return f >= desde && f <= hasta; }).reduce((s, c) => s + Number(c.amount), 0) -
-      (notas ?? []).reduce((s, n) => s + Number(n.amount), 0),
+    (cuotas ?? []).filter((c) => { const f = fechaContable(c); return f >= desde && f <= hasta; }).reduce((s, c) => s + docEn(c, tasaEn(fechaContable(c))), 0) -
+      (notas ?? []).reduce((s, n) => s + docEn(n, 0), 0),
   );
-  const cobrado = r2((pagos ?? []).reduce((s, p) => s + Number(p.amount), 0));
+  const cobrado = r2(
+    (pagos ?? []).reduce((s, p) => {
+      const factura = (Array.isArray(p.invoices) ? p.invoices[0] : p.invoices) as { exchange_rate?: unknown } | null;
+      return s + docEn(p, Number(factura?.exchange_rate) || 0);
+    }, 0),
+  );
   const sinSoporte = (gastos ?? []).filter((g) => !g.receipt_url).length;
-  const otros = r2((ingresos ?? []).reduce((s, i) => s + Number(i.amount), 0));
-  const conFondo = r2((gastos ?? []).filter((g) => g.paid_from_reserve).reduce((s, g) => s + enUsd(g), 0));
+  const montoIngreso = (i: { amount: unknown; income_date: unknown }) => (enBs ? r2(Number(i.amount) * tasaEn(i.income_date as string)) : Number(i.amount));
+  const otros = r2((ingresos ?? []).reduce((s, i) => s + montoIngreso(i), 0));
+  const conFondo = r2((gastos ?? []).filter((g) => g.paid_from_reserve).reduce((s, g) => s + montoDe(g), 0));
   const nombreCentro = (g: { cost_centers?: unknown }) => {
     const c = (Array.isArray(g.cost_centers) ? g.cost_centers[0] : g.cost_centers) as { name: string } | null | undefined;
     return c?.name ?? null;
@@ -116,7 +139,7 @@ export default async function RelacionDeGastosPage({ searchParams }: { searchPar
   const porCentro = new Map<string, number>();
   for (const g of gastos ?? []) {
     const nombre = nombreCentro(g) ?? "Sin centro de costo";
-    porCentro.set(nombre, r2((porCentro.get(nombre) ?? 0) + enUsd(g)));
+    porCentro.set(nombre, r2((porCentro.get(nombre) ?? 0) + montoDe(g)));
   }
   const centros = [...porCentro.entries()].sort((a, b) => b[1] - a[1]);
   const hayCentros = centros.some(([n]) => n !== "Sin centro de costo");
@@ -125,7 +148,10 @@ export default async function RelacionDeGastosPage({ searchParams }: { searchPar
     <div className="space-y-6">
       <div className="print:hidden space-y-6">
         <Pestanas items={PESTANAS_CUENTAS} actual="/admin/informes/relacion-de-gastos" />
-        <SelectorPeriodo desde={desde} hasta={hasta} hoy={hoy} />
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <SelectorPeriodo desde={desde} hasta={hasta} hoy={hoy} />
+          <SelectorMoneda enBs={enBs} enlaceBs={enlaceMoneda(true)} enlaceUsd={enlaceMoneda(false)} />
+        </div>
       </div>
       <Documento
         membrete={membrete}
@@ -135,9 +161,12 @@ export default async function RelacionDeGastosPage({ searchParams }: { searchPar
         ancho="max-w-4xl"
         pie={
           <>
-            Montos en dólares; los gastos en bolívares se convierten a la tasa BCV del día del gasto. Facturado: recibos emitidos en el
+            {enBs
+              ? "Montos en bolívares; lo que se pactó en dólares se convierte a la tasa BCV de cada documento."
+              : "Montos en dólares, como referencia; lo que se pagó en bolívares se convierte a la tasa BCV del día del gasto."}{" "}
+            Facturado: recibos emitidos en el
             período, menos notas de crédito. Cobrado: pagos aprobados en el período (sin saldo a favor aplicado).
-            {conFondo > 0 && ` Gastado incluye ${usd(conFondo)} pagados con el fondo de reserva.`}
+            {conFondo > 0 && ` Gastado incluye ${fmt(conFondo)} pagados con el fondo de reserva.`}
             {sinSoporte > 0 && ` ${sinSoporte} gasto${sinSoporte !== 1 ? "s" : ""} sin factura adjunta.`}
           </>
         }
@@ -152,7 +181,7 @@ export default async function RelacionDeGastosPage({ searchParams }: { searchPar
           ].map(([t, v]) => (
             <div key={t as string} className="rounded-xl bg-frost px-3 py-2.5">
               <p className="font-meta text-mute">{t}</p>
-              <p className={`mt-1 font-display text-[17px] tabular-nums ${(v as number) < 0 ? "text-destructive" : ""}`}>{usd(v as number)}</p>
+              <p className={`mt-1 font-display text-[17px] tabular-nums ${(v as number) < 0 ? "text-destructive" : ""}`}>{fmt(v as number)}</p>
             </div>
           ))}
         </div>
@@ -169,7 +198,7 @@ export default async function RelacionDeGastosPage({ searchParams }: { searchPar
               {centros.map(([nombre, monto]) => (
                 <tr key={nombre} className="border-b border-border">
                   <td className="py-1.5 pr-2">{nombre}</td>
-                  <td className="py-1.5 pl-2 text-right tabular-nums">{usd(monto)}</td>
+                  <td className="py-1.5 pl-2 text-right tabular-nums">{fmt(monto)}</td>
                 </tr>
               ))}
             </tbody>
@@ -199,7 +228,7 @@ export default async function RelacionDeGastosPage({ searchParams }: { searchPar
                       {c.label}
                     </span>
                   </td>
-                  <td className="pt-4 pb-1.5 text-right font-semibold tabular-nums">{usd(c.total)}</td>
+                  <td className="pt-4 pb-1.5 text-right font-semibold tabular-nums">{fmt(c.total)}</td>
                 </tr>
                 {c.items!.map((g) => {
                   const v = (Array.isArray(g.vendors) ? g.vendors[0] : g.vendors) as { name: string } | null;
@@ -213,17 +242,21 @@ export default async function RelacionDeGastosPage({ searchParams }: { searchPar
                             Con el fondo de reserva{g.reserve_acta ? ` · ${g.reserve_acta as string}` : ""}
                           </span>
                         )}
+                        {g.tipo_contable === "provision" && (
+                          <span className="block text-[10.5px] text-mute">Provisión: todavía no sale del banco</span>
+                        )}
+                        {Number(g.retencion_islr) > 0 && (
+                          <span className="block text-[10.5px] text-mute">
+                            Retención de ISLR: {g.currency === "USD" ? usd(Number(g.retencion_islr)) : bs(Number(g.retencion_islr))}
+                          </span>
+                        )}
                       </td>
                       <td className="py-1.5 pr-2 text-mute">{nombreCentro(g) ?? "—"}</td>
                       <td className="py-1.5 pr-2 text-mute">{v?.name ?? "—"}</td>
                       <td className="py-1.5 pr-2 text-center">{g.receipt_url ? "Sí" : <span className="text-ember-ink">No</span>}</td>
                       <td className="py-1.5 pl-2 text-right tabular-nums">
-                        {usd(enUsd(g))}
-                        {g.currency !== "USD" && (
-                          <span className="block text-[10.5px] text-mute">
-                            {Number(g.amount).toLocaleString("es-VE", { minimumFractionDigits: 2 })} {g.currency as string}
-                          </span>
-                        )}
+                        {fmt(montoDe(g))}
+                        <span className="block text-[10.5px] text-mute">{enBs ? usd(enUsd(g)) : bs(enBolivares(g))}</span>
                       </td>
                     </tr>
                   );
@@ -235,7 +268,7 @@ export default async function RelacionDeGastosPage({ searchParams }: { searchPar
                 <td colSpan={5} className="pt-4 text-right font-meta text-mute">
                   TOTAL DE GASTOS
                 </td>
-                <td className="pt-4 text-right font-display text-[18px] tabular-nums">{usd(gastado)}</td>
+                <td className="pt-4 text-right font-display text-[18px] tabular-nums">{fmt(gastado)}</td>
               </tr>
             </tfoot>
           </table>
@@ -257,7 +290,7 @@ export default async function RelacionDeGastosPage({ searchParams }: { searchPar
                   <td className="py-1.5 pr-2 whitespace-nowrap">{corta(i.income_date as string)}</td>
                   <td className="py-1.5 pr-2">{i.description as string}</td>
                   <td className="py-1.5 pr-2 text-mute">{(i.source as string) ?? "—"}</td>
-                  <td className="py-1.5 pl-2 text-right tabular-nums">{usd(Number(i.amount))}</td>
+                  <td className="py-1.5 pl-2 text-right tabular-nums">{fmt(montoIngreso(i))}</td>
                 </tr>
               ))}
             </tbody>
