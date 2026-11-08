@@ -172,7 +172,7 @@ ol.pasos li{margin:6px 0}
   <main>
     <section class="parte">
       <h2>Información para arrancar</h2>
-      <p class="intro">Esta es la información que hace falta para operar desde el día 1, en el orden en que se carga. Cambia el estado de cada dato a medida que lo tengan: queda guardado en este dispositivo.</p>
+      <p class="intro">Esta es la información que hace falta para operar desde el día 1, en el orden en que se carga. Cada dato ya muestra cómo va al 8 de noviembre. Si cambias un estado, queda guardado solo en este dispositivo.</p>
       <p class="nota"><strong>Cómo va al 8 de noviembre.</strong> Ya están en la app las 103 unidades con sus alícuotas, el correo y el teléfono de 75 apartamentos, las 19 categorías de gasto y los 6 centros de costo.</p>
       <p class="nota"><strong>En aclaratoria con la Junta.</strong> Las alícuotas de la Torre A, la marina y sus muelles, y los datos de propietario o de contacto de 28 apartamentos.</p>
       <p class="nota"><strong>Falta recibir.</strong> La fecha de corte, las cuentas bancarias, los saldos de apertura, el fondo de reserva, los técnicos y los datos de la administración.</p>
@@ -192,7 +192,7 @@ ol.pasos li{margin:6px 0}
   <td data-e="Información">Nombre legal, RIF y dirección. Hoy: RIF J-31724233-5, Cerro El Morro, Lechería.</td>
   <td data-e="Quién la da">Junta</td>
   <td data-e="Dónde se carga">Lo carga Rafael</td>
-  <td data-e="Estado"><select class="estado" data-id="d1" data-defecto="1" aria-label="Estado del dato 1"><option value="0">Falta</option><option value="1" selected>Por confirmar</option><option value="2">Listo</option></select></td>
+  <td data-e="Estado"><select class="estado" data-id="d1" data-defecto="2" aria-label="Estado del dato 1"><option value="0">Falta</option><option value="1">Por confirmar</option><option value="2" selected>Listo</option></select></td>
 </tr><tr>
   <td class="num" data-e="N.º">2</td>
   <td data-e="Información">Logo. Hay dos propuestas y falta que la Junta elija una.</td>
@@ -204,7 +204,7 @@ ol.pasos li{margin:6px 0}
   <td data-e="Información">Copia del documento de condominio y del reglamento interno. Es la fuente de las alícuotas y de las normas. Hoy: recibidos los documentos de las tres torres y el reglamento del Edificio B.</td>
   <td data-e="Quién la da">Junta</td>
   <td data-e="Dónde se carga">No se carga, se consulta</td>
-  <td data-e="Estado"><select class="estado" data-id="d3" data-defecto="0" aria-label="Estado del dato 3"><option value="0" selected>Falta</option><option value="1">Por confirmar</option><option value="2">Listo</option></select></td>
+  <td data-e="Estado"><select class="estado" data-id="d3" data-defecto="1" aria-label="Estado del dato 3"><option value="0">Falta</option><option value="1" selected>Por confirmar</option><option value="2">Listo</option></select></td>
 </tr><tr>
   <td class="num" data-e="N.º">4</td>
   <td data-e="Información">Junta actual: nombre, cargo, correo y teléfono de cada miembro, y el acta que los designó.</td>
@@ -216,7 +216,7 @@ ol.pasos li{margin:6px 0}
   <td data-e="Información">Administradora: nombre, correo y teléfono. También quién emite, quién aprueba pagos y quién registra gastos.</td>
   <td data-e="Quién la da">Junta</td>
   <td data-e="Dónde se carga">Lo carga Rafael, después del bloque 3</td>
-  <td data-e="Estado"><select class="estado" data-id="d5" data-defecto="0" aria-label="Estado del dato 5"><option value="0" selected>Falta</option><option value="1">Por confirmar</option><option value="2">Listo</option></select></td>
+  <td data-e="Estado"><select class="estado" data-id="d5" data-defecto="1" aria-label="Estado del dato 5"><option value="0">Falta</option><option value="1" selected>Por confirmar</option><option value="2">Listo</option></select></td>
 </tr><tr>
   <td class="num" data-e="N.º">6</td>
   <td data-e="Información">Fecha de corte y primer mes en Atryum. Propuesta: corte el 30/11/2026 y primera cuota de diciembre.</td>
@@ -236,13 +236,13 @@ ol.pasos li{margin:6px 0}
   <td data-e="Información">Lista de unidades: torre, número, piso y tipo. Hoy: Torre A 39, Torre B 20, Torre C 44 (2 penthouses). Los metros cuadrados son opcionales y no hay ninguno cargado.</td>
   <td data-e="Quién la da">Junta</td>
   <td data-e="Dónde se carga">Unidades</td>
-  <td data-e="Estado"><select class="estado" data-id="d7" data-defecto="1" aria-label="Estado del dato 7"><option value="0">Falta</option><option value="1" selected>Por confirmar</option><option value="2">Listo</option></select></td>
+  <td data-e="Estado"><select class="estado" data-id="d7" data-defecto="2" aria-label="Estado del dato 7"><option value="0">Falta</option><option value="1">Por confirmar</option><option value="2" selected>Listo</option></select></td>
 </tr><tr>
   <td class="num" data-e="N.º">8</td>
   <td data-e="Información">Alícuota de cada unidad, copiada del documento de condominio. Hoy: Torre A 36,55 %, Torre B 21,21 %, Torre C 36,55 %. Ya comparadas con el documento: la Torre B y la Torre C coinciden, y la Torre A está en consulta con la Junta.</td>
   <td data-e="Quién la da">Junta</td>
   <td data-e="Dónde se carga">Unidades, Alícuotas</td>
-  <td data-e="Estado"><select class="estado" data-id="d8" data-defecto="0" aria-label="Estado del dato 8"><option value="0" selected>Falta</option><option value="1">Por confirmar</option><option value="2">Listo</option></select></td>
+  <td data-e="Estado"><select class="estado" data-id="d8" data-defecto="1" aria-label="Estado del dato 8"><option value="0">Falta</option><option value="1" selected>Por confirmar</option><option value="2">Listo</option></select></td>
 </tr><tr>
   <td class="num" data-e="N.º">9</td>
   <td data-e="Información">Gastos que pagan solo algunas unidades. Hoy: grupo Marina, con 62 unidades y el peso de cada una. ¿Hay otros?</td>
@@ -262,13 +262,13 @@ ol.pasos li{margin:6px 0}
   <td data-e="Información">Planilla con cinco columnas: Torre, Unidad, Propietario, Correo y Teléfono. Una fila por unidad. Hoy: recibida, y aplicada en los 75 apartamentos verificados.</td>
   <td data-e="Quién la da">Junta</td>
   <td data-e="Dónde se carga">Contactos: descargar, llenar, pegar y aplicar</td>
-  <td data-e="Estado"><select class="estado" data-id="d10" data-defecto="0" aria-label="Estado del dato 10"><option value="0" selected>Falta</option><option value="1">Por confirmar</option><option value="2">Listo</option></select></td>
+  <td data-e="Estado"><select class="estado" data-id="d10" data-defecto="1" aria-label="Estado del dato 10"><option value="0">Falta</option><option value="1" selected>Por confirmar</option><option value="2">Listo</option></select></td>
 </tr><tr>
   <td class="num" data-e="N.º">11</td>
   <td data-e="Información">Casos especiales: sucesiones, apoderados, propietarios en el exterior, ventas en curso y unidades de dos dueños.</td>
   <td data-e="Quién la da">Junta</td>
   <td data-e="Dónde se carga">Contactos, o Unidades caso por caso</td>
-  <td data-e="Estado"><select class="estado" data-id="d11" data-defecto="0" aria-label="Estado del dato 11"><option value="0" selected>Falta</option><option value="1">Por confirmar</option><option value="2">Listo</option></select></td>
+  <td data-e="Estado"><select class="estado" data-id="d11" data-defecto="1" aria-label="Estado del dato 11"><option value="0">Falta</option><option value="1" selected>Por confirmar</option><option value="2">Listo</option></select></td>
 </tr><tr>
   <td class="num" data-e="N.º">12</td>
   <td data-e="Información">Reglas para inquilinos: ¿votan?, ¿reservan?, ¿ven la lista de morosos? Hoy: no votan, sí reservan, no ven morosos. Los inquilinos no se precargan: los invita su propietario.</td>
@@ -312,7 +312,7 @@ ol.pasos li{margin:6px 0}
   <td data-e="Información">Tasa de mora anual. El interés legal es 3 %; una tasa mayor necesita el acta o el artículo que la aprueba.</td>
   <td data-e="Quién la da">Junta</td>
   <td data-e="Dónde se carga">Cuentas por cobrar, Intereses de mora</td>
-  <td data-e="Estado"><select class="estado" data-id="d17" data-defecto="0" aria-label="Estado del dato 17"><option value="0" selected>Falta</option><option value="1">Por confirmar</option><option value="2">Listo</option></select></td>
+  <td data-e="Estado"><select class="estado" data-id="d17" data-defecto="1" aria-label="Estado del dato 17"><option value="0">Falta</option><option value="1" selected>Por confirmar</option><option value="2">Listo</option></select></td>
 </tr><tr>
   <td class="num" data-e="N.º">18</td>
   <td data-e="Información">Fondo de reserva: porcentaje que se suma a la cuota, acta que lo aprueba y saldo a la fecha de corte.</td>
@@ -370,7 +370,7 @@ ol.pasos li{margin:6px 0}
   <td data-e="Información">Centros de costo: a qué parte del condominio corresponde el gasto. Ya están creados General, Piscina, Marina, Torre A, Torre B y Torre C. ¿Faltan otros?</td>
   <td data-e="Quién la da">Junta</td>
   <td data-e="Dónde se carga">Configuración, Centros de costo</td>
-  <td data-e="Estado"><select class="estado" data-id="d24" data-defecto="1" aria-label="Estado del dato 24"><option value="0">Falta</option><option value="1" selected>Por confirmar</option><option value="2">Listo</option></select></td>
+  <td data-e="Estado"><select class="estado" data-id="d24" data-defecto="2" aria-label="Estado del dato 24"><option value="0">Falta</option><option value="1">Por confirmar</option><option value="2" selected>Listo</option></select></td>
 </tr><tr>
   <td class="num" data-e="N.º">25</td>
   <td data-e="Información">Proveedores habituales: nombre, RIF, teléfono y correo.</td>
@@ -408,19 +408,19 @@ ol.pasos li{margin:6px 0}
   <td data-e="Información">Caney y parrillera: capacidad, descripción, reglas, duración máxima, anticipación mínima y máxima, y reservas por semana. La playa no se reserva.</td>
   <td data-e="Quién la da">Junta</td>
   <td data-e="Dónde se carga">Configuración, Políticas de uso</td>
-  <td data-e="Estado"><select class="estado" data-id="d29" data-defecto="1" aria-label="Estado del dato 29"><option value="0">Falta</option><option value="1" selected>Por confirmar</option><option value="2">Listo</option></select></td>
+  <td data-e="Estado"><select class="estado" data-id="d29" data-defecto="0" aria-label="Estado del dato 29"><option value="0" selected>Falta</option><option value="1">Por confirmar</option><option value="2">Listo</option></select></td>
 </tr><tr>
   <td class="num" data-e="N.º">30</td>
   <td data-e="Información">Contacto de la administración: teléfono, correo y horario de oficina.</td>
   <td data-e="Quién la da">Administradora</td>
   <td data-e="Dónde se carga">Configuración, Contacto</td>
-  <td data-e="Estado"><select class="estado" data-id="d30" data-defecto="0" aria-label="Estado del dato 30"><option value="0" selected>Falta</option><option value="1">Por confirmar</option><option value="2">Listo</option></select></td>
+  <td data-e="Estado"><select class="estado" data-id="d30" data-defecto="1" aria-label="Estado del dato 30"><option value="0">Falta</option><option value="1" selected>Por confirmar</option><option value="2">Listo</option></select></td>
 </tr><tr>
   <td class="num" data-e="N.º">31</td>
   <td data-e="Información">Normas de convivencia: basura, ruido, mascotas, mudanzas, piscina.</td>
   <td data-e="Quién la da">Junta</td>
   <td data-e="Dónde se carga">Configuración, Contacto, notas</td>
-  <td data-e="Estado"><select class="estado" data-id="d31" data-defecto="0" aria-label="Estado del dato 31"><option value="0" selected>Falta</option><option value="1">Por confirmar</option><option value="2">Listo</option></select></td>
+  <td data-e="Estado"><select class="estado" data-id="d31" data-defecto="1" aria-label="Estado del dato 31"><option value="0">Falta</option><option value="1" selected>Por confirmar</option><option value="2">Listo</option></select></td>
 </tr><tr>
   <td class="num" data-e="N.º">32</td>
   <td data-e="Información">Técnicos de confianza: categoría, nombre, teléfono, WhatsApp, notas y quién lo recomienda. Lo de dentro del apartamento se resuelve con ellos.</td>
@@ -478,7 +478,7 @@ ol.pasos li{margin:6px 0}
 </div>
 <footer class="pie">Costa de Plata, con Atryum. Dudas: <a href="mailto:hola@atryum.net">hola@atryum.net</a></footer>
 <script>(function(){
-  var CLAVE='atryum-arranque-costa-de-plata-v1';
+  var CLAVE='atryum-arranque-costa-de-plata-v2';
   var guardado={};
   try{guardado=JSON.parse(localStorage.getItem(CLAVE)||'{}')}catch(e){guardado={}}
   var selectores=[].slice.call(document.querySelectorAll('select.estado'));
