@@ -64,13 +64,31 @@ function Pastilla({ color }: { color: Color }) {
   );
 }
 
+const CLAVE_NOMBRE = "atryum_revision_nombre";
+
+/** Solo una comodidad: si el navegador no lo guarda, se vuelve a escribir. */
+function nombreRecordado(): string {
+  try {
+    return localStorage.getItem(CLAVE_NOMBRE) ?? "";
+  } catch {
+    return "";
+  }
+}
+
+function recordarNombre(nombre: string) {
+  try {
+    localStorage.setItem(CLAVE_NOMBRE, nombre.trim());
+  } catch {}
+}
+
 function FormularioAclarar({
   textoBoton,
   alEnviar,
 }: {
   textoBoton: string;
-  alEnviar: (nota: string) => Promise<{ error: string } | { success: true }>;
+  alEnviar: (nombre: string, nota: string) => Promise<{ error: string } | { success: true }>;
 }) {
+  const [nombre, setNombre] = useState(nombreRecordado);
   const [nota, setNota] = useState("");
   const [error, setError] = useState("");
   const [pending, start] = useTransition();
@@ -80,13 +98,26 @@ function FormularioAclarar({
         e.preventDefault();
         start(async () => {
           setError("");
-          const r = await alEnviar(nota);
+          const r = await alEnviar(nombre, nota);
           if ("error" in r) setError(r.error);
-          else window.location.reload();
+          else {
+            recordarNombre(nombre);
+            window.location.reload();
+          }
         });
       }}
       className="space-y-2"
     >
+      <label className="block text-[13px] text-marine-deep">
+        Tu nombre
+        <input
+          value={nombre}
+          onChange={(e) => setNombre(e.target.value)}
+          maxLength={80}
+          autoComplete="name"
+          className="mt-1 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus-visible:outline-2 focus-visible:outline-cyan"
+        />
+      </label>
       <label className="block text-[13px] text-marine-deep">
         Qué se aclaró y quién lo confirmó
         <textarea
@@ -169,13 +200,13 @@ function Dato({ dato, etiqueta }: { dato: DatoVerificado; etiqueta: string }) {
         <div className="space-y-1 rounded-lg bg-frost px-3 py-2 text-[13px]">
           <p className="text-marine-deep">{dato.aclaracion}</p>
           <p className="text-[12px] text-mute">
-            {dato.aclaradoPor ?? "Administración"}, {dato.aclaradoEn}
+            {dato.aclaradoPor ?? "Sin nombre"}, {dato.aclaradoEn}
           </p>
           <BotonReabrir id={dato.id} />
         </div>
       ) : (
         dato.estado !== "verde" && (
-          <FormularioAclarar textoBoton="Marcar como aclarado" alEnviar={(nota) => aclararDato(dato.id, nota)} />
+          <FormularioAclarar textoBoton="Marcar como aclarado" alEnviar={(nombre, nota) => aclararDato(dato.id, nombre, nota)} />
         )
       )}
     </section>
@@ -203,7 +234,7 @@ function Hallazgo({ h }: { h: HallazgoColectivo }) {
         <div className="mt-3 max-w-xl">
           <FormularioAclarar
             textoBoton={`Marcar las ${h.pendientes} como aclaradas`}
-            alEnviar={(nota) => aclararHallazgo(h.titulo, nota)}
+            alEnviar={(nombre, nota) => aclararHallazgo(h.titulo, nombre, nota)}
           />
         </div>
       )}
@@ -254,7 +285,7 @@ export function Matriz({ filas, hallazgos }: { filas: FilaVerificacion[]; hallaz
             <Marca color="rojo" /> Diferencia por aclarar
           </li>
           <li className="flex items-center gap-2">
-            <Marca color="verde" aclarado /> Aclarado por la administración
+            <Marca color="verde" aclarado /> Ya aclarado
           </li>
         </ul>
         <p className="mt-2 text-[12px]">

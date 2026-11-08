@@ -56,7 +56,6 @@ const moreItemsBase = [
   { href: "/admin", label: "Panel admin", adminOnly: true },
   { href: "/admin/units", label: "Unidades", adminOnly: true },
   { href: "/admin/contactos", label: "Contactos", adminOnly: true },
-  { href: "/admin/verificacion", label: "Verificación", adminOnly: true },
   { href: "/admin/cuentas", label: "Cuentas", adminOnly: true },
   { href: "/admin/libro", label: "Libro contable", adminOnly: true },
   { href: "/admin/fondo-reserva", label: "Fondo de reserva", adminOnly: true },

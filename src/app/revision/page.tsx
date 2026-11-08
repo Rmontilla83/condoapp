@@ -1,6 +1,5 @@
-import { redirect } from "next/navigation";
-import { getCurrentProfile } from "@/lib/queries";
-import { isAdminRole } from "@/lib/permissions";
+import type { Metadata } from "next";
+import { revisionActual } from "@/lib/revision";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { compararUnidades } from "@/lib/units/orden";
 import { Cifra, Cifras, Encabezado } from "@/components/contabilidad/ui";
@@ -15,6 +14,12 @@ import {
 } from "@/lib/verificacion";
 import { Matriz } from "./matriz";
 
+export const metadata: Metadata = {
+  title: { absolute: "Verificación de la información" },
+  robots: { index: false, follow: false },
+};
+export const dynamic = "force-dynamic";
+
 interface RegistroDB {
   id: string;
   unit_id: string;
@@ -26,24 +31,46 @@ interface RegistroDB {
   motivo: string | null;
   hallazgo: string | null;
   aclaracion: string | null;
+  aclarado_nombre: string | null;
   aclarado_en: string | null;
   units: { unit_number: string; block: string | null } | null;
-  perfil: { full_name: string | null } | null;
 }
 
 const fecha = new Intl.DateTimeFormat("es-VE", { timeZone: "America/Caracas", dateStyle: "short" });
 
-export default async function VerificacionPage() {
-  const profile = await getCurrentProfile();
-  if (!profile?.organization_id) return null;
-  if (!isAdminRole(profile)) redirect("/dashboard");
+function Marco({ children }: { children: React.ReactNode }) {
+  return <main className="mx-auto w-full max-w-6xl flex-1 space-y-6 px-4 py-8 sm:px-6 sm:py-12">{children}</main>;
+}
+
+/**
+ * Revisión previa a la migración. Vive en el portal pero fuera de la app: sin
+ * sesión ni panel, su credencial es la cookie que deja el enlace privado.
+ */
+export default async function RevisionPage({ searchParams }: { searchParams: Promise<{ enlace?: string }> }) {
+  const { enlace } = await searchParams;
+  const revision = await revisionActual();
+
+  if (!revision) {
+    return (
+      <Marco>
+        <div className="mx-auto max-w-md rounded-2xl border border-border bg-card p-6 text-center">
+          <p className="font-meta text-ember-ink">{enlace === "invalido" ? "ENLACE NO VÁLIDO" : "ENLACE PRIVADO"}</p>
+          <p className="mt-3 text-[15px] text-marine-deep">
+            {enlace === "invalido"
+              ? "Este enlace fue revocado o está incompleto."
+              : "Esta página solo se abre con el enlace privado que te compartieron."}
+          </p>
+        </div>
+      </Marco>
+    );
+  }
 
   const { data, error } = await createAdminClient()
     .from("verificacion_carga")
     .select(
-      "id, unit_id, campo, estado, fuente, valor_fuente, valor_planilla, motivo, hallazgo, aclaracion, aclarado_en, units(unit_number, block), perfil:profiles!verificacion_carga_aclarado_por_fkey(full_name)",
+      "id, unit_id, campo, estado, fuente, valor_fuente, valor_planilla, motivo, hallazgo, aclaracion, aclarado_nombre, aclarado_en, units(unit_number, block)",
     )
-    .eq("organization_id", profile.organization_id)
+    .eq("organization_id", revision.organizationId)
     .returns<RegistroDB[]>();
   if (error) throw new Error(error.message);
 
@@ -71,7 +98,7 @@ export default async function VerificacionPage() {
       valorPlanilla: r.valor_planilla,
       motivo: r.motivo,
       aclaracion: r.aclaracion,
-      aclaradoPor: r.perfil?.full_name ?? null,
+      aclaradoPor: r.aclarado_nombre,
       aclaradoEn: r.aclarado_en ? fecha.format(new Date(r.aclarado_en)) : null,
     };
     fila.datos[r.campo] = dato;
@@ -96,11 +123,11 @@ export default async function VerificacionPage() {
   const cuenta = (c: Color) => filas.filter((f) => f.general === c).length;
 
   return (
-    <div className="space-y-6">
+    <Marco>
       <Encabezado
-        eyebrow="MIGRACIÓN"
-        titulo="Verificación de la carga"
-        descripcion="Cada apartamento, dato por dato, comparado con los documentos y las planillas del condominio. Solo la administración ve esta página."
+        eyebrow={revision.condominio.toUpperCase()}
+        titulo="Verificación de la información"
+        descripcion="Cada apartamento, dato por dato, comparado con los documentos y las planillas del condominio. Esta página es independiente de la app: cuando todo esté aclarado, se migra la información."
       />
 
       {filas.length === 0 ? (
@@ -118,6 +145,10 @@ export default async function VerificacionPage() {
           <Matriz filas={filas} hallazgos={[...porHallazgo.values()]} />
         </>
       )}
-    </div>
+
+      <footer className="border-t border-border pt-4 text-[12px] text-mute">
+        Enlace privado, preparado por Atryum. Compártelo solo con quienes revisan la información.
+      </footer>
+    </Marco>
   );
 }

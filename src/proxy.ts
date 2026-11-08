@@ -9,9 +9,17 @@ const PORTAL_HOST = "portal.atryum.net";
 const esPublica = (pathname: string) =>
   pathname.startsWith("/guias") || pathname === "/terminos" || pathname === "/privacidad";
 
+/** La revisión previa a la migración: en el portal, fuera de la app y sin sesión. */
+const esRevision = (pathname: string) => pathname === "/revision" || pathname.startsWith("/revision/");
+
 export async function proxy(request: NextRequest) {
   const hostname = (request.headers.get("host") ?? "").toLowerCase();
   const { pathname, search } = request.nextUrl;
+
+  // En atryum.net sigue el camino normal: se redirige al portal.
+  if (esRevision(pathname) && hostname !== LANDING_APEX && hostname !== LANDING_WWW) {
+    return NextResponse.next();
+  }
 
   // Preview deployments (*.vercel.app): comportarse como portal — landing en /
   // sin auth, login/auth/verificar también pasan directo (Supabase auth no
