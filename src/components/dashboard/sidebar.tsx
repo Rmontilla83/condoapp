@@ -23,6 +23,7 @@ const adminItems = [
   { href: "/admin", label: "Panel admin", icon: "admin" },
   { href: "/admin/units", label: "Unidades", icon: "units" },
   { href: "/admin/contactos", label: "Contactos", icon: "contactos" },
+  { href: "/admin/verificacion", label: "Verificación de carga", icon: "units" },
   { href: "/admin/cuentas", label: "Cuentas por cobrar", icon: "payments" },
   { href: "/admin/libro", label: "Libro contable", icon: "finanzas" },
   { href: "/admin/fondo-reserva", label: "Fondo de reserva", icon: "finanzas" },
