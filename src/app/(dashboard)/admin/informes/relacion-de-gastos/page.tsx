@@ -71,7 +71,7 @@ export default async function RelacionDeGastosPage({ searchParams }: { searchPar
     db.from("credit_notes").select("amount, amount_bs, exchange_rate").eq("organization_id", orgId).gte("created_at", desde).lt("created_at", hastaFin),
     db
       .from("other_incomes")
-      .select("id, income_date, description, source, amount")
+      .select("id, income_date, description, source, amount, currency")
       .eq("organization_id", orgId)
       .is("voided_at", null)
       .gte("income_date", desde)
@@ -129,7 +129,8 @@ export default async function RelacionDeGastosPage({ searchParams }: { searchPar
     }, 0),
   );
   const sinSoporte = (gastos ?? []).filter((g) => !g.receipt_url).length;
-  const montoIngreso = (i: { amount: unknown; income_date: unknown }) => (enBs ? r2(Number(i.amount) * tasaEn(i.income_date as string)) : Number(i.amount));
+  const montoIngreso = (i: { amount: unknown; currency: unknown; income_date: unknown }) =>
+    montoDe({ amount: i.amount, currency: i.currency, expense_date: i.income_date });
   const otros = r2((ingresos ?? []).reduce((s, i) => s + montoIngreso(i), 0));
   const conFondo = r2((gastos ?? []).filter((g) => g.paid_from_reserve).reduce((s, g) => s + montoDe(g), 0));
   const nombreCentro = (g: { cost_centers?: unknown }) => {

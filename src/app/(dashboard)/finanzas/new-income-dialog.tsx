@@ -12,14 +12,23 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { bs, usd } from "@/lib/format";
+import { hayTasaPara, tasaEn, type SerieTasas } from "@/lib/contabilidad/gastos";
 import { createOtherIncome, voidOtherIncome } from "./actions";
 
 const selector = "flex h-11 w-full rounded-md border border-input bg-background px-3 py-2 text-base md:text-sm";
 
-export function NewIncomeDialog({ centros, hoy }: { centros: { id: string; name: string }[]; hoy: string }) {
+export function NewIncomeDialog({ centros, hoy, tasas = [] }: { centros: { id: string; name: string }[]; hoy: string; tasas?: SerieTasas }) {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [moneda, setMoneda] = useState<"VES" | "USD">("VES");
+  const [monto, setMonto] = useState("");
+  const [fecha, setFecha] = useState(hoy);
+  const conTasa = hayTasaPara(tasas, fecha);
+  const tasa = tasaEn(tasas, fecha);
+  const valor = parseFloat(monto) || 0;
+  const equivalencia = moneda === "VES" ? usd(tasa > 0 ? valor / tasa : 0) : bs(valor * tasa);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -53,15 +62,30 @@ export function NewIncomeDialog({ centros, hoy }: { centros: { id: string; name:
             <Label htmlFor="income-source">De quién (opcional)</Label>
             <Input id="income-source" name="source" maxLength={120} />
           </div>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-[6.5rem_1fr] gap-3">
             <div className="space-y-2">
-              <Label htmlFor="income-amount">Monto (USD)</Label>
-              <Input id="income-amount" name="amount" type="number" step="0.01" min="0.01" required placeholder="0.00" />
+              <Label htmlFor="income-currency">Moneda</Label>
+              <select id="income-currency" name="currency" className={selector} value={moneda} onChange={(e) => setMoneda(e.target.value as "VES" | "USD")}>
+                <option value="VES">Bs</option>
+                <option value="USD">USD</option>
+              </select>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="income-date">Fecha</Label>
-              <Input id="income-date" name="income_date" type="date" required max={hoy} defaultValue={hoy} />
+              <Label htmlFor="income-amount">Monto</Label>
+              <Input id="income-amount" name="amount" type="number" step="0.01" min="0.01" required placeholder="0.00" value={monto} onChange={(e) => setMonto(e.target.value)} />
             </div>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="income-date">Fecha</Label>
+            <Input id="income-date" name="income_date" type="date" required max={hoy} value={fecha} onChange={(e) => setFecha(e.target.value)} />
+            {conTasa ? (
+              <p className="text-[12px] text-mute">
+                Tasa BCV: {tasa.toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 4 })}
+                {valor > 0 && `. Equivale a ${equivalencia}.`}
+              </p>
+            ) : (
+              <p className="text-[12px] text-destructive">No hay tasa BCV registrada para esa fecha.</p>
+            )}
           </div>
           <div className="space-y-2">
             <Label htmlFor="income-method">Dónde entró</Label>
@@ -92,7 +116,7 @@ export function NewIncomeDialog({ centros, hoy }: { centros: { id: string; name:
             <Button type="button" variant="outline" className="flex-1" onClick={() => setOpen(false)} disabled={loading}>
               Cancelar
             </Button>
-            <Button type="submit" className="flex-1" disabled={loading}>
+            <Button type="submit" className="flex-1" disabled={loading || !conTasa}>
               {loading ? "Guardando…" : "Registrar ingreso"}
             </Button>
           </div>

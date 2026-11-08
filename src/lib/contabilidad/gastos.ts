@@ -34,6 +34,10 @@ export function gastoEnUsd(g: { amount: number | string; currency?: string | nul
   return t > 0 ? Math.round((monto / t) * 100) / 100 : 0;
 }
 
+export function ingresoEnUsd(i: { amount: number | string; currency?: string | null; income_date: string }, serie: SerieTasas): number {
+  return gastoEnUsd({ amount: i.amount, currency: i.currency, expense_date: i.income_date }, serie);
+}
+
 export function gastoEnBs(g: { amount: number | string; currency?: string | null; expense_date: string }, serie: SerieTasas): number {
   const monto = Number(g.amount);
   if (g.currency && g.currency !== "USD") return monto;

@@ -2,7 +2,7 @@ import Link from "next/link";
 import { todayInTimeZone } from "@/lib/utils";
 import { resumenFondo } from "@/lib/contabilidad/fondo-reserva";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { esGastoDelPeriodo, gastoEnUsd, saldosPorPagar, salidaEnUsd, serieDeTasas, textoPeriodo } from "@/lib/contabilidad/gastos";
+import { esGastoDelPeriodo, gastoEnUsd, ingresoEnUsd, saldosPorPagar, salidaEnUsd, serieDeTasas, textoPeriodo } from "@/lib/contabilidad/gastos";
 import { estaAbierta, pendienteDe } from "@/lib/cuotas";
 import { IconoCategoria } from "@/components/ui/icono";
 import { bs, usd } from "@/lib/format";
@@ -52,6 +52,9 @@ interface IngresoRow {
   description: string;
   source: string | null;
   amount: number;
+  currency?: string | null;
+  /** Monto en bolívares, si entró en bolívares. */
+  monto_original?: number | null;
   receipt_url: string | null;
   voided_at: string | null;
   voided_reason: string | null;
@@ -95,7 +98,7 @@ export default async function FinanzasPage({ searchParams }: { searchParams: Pro
     getCurrentBudget(profile.organization_id, currentYear),
     supabase
       .from("other_incomes")
-      .select("id, income_date, description, source, amount, receipt_url, voided_at, voided_reason, cost_centers(name)")
+      .select("id, income_date, description, source, amount, currency, receipt_url, voided_at, voided_reason, cost_centers(name)")
       .eq("organization_id", profile.organization_id)
       .order("income_date", { ascending: false }),
     supabase
@@ -132,7 +135,12 @@ export default async function FinanzasPage({ searchParams }: { searchParams: Pro
 
   const ingresosRaw = (otrosRes.data ?? []) as unknown as IngresoRow[];
   const firmasIngresos = await signStorageRefs(ingresosRaw.map((o) => o.receipt_url));
-  const otrosIngresos = ingresosRaw.map((o, i) => ({ ...o, receipt_url: firmasIngresos[i] }));
+  const otrosIngresos = ingresosRaw.map((o, i) => ({
+    ...o,
+    amount: ingresoEnUsd(o, tasas),
+    monto_original: o.currency && o.currency !== "USD" ? Number(o.amount) : null,
+    receipt_url: firmasIngresos[i],
+  }));
   const totalOtros = otrosIngresos.filter((o) => !o.voided_at).reduce((s, o) => s + Number(o.amount), 0);
   const centros = (centrosRes.data ?? []) as { id: string; name: string }[];
 
@@ -224,7 +232,7 @@ export default async function FinanzasPage({ searchParams }: { searchParams: Pro
         </div>
         {isAdmin && (
           <div className="flex flex-wrap justify-end gap-2">
-            <NewIncomeDialog centros={centros} hoy={hoy} />
+            <NewIncomeDialog centros={centros} hoy={hoy} tasas={tasas} />
             <NewExpenseDialog categories={categories} centros={centros} saldoFondo={fondo.saldo} tasas={tasas} porPagar={porPagar} />
           </div>
         )}
@@ -518,7 +526,12 @@ export default async function FinanzasPage({ searchParams }: { searchParams: Pro
                         Soporte
                       </a>
                     )}
-                    <span className={`text-[14px] font-medium text-cyan ${anulado ? "line-through" : ""}`}>+{usd(Number(o.amount))}</span>
+                    <span className={`text-[14px] font-medium text-cyan ${anulado ? "line-through" : ""}`}>
+                      +{usd(Number(o.amount))}
+                      {o.monto_original != null && (
+                        <span className="block text-right text-[11px] font-normal text-mute">{bs(o.monto_original)}</span>
+                      )}
+                    </span>
                     {isAdmin && !anulado && <VoidIncome id={o.id} />}
                   </div>
                 </div>

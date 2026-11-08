@@ -197,6 +197,7 @@ export async function createOtherIncome(formData: FormData) {
   const amount = parseFloat(formData.get("amount") as string);
   const incomeDate = formData.get("income_date") as string;
   const method = formData.get("payment_method") === "cash" ? "cash" : "bank";
+  const moneda = formData.get("currency") === "USD" ? "USD" : "VES";
   const costCenterId = (formData.get("cost_center_id") as string)?.trim() || null;
   const photo = formData.get("receipt") as File | null;
 
@@ -205,6 +206,9 @@ export async function createOtherIncome(formData: FormData) {
   if (!incomeDate || !/^\d{4}-\d{2}-\d{2}$/.test(incomeDate)) return { error: "Indica la fecha" };
 
   const supabase = createAdminClient();
+  if (!hayTasaPara(await serieDeTasas(supabase, profile.organization_id), incomeDate)) {
+    return { error: "No hay tasa BCV registrada para esa fecha. Cárgala primero." };
+  }
   if (costCenterId) {
     const { data: centro } = await supabase
       .from("cost_centers")
@@ -231,6 +235,7 @@ export async function createOtherIncome(formData: FormData) {
     description,
     source,
     amount,
+    currency: moneda,
     payment_method: method,
     receipt_url: receiptUrl,
     cost_center_id: costCenterId,

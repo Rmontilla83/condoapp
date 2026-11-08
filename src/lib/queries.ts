@@ -1,4 +1,4 @@
-import { esGastoDelPeriodo, gastoEnUsd, salidaEnUsd, serieDeTasas, textoPeriodo } from "@/lib/contabilidad/gastos";
+import { esGastoDelPeriodo, gastoEnUsd, ingresoEnUsd, salidaEnUsd, serieDeTasas, textoPeriodo } from "@/lib/contabilidad/gastos";
 import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
 import { todayInTimeZone, isInvoiceOverdue } from "@/lib/utils";
@@ -374,7 +374,7 @@ export async function getAdminStats(orgId: string) {
         .order("paid_at", { ascending: false }),
       supabase
         .from("other_incomes")
-        .select("amount, income_date")
+        .select("amount, currency, income_date")
         .eq("organization_id", orgId)
         .is("voided_at", null),
       supabase
@@ -419,7 +419,7 @@ export async function getAdminStats(orgId: string) {
 
   const totalIncome = Math.round(
     (transactions.reduce((sum, t) => sum + Number(t.amount), 0) +
-      otrosIngresos.reduce((sum, o) => sum + Number(o.amount), 0)) * 100,
+      otrosIngresos.reduce((sum, o) => sum + ingresoEnUsd(o as { amount: number; currency: string; income_date: string }, tasas), 0)) * 100,
   ) / 100;
   const totalExpenses = Math.round(
     expenses.filter(esGastoDelPeriodo).reduce((sum, e) => sum + gastoEnUsd(e as { amount: number; currency: string; expense_date: string }, tasas), 0) * 100,
