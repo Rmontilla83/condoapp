@@ -11,7 +11,7 @@ import {
   leerPlanilla,
   normalizarTelefono,
 } from "@/lib/contactos";
-import { enviarLote } from "@/lib/email/send";
+import { CORREOS_APAGADOS, correosActivos, enviarLote } from "@/lib/email/send";
 import { bienvenidaPropietario } from "@/lib/email/templates";
 import { nombreDeOrg } from "@/lib/email/recipients";
 import { propietariosDeOrg } from "./datos";
@@ -266,6 +266,8 @@ export async function invitarPropietarios(profileIds?: string[]): Promise<{ erro
   const guard = requireAdmin(profile);
   if (guard) return guard;
   const orgId = profile!.organization_id!;
+
+  if (!correosActivos()) return { error: CORREOS_APAGADOS };
 
   const propietarios = await propietariosDeOrg(orgId);
   const elegidos = propietarios.filter(

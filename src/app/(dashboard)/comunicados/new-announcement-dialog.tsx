@@ -15,7 +15,7 @@ interface Foto {
   vista: string;
 }
 
-export function NewAnnouncementDialog() {
+export function NewAnnouncementDialog({ correos }: { correos: boolean }) {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [preparando, setPreparando] = useState(false);
@@ -145,7 +145,7 @@ export function NewAnnouncementDialog() {
             <select id="priority" name="priority" className="flex h-11 w-full rounded-md border border-input bg-background px-3 py-2 text-base md:text-sm" defaultValue="normal">
               <option value="normal">Normal</option>
               <option value="important">Importante</option>
-              <option value="urgent">Urgente · se envía por correo a todos los residentes</option>
+              <option value="urgent">{correos ? "Urgente · se envía por correo a todos los residentes" : "Urgente"}</option>
             </select>
           </div>
           {error && <p className="text-sm text-destructive">{error}</p>}

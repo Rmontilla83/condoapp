@@ -2,6 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { CORREOS_APAGADOS, correosActivos } from "@/lib/email/send";
 import { getCurrentProfile } from "@/lib/queries";
 import { isAdminRole } from "@/lib/permissions";
 import { revalidatePath } from "next/cache";
@@ -130,6 +131,7 @@ export async function inviteUnitMember(params: {
   const { unitId, email: rawEmail, role, permissions = {} } = params;
   const email = rawEmail.trim().toLowerCase();
   if (!email) return { error: "Email requerido" };
+  if (!correosActivos()) return { error: CORREOS_APAGADOS };
 
   // Solo admins o propietarios (si role='tenant') pueden invitar
   const access = await requireUnitAccess(

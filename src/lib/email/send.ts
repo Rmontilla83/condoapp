@@ -14,13 +14,27 @@ import { Resend } from "resend";
  *  2. **Degrada sin romper si no hay API key.** El código puede desplegarse
  *     antes de que exista `RESEND_API_KEY`; simplemente no envía.
  *  3. **Nunca envía a una dirección vacía**, y deduplica destinatarios.
+ *  4. **Apagada hasta que se encienda a propósito.** Ver `correosActivos`.
  */
 
 const FROM = "Atryum <hola@atryum.net>";
 
+/**
+ * Interruptor general. Rafael (2026-11-08): con los correos reales de los
+ * propietarios ya cargados, no sale nada hasta que se formalice con la Junta.
+ * Sin `CORREOS_ACTIVOS=si` en el entorno no se envía ningún correo, aunque
+ * exista la API key. Para encenderlo: crear esa variable en Vercel y redesplegar.
+ */
+export function correosActivos(): boolean {
+  return process.env.CORREOS_ACTIVOS === "si";
+}
+
+export const CORREOS_APAGADOS = "Los correos están desactivados por ahora, así que no se envió ninguna invitación.";
+
 /** Cliente perezoso: sin key, no se construye y el módulo no explota al importarse. */
 let cliente: Resend | null = null;
 function getResend(): Resend | null {
+  if (!correosActivos()) return null;
   const key = process.env.RESEND_API_KEY;
   if (!key) return null;
   if (!cliente) cliente = new Resend(key);
@@ -39,7 +53,7 @@ export function esCorreoEntregable(correo: string): boolean {
 }
 
 export function emailHabilitado(): boolean {
-  return Boolean(process.env.RESEND_API_KEY);
+  return correosActivos() && Boolean(process.env.RESEND_API_KEY);
 }
 
 export interface EnvioResultado {
@@ -77,7 +91,7 @@ export async function enviarEmail(params: {
   const resend = getResend();
   if (!resend) {
     console.warn(
-      `[email] ${params.evento}: RESEND_API_KEY no está configurada, se omiten ${destinatarios.length} envío(s).`,
+      `[email] ${params.evento}: correos apagados o sin RESEND_API_KEY, se omiten ${destinatarios.length} envío(s).`,
     );
     return { enviados: 0, omitidos: destinatarios.length };
   }
@@ -141,7 +155,7 @@ export async function enviarLote(
   const resend = getResend();
   if (!resend) {
     console.warn(
-      `[email] ${evento}: RESEND_API_KEY no está configurada, se omiten ${validos.length} envío(s).`,
+      `[email] ${evento}: correos apagados o sin RESEND_API_KEY, se omiten ${validos.length} envío(s).`,
     );
     return { enviados: 0, omitidos: validos.length };
   }

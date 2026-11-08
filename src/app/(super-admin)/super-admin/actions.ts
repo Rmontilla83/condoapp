@@ -1,6 +1,7 @@
 "use server";
 
 import { createAdminClient } from "@/lib/supabase/admin";
+import { CORREOS_APAGADOS, correosActivos } from "@/lib/email/send";
 import { getCurrentProfile } from "@/lib/queries";
 import { revalidatePath } from "next/cache";
 
@@ -112,6 +113,8 @@ export async function inviteAdmin(formData: FormData) {
     return { error: "Este email ya es super administrador — no se puede degradar" };
   }
 
+  if (!correosActivos()) return { error: CORREOS_APAGADOS };
+
   // 1. Upsert invitación
   const { error: invError } = await admin
     .from("admin_invitations")
@@ -201,6 +204,7 @@ export async function inviteAdmin(formData: FormData) {
 export async function resendAdminInvite(invitationId: string) {
   const profile = await getCurrentProfile();
   requireSuperAdmin(profile);
+  if (!correosActivos()) return { error: CORREOS_APAGADOS };
 
   const admin = createAdminClient();
 

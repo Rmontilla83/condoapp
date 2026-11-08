@@ -1,5 +1,6 @@
 import { getCurrentProfile, getEffectiveRole, getAnnouncements } from "@/lib/queries";
 import { signStorageRefRows } from "@/lib/storage";
+import { correosActivos } from "@/lib/email/send";
 import { NewAnnouncementDialog } from "./new-announcement-dialog";
 import { GaleriaFotos } from "./galeria-fotos";
 
@@ -27,7 +28,7 @@ export default async function ComunicadosPage() {
           </h1>
         </div>
         {(getEffectiveRole(profile) === "admin" || getEffectiveRole(profile) === "super_admin") && (
-          <NewAnnouncementDialog />
+          <NewAnnouncementDialog correos={correosActivos()} />
         )}
       </div>
 
