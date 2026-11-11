@@ -60,6 +60,7 @@ export function AliquotEditor({
     return map;
   });
   const [reason, setReason] = useState("");
+  const [acta, setActa] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [confirmando, setConfirmando] = useState(false);
@@ -92,6 +93,16 @@ export function AliquotEditor({
       }),
     [units, drafts],
   );
+  // Cambiar una alícuota ya cargada pide el acta; completar una vacía, no.
+  const modificaCargadas = useMemo(
+    () =>
+      units.some((u) => {
+        if (u.aliquot === null) return false;
+        return (drafts[u.id] ?? "") !== String(u.aliquot).replace(".", ",");
+      }),
+    [units, drafts],
+  );
+  const faltaActa = modificaCargadas && acta.trim().length < 5;
 
   // Que no se pierda media hora de tipeo por un clic en el menú.
   useEffect(() => {
@@ -167,6 +178,7 @@ export function AliquotEditor({
 
     const fd = new FormData();
     fd.set("reason", reason);
+    fd.set("acta", acta);
     fd.set(
       "items",
       JSON.stringify(parsed.map((p) => ({ id: p.unit.id, value: p.value }))),
@@ -374,6 +386,28 @@ export function AliquotEditor({
           </p>
         </div>
 
+        {modificaCargadas && (
+          <div className="space-y-2">
+            <label htmlFor="acta" className="font-meta text-mute">
+              ACTA DE ASAMBLEA QUE LO APRUEBA
+            </label>
+            <Input
+              id="acta"
+              value={acta}
+              onChange={(e) => {
+                setActa(e.target.value);
+                if (error) setError("");
+              }}
+              maxLength={200}
+              placeholder="Ej: Asamblea del 15/03/2027, punto 4"
+              className="h-11"
+            />
+            <p className="text-[12px] text-mute">
+              Estás cambiando alícuotas que ya estaban cargadas. Modificar el reparto necesita el acta que lo aprueba.
+            </p>
+          </div>
+        )}
+
         {error && (
           <p
             role="alert"
@@ -396,7 +430,7 @@ export function AliquotEditor({
           <Button
             type="button"
             onClick={guardar}
-            disabled={loading || hayErrores || !sucio || reason.trim().length < 10}
+            disabled={loading || hayErrores || !sucio || reason.trim().length < 10 || faltaActa}
             className="min-w-40"
           >
             {loading

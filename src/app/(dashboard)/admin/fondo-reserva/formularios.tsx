@@ -7,7 +7,7 @@ const campo =
   "h-10 w-full rounded-lg border border-border bg-background px-3 text-sm focus-visible:outline-2 focus-visible:outline-cyan";
 const boton = "rounded-lg bg-marine-deep px-4 py-2 text-sm font-medium text-frost disabled:opacity-50";
 
-export function ConfigFondo({ pct, acta }: { pct: number | null; acta: string | null }) {
+export function ConfigFondo({ fondo, pct, acta }: { fondo: string; pct: number | null; acta: string | null }) {
   const [valor, setValor] = useState(pct === null ? "" : String(pct).replace(".", ","));
   const [texto, setTexto] = useState(acta ?? "");
   const [aviso, setAviso] = useState<{ ok: boolean; msg: string } | null>(null);
@@ -21,7 +21,7 @@ export function ConfigFondo({ pct, acta }: { pct: number | null; acta: string | 
         const n = limpio === "" ? null : Number(limpio);
         if (n !== null && !Number.isFinite(n)) return setAviso({ ok: false, msg: "Escribe un número, por ejemplo 10." });
         start(async () => {
-          const r = await guardarConfigFondo(n, texto);
+          const r = await guardarConfigFondo(fondo, n, texto);
           setAviso("error" in r ? { ok: false, msg: r.error } : { ok: true, msg: "Guardado." });
         });
       }}
@@ -48,7 +48,7 @@ export function ConfigFondo({ pct, acta }: { pct: number | null; acta: string | 
   );
 }
 
-export function NuevoMovimiento({ hoy, tieneInicial }: { hoy: string; tieneInicial: boolean }) {
+export function NuevoMovimiento({ fondo, hoy, tieneInicial }: { fondo: string; hoy: string; tieneInicial: boolean }) {
   const [kind, setKind] = useState(tieneInicial ? "contribution" : "opening");
   const [error, setError] = useState("");
   const [pending, start] = useTransition();
@@ -71,6 +71,7 @@ export function NuevoMovimiento({ hoy, tieneInicial }: { hoy: string; tieneInici
       }
       className="space-y-3"
     >
+      <input type="hidden" name="fund" value={fondo} />
       <div className="grid gap-3 sm:grid-cols-3">
         <label className="text-[13px] text-marine-deep">
           Tipo

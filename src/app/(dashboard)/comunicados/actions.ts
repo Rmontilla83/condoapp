@@ -3,7 +3,7 @@
 import { randomUUID } from "node:crypto";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getCurrentProfile } from "@/lib/queries";
-import { isAdminRole } from "@/lib/permissions";
+import { puede } from "@/lib/permissions";
 import { revalidatePath } from "next/cache";
 import { enviarEmail } from "@/lib/email/send";
 import { comunicadoUrgente } from "@/lib/email/templates";
@@ -17,7 +17,7 @@ const MAX_BYTES_FOTO = 1024 * 1024;
 export async function createAnnouncement(formData: FormData) {
   const profile = await getCurrentProfile();
   if (!profile?.organization_id) return { error: "No tienes organización" };
-  if (!isAdminRole(profile)) {
+  if (!puede(profile, "comunicar")) {
     return { error: "Solo administradores pueden crear comunicados" };
   }
 

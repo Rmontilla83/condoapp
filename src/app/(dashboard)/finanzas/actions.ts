@@ -2,10 +2,11 @@
 
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getCurrentProfile } from "@/lib/queries";
-import { isAdminRole } from "@/lib/permissions";
+import { puede, sinPermiso } from "@/lib/permissions";
+import { registrarEvento } from "@/lib/historial";
 import { validateVoidReason } from "@/lib/schemas/finance";
 import { revalidatePath } from "next/cache";
-import { resumenFondo } from "@/lib/contabilidad/fondo-reserva";
+import { NOMBRE_FONDO, resumenFondo, type Fondo } from "@/lib/contabilidad/fondo-reserva";
 import { gastoEnUsd, hayTasaPara, saldosPorPagar, serieDeTasas, type TipoContable } from "@/lib/contabilidad/gastos";
 import { usd } from "@/lib/format";
 
@@ -14,9 +15,7 @@ const TIPOS_CONTABLES: TipoContable[] = ["gasto", "provision", "pago_provision",
 export async function createExpense(formData: FormData) {
   const profile = await getCurrentProfile();
   if (!profile?.organization_id) return { error: "No tienes organización asignada" };
-  if (!isAdminRole(profile)) {
-    return { error: "Solo administradores pueden registrar gastos" };
-  }
+  if (!puede(profile, "cargar")) return { error: sinPermiso(profile) };
 
   const categoryId = (formData.get("category_id") as string)?.trim();
   const description = (formData.get("description") as string)?.trim();
@@ -31,6 +30,7 @@ export async function createExpense(formData: FormData) {
   // Solo un gasto común puede salir del fondo o llevar retención.
   const conFondo = tipo === "gasto" && formData.get("paid_from_reserve") === "on";
   const actaFondo = (formData.get("reserve_acta") as string)?.trim().slice(0, 200) || null;
+  const fondo: Fondo = formData.get("fund") === "contingencia" ? "contingencia" : "reserva";
   const moneda = formData.get("currency") === "USD" ? "USD" : "VES";
   const retencion = tipo === "gasto" ? parseFloat((formData.get("retencion_islr") as string) || "0") || 0 : 0;
 
@@ -76,10 +76,10 @@ export async function createExpense(formData: FormData) {
   }
 
   if (conFondo) {
-    if (!actaFondo || actaFondo.length < 5) return { error: "Indica el acta o acuerdo que aprueba usar el fondo de reserva" };
-    const { saldo } = await resumenFondo(supabase, profile.organization_id);
+    if (!actaFondo || actaFondo.length < 5) return { error: `Indica el acta o acuerdo que aprueba usar el ${NOMBRE_FONDO[fondo]}` };
+    const { saldo } = await resumenFondo(supabase, profile.organization_id, fondo);
     const enUsd = gastoEnUsd({ amount, currency: moneda, expense_date: expenseDate }, tasas);
-    if (enUsd > saldo) return { error: `El fondo de reserva tiene ${usd(saldo)}: no alcanza para este gasto` };
+    if (enUsd > saldo) return { error: `El ${NOMBRE_FONDO[fondo]} tiene ${usd(saldo)}: no alcanza para este gasto` };
   }
 
   // Resolver vendor_id: id existente o quick-create
@@ -128,6 +128,7 @@ export async function createExpense(formData: FormData) {
     vendor_id: vendorId,
     cost_center_id: costCenterId,
     paid_from_reserve: conFondo,
+    fund: conFondo ? fondo : "reserva",
     reserve_acta: conFondo ? actaFondo : null,
     description,
     amount,
@@ -140,6 +141,12 @@ export async function createExpense(formData: FormData) {
   });
 
   if (error) return { error: error.message };
+  await registrarEvento({
+    orgId: profile.organization_id,
+    actorId: profile.id,
+    evento: "expense_recorded",
+    datos: { descripcion: description, monto: amount, moneda, tipo, con_fondo: conFondo ? fondo : null, acta: conFondo ? actaFondo : null },
+  });
 
   revalidatePath("/finanzas");
   revalidatePath("/admin");
@@ -150,7 +157,7 @@ export async function createExpense(formData: FormData) {
 export async function voidExpense(expenseId: string, reason: string) {
   const profile = await getCurrentProfile();
   if (!profile?.organization_id) return { error: "No autenticado" };
-  if (!isAdminRole(profile)) return { error: "Solo administradores pueden anular gastos" };
+  if (!puede(profile, "administrar")) return { error: sinPermiso(profile) };
 
   const reasonCheck = validateVoidReason(reason);
   if (!reasonCheck.ok || !reasonCheck.reason) {
@@ -162,7 +169,7 @@ export async function voidExpense(expenseId: string, reason: string) {
   // Verificar que existe y pertenece a la org y NO está ya anulado
   const { data: expense } = await supabase
     .from("expense_records")
-    .select("id, organization_id, voided_at")
+    .select("id, organization_id, voided_at, description, amount, currency")
     .eq("id", expenseId)
     .eq("organization_id", profile.organization_id)
     .single();
@@ -174,11 +181,18 @@ export async function voidExpense(expenseId: string, reason: string) {
     .update({
       voided_at: new Date().toISOString(),
       voided_reason: reasonCheck.reason,
+      voided_by: profile.id,
     })
     .eq("id", expenseId)
     .eq("organization_id", profile.organization_id);
 
   if (error) return { error: error.message };
+  await registrarEvento({
+    orgId: profile.organization_id,
+    actorId: profile.id,
+    evento: "expense_voided",
+    datos: { descripcion: expense.description, monto: Number(expense.amount), moneda: expense.currency, motivo: reasonCheck.reason },
+  });
 
   revalidatePath("/finanzas");
   revalidatePath("/admin");
@@ -190,7 +204,7 @@ export async function voidExpense(expenseId: string, reason: string) {
 export async function createOtherIncome(formData: FormData) {
   const profile = await getCurrentProfile();
   if (!profile?.organization_id) return { error: "No tienes organización asignada" };
-  if (!isAdminRole(profile)) return { error: "Solo administradores pueden registrar ingresos" };
+  if (!puede(profile, "cargar")) return { error: sinPermiso(profile) };
 
   const description = (formData.get("description") as string)?.trim().slice(0, 200);
   const source = (formData.get("source") as string)?.trim().slice(0, 120) || null;
@@ -242,6 +256,12 @@ export async function createOtherIncome(formData: FormData) {
     recorded_by: profile.id,
   });
   if (error) return { error: error.message };
+  await registrarEvento({
+    orgId: profile.organization_id,
+    actorId: profile.id,
+    evento: "income_recorded",
+    datos: { descripcion: description, monto: amount, moneda },
+  });
 
   revalidatePath("/finanzas");
   revalidatePath("/admin");
@@ -252,20 +272,26 @@ export async function createOtherIncome(formData: FormData) {
 export async function voidOtherIncome(id: string, reason: string) {
   const profile = await getCurrentProfile();
   if (!profile?.organization_id) return { error: "No autenticado" };
-  if (!isAdminRole(profile)) return { error: "Solo administradores pueden anular ingresos" };
+  if (!puede(profile, "administrar")) return { error: sinPermiso(profile) };
 
   const check = validateVoidReason(reason);
   if (!check.ok || !check.reason) return { error: check.error ?? "Razón inválida" };
 
   const { data, error } = await createAdminClient()
     .from("other_incomes")
-    .update({ voided_at: new Date().toISOString(), voided_reason: check.reason })
+    .update({ voided_at: new Date().toISOString(), voided_reason: check.reason, voided_by: profile.id })
     .eq("id", id)
     .eq("organization_id", profile.organization_id)
     .is("voided_at", null)
-    .select("id");
+    .select("id, description, amount, currency");
   if (error) return { error: error.message };
   if (!data?.length) return { error: "Ese ingreso no existe o ya está anulado" };
+  await registrarEvento({
+    orgId: profile.organization_id,
+    actorId: profile.id,
+    evento: "income_voided",
+    datos: { descripcion: data[0].description, monto: Number(data[0].amount), moneda: data[0].currency, motivo: check.reason },
+  });
 
   revalidatePath("/finanzas");
   revalidatePath("/admin");

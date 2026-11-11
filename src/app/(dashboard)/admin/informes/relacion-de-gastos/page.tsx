@@ -43,7 +43,7 @@ export default async function RelacionDeGastosPage({ searchParams }: { searchPar
   const [{ data: gastos }, { data: cats }, { data: tasas }, { data: cuotas }, { data: pagos }, { data: notas }, { data: ingresos }] = await Promise.all([
     db
       .from("expense_records")
-      .select("id, description, amount, currency, expense_date, receipt_url, category_id, paid_from_reserve, reserve_acta, tipo_contable, retencion_islr, vendors(name), cost_centers(name)")
+      .select("id, description, amount, currency, expense_date, receipt_url, category_id, paid_from_reserve, reserve_acta, fund, tipo_contable, retencion_islr, vendors(name), cost_centers(name)")
       .eq("organization_id", orgId)
       .is("voided_at", null)
       // Pagar una provisión o enterar retenciones salda una deuda: no es gasto del período.
@@ -167,7 +167,7 @@ export default async function RelacionDeGastosPage({ searchParams }: { searchPar
               : "Montos en dólares, como referencia; lo que se pagó en bolívares se convierte a la tasa BCV del día del gasto."}{" "}
             Facturado: recibos emitidos en el
             período, menos notas de crédito. Cobrado: pagos aprobados en el período (sin saldo a favor aplicado).
-            {conFondo > 0 && ` Gastado incluye ${fmt(conFondo)} pagados con el fondo de reserva.`}
+            {conFondo > 0 && ` Gastado incluye ${fmt(conFondo)} pagados con los fondos.`}
             {sinSoporte > 0 && ` ${sinSoporte} gasto${sinSoporte !== 1 ? "s" : ""} sin factura adjunta.`}
           </>
         }
@@ -240,7 +240,7 @@ export default async function RelacionDeGastosPage({ searchParams }: { searchPar
                         {g.description as string}
                         {!!g.paid_from_reserve && (
                           <span className="block text-[10.5px] text-mute">
-                            Con el fondo de reserva{g.reserve_acta ? ` · ${g.reserve_acta as string}` : ""}
+                            Con el fondo de {g.fund === "contingencia" ? "contingencia" : "reserva"}{g.reserve_acta ? ` · ${g.reserve_acta as string}` : ""}
                           </span>
                         )}
                         {g.tipo_contable === "provision" && (

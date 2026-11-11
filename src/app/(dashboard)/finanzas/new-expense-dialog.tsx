@@ -21,8 +21,9 @@ interface Props {
   categories: ExpenseCategory[];
   /** Centros de costo activos. Si hay alguno, cada gasto debe decir el suyo. */
   centros?: { id: string; name: string }[];
-  /** Saldo disponible del fondo de reserva. */
+  /** Saldo disponible de cada fondo. */
   saldoFondo?: number;
+  saldoContingencia?: number;
   /** Tasas BCV, para mostrar la equivalencia antes de guardar. */
   tasas?: SerieTasas;
   /** Lo que falta por pagar, en bolívares. */
@@ -39,8 +40,10 @@ const AYUDA_TIPO: Record<TipoContable, string> = {
   entero_retencion: "Sale dinero del banco para pagarle al SENIAT lo retenido. No se cuenta otra vez como gasto.",
 };
 
-export function NewExpenseDialog({ categories, centros = [], saldoFondo = 0, tasas = [], porPagar = { provisiones: 0, retenciones: 0 } }: Props) {
+export function NewExpenseDialog({ categories, centros = [], saldoFondo = 0, saldoContingencia = 0, tasas = [], porPagar = { provisiones: 0, retenciones: 0 } }: Props) {
   const [conFondo, setConFondo] = useState(false);
+  const [fondo, setFondo] = useState<"reserva" | "contingencia">("reserva");
+  const saldoDelFondo = fondo === "contingencia" ? saldoContingencia : saldoFondo;
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -289,12 +292,24 @@ export function NewExpenseDialog({ categories, centros = [], saldoFondo = 0, tas
                   className="mt-0.5 h-4 w-4 cursor-pointer"
                 />
                 <span>
-                  Se paga con el fondo de reserva
-                  <span className="block text-[12px] text-mute">Saldo disponible: ${saldoFondo.toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                  Se paga con un fondo del condominio
+                  <span className="block text-[12px] text-mute">Reserva o contingencia, con el acta que lo aprueba.</span>
                 </span>
               </label>
               {conFondo && (
                 <div className="space-y-2">
+                  <Label htmlFor="fund">Fondo</Label>
+                  <select
+                    id="fund"
+                    name="fund"
+                    value={fondo}
+                    onChange={(e) => setFondo(e.target.value === "contingencia" ? "contingencia" : "reserva")}
+                    className={campo}
+                  >
+                    <option value="reserva">Fondo de reserva</option>
+                    <option value="contingencia">Fondo de contingencia</option>
+                  </select>
+                  <p className="text-[12px] text-mute">Saldo disponible: ${saldoDelFondo.toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
                   <Label htmlFor="reserve_acta">Acta o acuerdo que lo aprueba</Label>
                   <Input id="reserve_acta" name="reserve_acta" required minLength={5} maxLength={200} placeholder="Asamblea del 15/03/2026" />
                 </div>

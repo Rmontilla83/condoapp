@@ -17,6 +17,8 @@ export interface InvoiceInsert {
   amount_bs: number | null;
   /** Parte del monto que va al fondo de reserva (migration 058). */
   reserve_amount: number;
+  /** Parte del monto que va al fondo de contingencia (migration 070). */
+  contingency_amount: number;
 }
 
 export interface ComputeUnit {
@@ -54,8 +56,12 @@ export interface ComputeInput {
   group_aliquot_sum?: number;
   /** % de aporte al fondo de reserva que se SUMA al monto de la emisión. */
   reserve_pct?: number;
-  /** La emisión completa va al fondo de reserva (una derrama para el fondo). */
+  /** % de aporte al fondo de contingencia, que también se SUMA (migration 070). */
+  contingency_pct?: number;
+  /** La emisión completa va a un fondo (una derrama para el fondo). */
   reserve_all?: boolean;
+  /** A cuál, cuando reserve_all. Por defecto, reserva. */
+  fund_all?: "reserva" | "contingencia";
 }
 
 export interface ComputeResult {
@@ -158,7 +164,9 @@ export function computeInvoiceAmounts(input: ComputeInput): ComputeResult {
   // El aporte al fondo se suma sobre lo que escribió la administración: cada
   // monto de entrada se multiplica antes de repartir, para que el total siga
   // exacto al centavo.
-  const pctFondo = !input.reserve_all && (input.reserve_pct ?? 0) > 0 ? (input.reserve_pct as number) : 0;
+  const pctReserva = !input.reserve_all && (input.reserve_pct ?? 0) > 0 ? (input.reserve_pct as number) : 0;
+  const pctConting = !input.reserve_all && (input.contingency_pct ?? 0) > 0 ? (input.contingency_pct as number) : 0;
+  const pctFondo = pctReserva + pctConting;
   const factor = 1 + pctFondo / 100;
 
   switch (input.fee_mode) {
@@ -297,10 +305,21 @@ export function computeInvoiceAmounts(input: ComputeInput): ComputeResult {
   const destinatarias = input.fee_mode === "by_group" ? input.units.filter((u) => perUnit.has(u.id)) : input.units;
   // La parte del fondo se calcula recibo por recibo: el recibo es inmutable y lo
   // lee el vecino, así que un residuo de redondeo no puede caer todo en uno solo.
-  const fondoDe = (amount: number) => (input.reserve_all ? amount : pctFondo > 0 ? round2(amount - amount / factor) : 0);
+  // Lo de los dos fondos se calcula junto y se parte por porcentaje: la suma de
+  // las dos partes es siempre lo que se le sumó a la cuota.
+  const fondosDe = (amount: number): { reserva: number; contingencia: number } => {
+    if (input.reserve_all) {
+      return input.fund_all === "contingencia" ? { reserva: 0, contingencia: amount } : { reserva: amount, contingencia: 0 };
+    }
+    if (pctFondo <= 0) return { reserva: 0, contingencia: 0 };
+    const ambos = round2(amount - amount / factor);
+    const contingencia = round2((ambos * pctConting) / pctFondo);
+    return { reserva: round2(ambos - contingencia), contingencia };
+  };
 
   const invoices: InvoiceInsert[] = destinatarias.map((u) => {
     const amount = perUnit.get(u.id) ?? 0;
+    const fondos = fondosDe(amount);
     const amount_bs = input.exchange_rate
       ? round2(amount * input.exchange_rate)
       : null;
@@ -315,7 +334,8 @@ export function computeInvoiceAmounts(input: ComputeInput): ComputeResult {
       kind: input.kind,
       exchange_rate: input.exchange_rate,
       amount_bs,
-      reserve_amount: fondoDe(amount),
+      reserve_amount: fondos.reserva,
+      contingency_amount: fondos.contingencia,
     };
   });
 

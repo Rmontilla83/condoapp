@@ -3,7 +3,7 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentProfile } from "@/lib/queries";
-import { isAdminRole, canTenantAct } from "@/lib/permissions";
+import { puede, canTenantAct } from "@/lib/permissions";
 import {
   getVoterAliquot,
   getAliquotCoverage,
@@ -19,7 +19,7 @@ const VALID_KINDS: DecisionKind[] = ["quick_poll", "formal_assembly"];
 export async function createDecision(formData: FormData) {
   const profile = await getCurrentProfile();
   if (!profile?.organization_id) return { error: "Sin organización" };
-  if (!isAdminRole(profile)) return { error: "Solo administradores" };
+  if (!puede(profile, "decidir")) return { error: "Tu función no permite gestionar consultas y asambleas." };
 
   const kindRaw = formData.get("kind") as string;
   const kind: DecisionKind = VALID_KINDS.includes(kindRaw as DecisionKind)
@@ -143,7 +143,7 @@ export async function createDecision(formData: FormData) {
 export async function updateDecision(formData: FormData) {
   const profile = await getCurrentProfile();
   if (!profile?.organization_id) return { error: "Sin organización" };
-  if (!isAdminRole(profile)) return { error: "Solo administradores" };
+  if (!puede(profile, "decidir")) return { error: "Tu función no permite gestionar consultas y asambleas." };
 
   const decisionId = (formData.get("decision_id") as string)?.trim();
   if (!decisionId) return { error: "Falta el id de la decisión" };
@@ -315,7 +315,7 @@ export async function voteDecision(questionId: string, option: string, decisionI
 export async function closeDecision(decisionId: string) {
   const profile = await getCurrentProfile();
   if (!profile?.organization_id) return { error: "No autenticado" };
-  if (!isAdminRole(profile)) return { error: "Solo administradores" };
+  if (!puede(profile, "decidir")) return { error: "Tu función no permite gestionar consultas y asambleas." };
 
   const supabase = createAdminClient();
 
@@ -469,7 +469,7 @@ export async function closeDecision(decisionId: string) {
 export async function cancelDecision(decisionId: string) {
   const profile = await getCurrentProfile();
   if (!profile?.organization_id) return { error: "No autenticado" };
-  if (!isAdminRole(profile)) return { error: "Solo administradores" };
+  if (!puede(profile, "decidir")) return { error: "Tu función no permite gestionar consultas y asambleas." };
 
   const supabase = createAdminClient();
   const { error } = await supabase

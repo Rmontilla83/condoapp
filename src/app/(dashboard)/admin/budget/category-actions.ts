@@ -2,7 +2,7 @@
 
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getCurrentProfile } from "@/lib/queries";
-import { isAdminRole } from "@/lib/permissions";
+import { puede } from "@/lib/permissions";
 import { revalidatePath } from "next/cache";
 
 /** Convierte un label a un code slug (lowercase, sin acentos, a-z0-9_). */
@@ -24,7 +24,7 @@ function revalidate() {
 export async function createExpenseCategory(formData: FormData) {
   const profile = await getCurrentProfile();
   if (!profile?.organization_id) return { error: "No autenticado" };
-  if (!isAdminRole(profile)) return { error: "Solo administradores" };
+  if (!puede(profile, "administrar")) return { error: "Solo administradores" };
 
   const label = (formData.get("label") as string)?.trim();
   const icon = (formData.get("icon") as string)?.trim() || "·";
@@ -67,7 +67,7 @@ export async function createExpenseCategory(formData: FormData) {
 export async function updateExpenseCategory(formData: FormData) {
   const profile = await getCurrentProfile();
   if (!profile?.organization_id) return { error: "No autenticado" };
-  if (!isAdminRole(profile)) return { error: "Solo administradores" };
+  if (!puede(profile, "administrar")) return { error: "Solo administradores" };
 
   const id = (formData.get("id") as string)?.trim();
   const label = (formData.get("label") as string)?.trim();
@@ -91,7 +91,7 @@ export async function updateExpenseCategory(formData: FormData) {
 export async function deactivateExpenseCategory(formData: FormData) {
   const profile = await getCurrentProfile();
   if (!profile?.organization_id) return { error: "No autenticado" };
-  if (!isAdminRole(profile)) return { error: "Solo administradores" };
+  if (!puede(profile, "administrar")) return { error: "Solo administradores" };
 
   const id = (formData.get("id") as string)?.trim();
   if (!id) return { error: "Falta el id de la categoría" };

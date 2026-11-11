@@ -67,6 +67,13 @@ export interface Organization {
   // Fondo de reserva (migration 058). NULL = sin definir.
   reserve_fund_pct?: number | null;
   reserve_fund_acta?: string | null;
+  // Fondo de contingencia (migration 070). NULL = sin definir.
+  contingency_fund_pct?: number | null;
+  contingency_fund_acta?: string | null;
+  /** Si los inquilinos ven las consultas y asambleas (migration 069). */
+  tenant_can_see_decisions?: boolean;
+  /** Quién ve el censo documental (migration 071). */
+  censo_visible?: "administracion" | "propio" | "todos";
   created_at: string;
 }
 
@@ -176,6 +183,8 @@ export interface Profile {
   /** Condiciones de uso aceptadas (migration 061). */
   terms_version?: string | null;
   terms_accepted_at?: string | null;
+  /** Función dentro de la administración (migration 069). Solo con role = admin. */
+  admin_funcion?: "administradora" | "junta" | "asistente" | "contador" | null;
   created_at: string;
 }
 
@@ -198,6 +207,8 @@ export interface Invoice {
   paid_amount?: number;
   /** Parte del monto que va al fondo de reserva (migration 058). */
   reserve_amount?: number;
+  /** Parte del monto que va al fondo de contingencia (migration 070). */
+  contingency_amount?: number;
 }
 
 export interface Transaction {
@@ -297,6 +308,8 @@ export interface ExpenseRecord {
   /** Pagado con el fondo de reserva, con el acta que lo aprueba (migration 058). */
   paid_from_reserve?: boolean;
   reserve_acta?: string | null;
+  /** De cuál fondo, cuando paid_from_reserve (migration 070). */
+  fund?: "reserva" | "contingencia";
   /** Cómo entra al libro y cuánto ISLR se retuvo, en la moneda del gasto (migration 066). */
   tipo_contable?: "gasto" | "provision" | "pago_provision" | "entero_retencion";
   retencion_islr?: number;

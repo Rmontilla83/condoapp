@@ -159,6 +159,7 @@ export default async function AdminSettingsPage() {
             tenant_can_vote: org.tenant_can_vote,
             tenant_can_see_delinquents: org.tenant_can_see_delinquents,
             tenant_can_reserve: org.tenant_can_reserve,
+            tenant_can_see_decisions: org.tenant_can_see_decisions ?? true,
           }}
         />
       </div>

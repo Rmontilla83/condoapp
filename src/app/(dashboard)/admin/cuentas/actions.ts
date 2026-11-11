@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getCurrentProfile } from "@/lib/queries";
 import { requireAdmin } from "@/lib/permissions";
+import { registrarEvento } from "@/lib/historial";
 import { ESTADOS_ABIERTOS, pendienteDe } from "@/lib/cuotas";
 import { calcularIntereses } from "@/lib/contabilidad/cobranza";
 import { notificar, perfilesDeUnidad } from "@/lib/notificaciones";
@@ -142,6 +143,13 @@ export async function registrarPagoRecibido(fd: FormData): Promise<Resultado> {
     correo: false,
   });
 
+  await registrarEvento({
+    orgId,
+    actorId: profile.id,
+    evento: "payment_registered",
+    datos: { unit_id: unitId, monto, metodo, referencia, recibos: filas.length, saldo_a_favor: resta },
+  });
+
   refrescar(unitId);
   return {
     success: true,
@@ -179,6 +187,7 @@ export async function anularRecibo(invoiceId: string, motivo: string): Promise<R
         : "Ese recibo ya estaba anulado.",
     };
   }
+  await registrarEvento({ orgId, actorId: profile.id, evento: "invoice_voided", datos: { recibo: invoiceId, unit_id: cuota.unit_id, motivo: m } });
   refrescar(cuota.unit_id as string);
   return { success: true, mensaje: "Recibo anulado. Se emitió la nota de crédito." };
 }
@@ -242,6 +251,7 @@ export async function cerrarConvenio(planId: string, estado: "completed" | "canc
     .maybeSingle();
   if (error) return { error: error.message };
   if (!data) return { error: "Ese convenio ya no está activo." };
+  await registrarEvento({ orgId, actorId: a.profile.id, evento: "payment_plan_closed", datos: { convenio: planId, unit_id: data.unit_id, estado, motivo: m || null } });
   refrescar(data.unit_id as string);
   return { success: true };
 }
@@ -261,6 +271,7 @@ export async function guardarTasaMora(pct: number | null, acta: string): Promise
     .update({ late_fee_pct: pct, late_fee_acta: actaLimpia || null })
     .eq("id", a.orgId);
   if (error) return { error: error.message };
+  await registrarEvento({ orgId: a.orgId, actorId: a.profile.id, evento: "late_fee_rate_updated", datos: { tasa_anual: pct, acta: actaLimpia || null } });
   revalidatePath("/admin/cuentas/intereses");
   return { success: true };
 }

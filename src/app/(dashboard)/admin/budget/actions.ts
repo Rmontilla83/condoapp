@@ -2,7 +2,8 @@
 
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getCurrentProfile } from "@/lib/queries";
-import { isAdminRole } from "@/lib/permissions";
+import { puede, sinPermiso } from "@/lib/permissions";
+import { registrarEvento } from "@/lib/historial";
 import { revalidatePath } from "next/cache";
 
 interface BudgetItemInput {
@@ -16,7 +17,7 @@ interface BudgetItemInput {
 export async function saveBudget(formData: FormData) {
   const profile = await getCurrentProfile();
   if (!profile?.organization_id) return { error: "No autenticado" };
-  if (!isAdminRole(profile)) return { error: "Solo administradores" };
+  if (!puede(profile, "administrar")) return { error: sinPermiso(profile) };
 
   const yearRaw = formData.get("year") as string;
   const year = parseInt(yearRaw, 10);
@@ -103,22 +104,25 @@ export async function saveBudget(formData: FormData) {
     p_items: itemRows,
   });
   if (iErr) return { error: iErr.message };
+  await registrarEvento({ orgId: profile.organization_id, actorId: profile.id, evento: "budget_saved", datos: { anio: year, partidas: itemRows.length } });
 
   revalidatePath("/admin/budget");
   revalidatePath("/finanzas");
   return { success: true, budgetId };
 }
 
+/** Aprobar el presupuesto es de la Junta: quien lo arma no lo aprueba. */
 export async function approveBudget(budgetId: string, decisionId?: string) {
   const profile = await getCurrentProfile();
   if (!profile?.organization_id) return { error: "No autenticado" };
-  if (!isAdminRole(profile)) return { error: "Solo administradores" };
+  if (!puede(profile, "aprobar_junta")) return { error: "El presupuesto lo aprueba la Junta de Condominio." };
 
   const supabase = createAdminClient();
 
   const updates: Record<string, unknown> = {
     status: "approved",
     approved_at: new Date().toISOString(),
+    approved_by: profile.id,
   };
   if (decisionId) updates.approved_by_decision_id = decisionId;
 
@@ -129,6 +133,7 @@ export async function approveBudget(budgetId: string, decisionId?: string) {
     .eq("organization_id", profile.organization_id);
 
   if (error) return { error: error.message };
+  await registrarEvento({ orgId: profile.organization_id, actorId: profile.id, evento: "budget_approved", datos: { presupuesto: budgetId } });
 
   revalidatePath("/admin/budget");
   revalidatePath("/finanzas");
@@ -138,7 +143,7 @@ export async function approveBudget(budgetId: string, decisionId?: string) {
 export async function archiveBudget(budgetId: string) {
   const profile = await getCurrentProfile();
   if (!profile?.organization_id) return { error: "No autenticado" };
-  if (!isAdminRole(profile)) return { error: "Solo administradores" };
+  if (!puede(profile, "administrar") && !puede(profile, "aprobar_junta")) return { error: sinPermiso(profile) };
 
   const supabase = createAdminClient();
   const { error } = await supabase
@@ -148,6 +153,7 @@ export async function archiveBudget(budgetId: string) {
     .eq("organization_id", profile.organization_id);
 
   if (error) return { error: error.message };
+  await registrarEvento({ orgId: profile.organization_id, actorId: profile.id, evento: "budget_archived", datos: { presupuesto: budgetId } });
 
   revalidatePath("/admin/budget");
   revalidatePath("/finanzas");

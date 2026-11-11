@@ -3,7 +3,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getCurrentProfile, getUserUnitIds } from "@/lib/queries";
-import { isAdminRole } from "@/lib/permissions";
+import { puede } from "@/lib/permissions";
 import { revalidatePath } from "next/cache";
 import { enviarEmail } from "@/lib/email/send";
 import { mantenimientoActualizado } from "@/lib/email/templates";
@@ -180,7 +180,7 @@ export async function updateRequestStatus(
   try {
     const profile = await getCurrentProfile();
     if (!profile?.organization_id) return { error: "No autorizado" };
-    if (!isAdminRole(profile)) {
+    if (!puede(profile, "cargar")) {
       return { error: "Solo administradores pueden cambiar el estado" };
     }
 

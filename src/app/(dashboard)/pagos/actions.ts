@@ -8,7 +8,8 @@ import {
   getCurrentRate,
   getUnitIdsWithPayAccess,
 } from "@/lib/queries";
-import { isAdminRole } from "@/lib/permissions";
+import { funcionDe, puede } from "@/lib/permissions";
+import { registrarEvento } from "@/lib/historial";
 import { revalidatePath } from "next/cache";
 import {
   MIN_REASON_LENGTH,
@@ -183,7 +184,7 @@ export async function submitPaymentForMultipleInvoices(formData: FormData) {
 
 export async function approvePayment(transactionId: string) {
   const profile = await getCurrentProfile();
-  if (!profile?.organization_id || !isAdminRole(profile)) {
+  if (!profile?.organization_id || !puede(profile, "administrar")) {
     return { error: "No autorizado" };
   }
 
@@ -206,6 +207,11 @@ export async function approvePayment(transactionId: string) {
   if (tx.status !== "pending") {
     return { error: "Este comprobante ya fue revisado." };
   }
+  // Quien reporta un pago no lo aprueba. La cuenta sin separación de tareas
+  // queda exenta: en un condominio con una sola persona no habría quién.
+  if (tx.paid_by === profile.id && funcionDe(profile) !== "completa") {
+    return { error: "No puedes aprobar un pago que tú reportaste. Debe revisarlo otra persona." };
+  }
 
   const { error: txError } = await supabase
     .from("transactions")
@@ -221,6 +227,12 @@ export async function approvePayment(transactionId: string) {
     .eq("id", transactionId);
 
   if (txError) return { error: txError.message };
+  await registrarEvento({
+    orgId: profile.organization_id,
+    actorId: profile.id,
+    evento: "payment_approved",
+    datos: { transaccion: transactionId, monto: Number(tx.amount), moneda: tx.currency, reportado_por: tx.paid_by },
+  });
 
   // El estado de la cuota (pagada o abonada) lo recalcula la base con el
   // trigger de la migration 052 a partir de los pagos aprobados.
@@ -308,7 +320,7 @@ async function notificarPago(
 
 export async function rejectPayment(transactionId: string, reason: string) {
   const profile = await getCurrentProfile();
-  if (!profile?.organization_id || !isAdminRole(profile)) {
+  if (!profile?.organization_id || !puede(profile, "administrar")) {
     return { error: "No autorizado" };
   }
 
@@ -347,6 +359,12 @@ export async function rejectPayment(transactionId: string, reason: string) {
     .eq("id", transactionId);
 
   if (error) return { error: error.message };
+  await registrarEvento({
+    orgId: profile.organization_id,
+    actorId: profile.id,
+    evento: "payment_rejected",
+    datos: { transaccion: transactionId, monto: Number(check.amount), moneda: check.currency, motivo },
+  });
 
   await notificarPago(check, profile.organization_id, "rechazado", motivo);
 

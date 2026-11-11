@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getCurrentProfile } from "@/lib/queries";
 import { requireAdmin } from "@/lib/permissions";
+import { registrarEvento } from "@/lib/historial";
 import { aplicarSaldos, saldosPorUnidad } from "@/lib/saldos";
 
 type Resultado = { error: string } | { success: true; aplicadas: number };
@@ -61,6 +62,7 @@ export async function registrarSaldo(formData: FormData): Promise<Resultado> {
   if (error) return { error: error.message };
 
   const aplicadas = tipo === "deposito" ? await aplicarSaldos(admin, [unitId], profile!.id) : 0;
+  await registrarEvento({ orgId, actorId: profile!.id, evento: "unit_credit_registered", datos: { unit_id: unitId, tipo, monto, motivo: nota } });
 
   revalidatePath("/admin/saldos");
   revalidatePath("/pagos");

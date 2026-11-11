@@ -8,6 +8,7 @@ interface Policies {
   tenant_can_vote: boolean;
   tenant_can_see_delinquents: boolean;
   tenant_can_reserve: boolean;
+  tenant_can_see_decisions: boolean;
 }
 
 const policyMeta: Record<keyof Policies, { title: string; description: string }> = {
@@ -20,6 +21,11 @@ const policyMeta: Record<keyof Policies, { title: string; description: string }>
     title: "Los inquilinos ven la lista completa de morosos",
     description:
       "Si lo activas, los inquilinos ven qué unidades del condominio están atrasadas. Si lo apagas, solo ven la morosidad de su propia unidad.",
+  },
+  tenant_can_see_decisions: {
+    title: "Los inquilinos ven las consultas y asambleas",
+    description:
+      "Si lo apagas, la sección Decisiones queda solo para propietarios. Votar depende de la primera regla.",
   },
   tenant_can_reserve: {
     title: "Los inquilinos pueden reservar áreas comunes",

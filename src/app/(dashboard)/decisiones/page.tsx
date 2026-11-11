@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentProfile, getEffectiveRole } from "@/lib/queries";
+import { canTenantAct, puede } from "@/lib/permissions";
 import { computeQuorum, getOrgQuorumUniverse, normalizeOptions } from "@/lib/decisions";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DecisionCard } from "./decision-card";
@@ -42,7 +43,11 @@ export default async function DecisionesPage() {
   if (!profile?.organization_id) redirect("/dashboard");
 
   const effectiveRole = getEffectiveRole(profile);
-  const isAdmin = effectiveRole === "admin" || effectiveRole === "super_admin";
+  const isAdmin = (effectiveRole === "admin" || effectiveRole === "super_admin") && puede(profile, "decidir");
+
+  // La Junta puede dejar las consultas y asambleas solo para propietarios (migration 069).
+  const acceso = await canTenantAct(profile, "tenant_can_see_decisions");
+  if (!acceso.allowed) redirect("/dashboard");
 
   const supabase = await createClient();
 

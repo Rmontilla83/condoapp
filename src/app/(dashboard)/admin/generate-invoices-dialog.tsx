@@ -56,8 +56,10 @@ interface FormState {
   group_total: string;
   /** Sumar a la cuota mensual el aporte al fondo de reserva. */
   incluir_fondo: boolean;
-  /** La derrama completa va al fondo de reserva. */
+  /** La derrama completa va a un fondo. */
   fondo_todo: boolean;
+  /** A cuál fondo va la derrama. */
+  fondo_destino: "reserva" | "contingencia";
 }
 
 function defaultMonthYear() {
@@ -97,8 +99,9 @@ export function GenerateInvoicesDialog({ org, units, feeTypeAmounts, exchangeRat
     manual_amounts: Object.fromEntries(units.map((u) => [u.id, ""])),
     group_id: groups[0]?.id ?? "",
     group_total: "",
-    incluir_fondo: Number(org.reserve_fund_pct ?? 0) > 0,
+    incluir_fondo: Number(org.reserve_fund_pct ?? 0) + Number(org.contingency_fund_pct ?? 0) > 0,
     fondo_todo: false,
+    fondo_destino: "reserva",
   }));
 
   const typeAmountsMap = useMemo(
@@ -149,9 +152,11 @@ export function GenerateInvoicesDialog({ org, units, feeTypeAmounts, exchangeRat
       group_total: form.mode === "by_group" && form.group_total ? parseFloat(form.group_total) : undefined,
       group_aliquot_sum: groups.reduce((s, g) => s + Number(g.aliquot ?? 0), 0),
       reserve_pct: form.kind === "monthly" && form.incluir_fondo ? Number(org.reserve_fund_pct ?? 0) : 0,
+      contingency_pct: form.kind === "monthly" && form.incluir_fondo ? Number(org.contingency_fund_pct ?? 0) : 0,
       reserve_all: form.kind === "extraordinary" && form.fondo_todo,
+      fund_all: form.fondo_destino,
     });
-  }, [step, org.reserve_fund_pct, org.id, org.currency, form, dueDateResolved, descriptionResolved, units, exchangeRate, typeAmountsMap, groups]);
+  }, [step, org.reserve_fund_pct, org.contingency_fund_pct, org.id, org.currency, form, dueDateResolved, descriptionResolved, units, exchangeRate, typeAmountsMap, groups]);
 
   function reset() {
     const d = defaultMonthYear();
@@ -173,8 +178,9 @@ export function GenerateInvoicesDialog({ org, units, feeTypeAmounts, exchangeRat
       manual_amounts: Object.fromEntries(units.map((u) => [u.id, ""])),
       group_id: groups[0]?.id ?? "",
       group_total: "",
-      incluir_fondo: Number(org.reserve_fund_pct ?? 0) > 0,
+      incluir_fondo: Number(org.reserve_fund_pct ?? 0) + Number(org.contingency_fund_pct ?? 0) > 0,
       fondo_todo: false,
+      fondo_destino: "reserva",
     });
   }
 
@@ -249,7 +255,10 @@ export function GenerateInvoicesDialog({ org, units, feeTypeAmounts, exchangeRat
     fd.set("mode", form.mode);
     fd.set("description", descriptionResolved);
     if (form.kind === "monthly" && form.incluir_fondo) fd.set("incluir_fondo", "on");
-    if (form.kind === "extraordinary" && form.fondo_todo) fd.set("fondo_todo", "on");
+    if (form.kind === "extraordinary" && form.fondo_todo) {
+      fd.set("fondo_todo", "on");
+      fd.set("fondo_destino", form.fondo_destino);
+    }
     if (form.kind === "extraordinary") {
       fd.set("due_date", form.due_date);
     } else {
@@ -345,6 +354,7 @@ export function GenerateInvoicesDialog({ org, units, feeTypeAmounts, exchangeRat
             unitsTypes={[...new Set(units.map((u) => u.type))]}
             groups={groups}
             pctFondo={Number(org.reserve_fund_pct ?? 0)}
+            pctConting={Number(org.contingency_fund_pct ?? 0)}
           />
         )}
 
@@ -633,6 +643,7 @@ function ModeStep({
   unitsTypes,
   groups,
   pctFondo,
+  pctConting,
 }: {
   form: FormState;
   onChange: (f: FormState | ((p: FormState) => FormState)) => void;
@@ -640,7 +651,13 @@ function ModeStep({
   unitsTypes: string[];
   groups: Array<{ id: string; name: string; aliquot?: number | null; weights: Record<string, number> }>;
   pctFondo: number;
+  pctConting: number;
 }) {
+  const pctFondos = pctFondo + pctConting;
+  const pc = (n: number) => `${n.toLocaleString("es-VE")} %`;
+  const detalleFondos = [pctFondo > 0 ? `reserva ${pc(pctFondo)}` : null, pctConting > 0 ? `contingencia ${pc(pctConting)}` : null]
+    .filter(Boolean)
+    .join(" y ");
   return (
     <div className="space-y-4">
       <div className="space-y-2">
@@ -656,7 +673,7 @@ function ModeStep({
               name="mode"
               checked={form.mode === m}
               // Un grupo como la marina no lleva aporte al fondo salvo que lo marquen.
-              onChange={() => onChange((p) => ({ ...p, mode: m, incluir_fondo: m !== "by_group" && pctFondo > 0 }))}
+              onChange={() => onChange((p) => ({ ...p, mode: m, incluir_fondo: m !== "by_group" && pctFondos > 0 }))}
               className="mt-1 h-4 w-4 cursor-pointer"
             />
             <div className="flex-1">
@@ -785,7 +802,7 @@ function ModeStep({
         </div>
       )}
 
-      {form.kind === "monthly" && pctFondo > 0 && (
+      {form.kind === "monthly" && pctFondos > 0 && (
         <label className="flex items-start gap-3 rounded-lg border border-border p-3 cursor-pointer">
           <input
             type="checkbox"
@@ -794,17 +811,17 @@ function ModeStep({
             className="mt-1 h-4 w-4 cursor-pointer"
           />
           <span>
-            <span className="block text-sm font-semibold">Sumar el aporte al fondo de reserva ({pctFondo.toLocaleString("es-VE")} %)</span>
+            <span className="block text-sm font-semibold">Sumar el aporte a los fondos ({detalleFondos})</span>
             <span className="block text-xs text-muted-foreground mt-0.5">
-              Se suma al monto que escribiste, y en la vista previa ves cuánto va al fondo.
+              Se suma al monto que escribiste, y en la vista previa ves cuánto va a cada fondo.
             </span>
           </span>
         </label>
       )}
-      {form.kind === "monthly" && pctFondo <= 0 && (
+      {form.kind === "monthly" && pctFondos <= 0 && (
         <p className="text-[12px] text-mute">
-          Este condominio no tiene porcentaje de fondo de reserva. Se define en{" "}
-          <a href="/admin/fondo-reserva" className="text-cyan underline">Fondo de reserva</a>.
+          Este condominio no tiene porcentaje para sus fondos. Se define en{" "}
+          <a href="/admin/fondo-reserva" className="text-cyan underline">Fondos</a>.
         </p>
       )}
       {form.kind === "extraordinary" && (
@@ -816,11 +833,24 @@ function ModeStep({
             className="mt-1 h-4 w-4 cursor-pointer"
           />
           <span>
-            <span className="block text-sm font-semibold">Esta derrama va completa al fondo de reserva</span>
+            <span className="block text-sm font-semibold">Esta derrama va completa a un fondo</span>
             <span className="block text-xs text-muted-foreground mt-0.5">
               Márcalo solo si la Asamblea la aprobó para el fondo.
             </span>
           </span>
+        </label>
+      )}
+      {form.kind === "extraordinary" && form.fondo_todo && (
+        <label className="block text-sm">
+          <span className="mb-1 block font-medium">¿A cuál fondo?</span>
+          <select
+            value={form.fondo_destino}
+            onChange={(e) => onChange((p) => ({ ...p, fondo_destino: e.target.value === "contingencia" ? "contingencia" : "reserva" }))}
+            className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
+          >
+            <option value="reserva">Fondo de reserva</option>
+            <option value="contingencia">Fondo de contingencia</option>
+          </select>
         </label>
       )}
     </div>
@@ -924,6 +954,7 @@ function PreviewStep({
   const total = result.invoices.reduce((s, i) => s + i.amount, 0);
   const totalBs = result.invoices.reduce((s, i) => s + (i.amount_bs ?? 0), 0);
   const totalFondo = result.invoices.reduce((s, i) => s + (i.reserve_amount ?? 0), 0);
+  const totalConting = result.invoices.reduce((s, i) => s + (i.contingency_amount ?? 0), 0);
 
   const unitsById = useMemo(() => new Map(units.map((u) => [u.id, u])), [units]);
 
@@ -958,6 +989,12 @@ function PreviewStep({
           <div className="flex justify-between text-[12px]">
             <span className="text-mute">De ese total, al fondo de reserva</span>
             <span className="font-medium">{usd(totalFondo)}</span>
+          </div>
+        )}
+        {totalConting > 0 && (
+          <div className="flex justify-between text-[12px]">
+            <span className="text-mute">De ese total, al fondo de contingencia</span>
+            <span className="font-medium">{usd(totalConting)}</span>
           </div>
         )}
       </div>

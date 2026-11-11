@@ -12,7 +12,7 @@ const CATEGORIAS = new Set<string>(CATEGORIAS_SERVICIO.map((c) => c.id));
 
 export async function agregarServicio(formData: FormData): Promise<Resultado> {
   const profile = await getCurrentProfile();
-  const guard = requireAdmin(profile);
+  const guard = requireAdmin(profile, "cargar");
   if (guard) return guard;
 
   const texto = (k: string, max: number) => {
@@ -46,7 +46,7 @@ export async function agregarServicio(formData: FormData): Promise<Resultado> {
 
 export async function retirarServicio(id: string): Promise<Resultado> {
   const profile = await getCurrentProfile();
-  const guard = requireAdmin(profile);
+  const guard = requireAdmin(profile, "cargar");
   if (guard) return guard;
 
   const { error } = await createAdminClient()

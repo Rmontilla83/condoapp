@@ -97,6 +97,8 @@ export async function inviteAdmin(formData: FormData) {
 
   const email = (formData.get("email") as string)?.trim().toLowerCase();
   const orgId = formData.get("org_id") as string;
+  const funcionCruda = String(formData.get("funcion") ?? "");
+  const funcion = ["administradora", "junta", "asistente", "contador"].includes(funcionCruda) ? funcionCruda : null;
 
   if (!email || !orgId) return { error: "Email y condominio requeridos" };
 
@@ -112,8 +114,6 @@ export async function inviteAdmin(formData: FormData) {
   if (existingProfile?.role === "super_admin") {
     return { error: "Este email ya es super administrador — no se puede degradar" };
   }
-
-  if (!correosActivos()) return { error: CORREOS_APAGADOS };
 
   // 1. Upsert invitación
   const { error: invError } = await admin
@@ -168,6 +168,24 @@ export async function inviteAdmin(formData: FormData) {
       .eq("email", email);
   }
 
+  // La función se escribe aquí y no en el trigger: así vale igual para una
+  // cuenta nueva que para una que ya existía.
+  await admin.from("profiles").update({ admin_funcion: funcion }).ilike("email", email).eq("role", "admin").eq("organization_id", orgId);
+  await logAuthEvent({
+    organization_id: orgId,
+    actor_id: profile!.id,
+    target_email: email,
+    event: "admin_cuenta_creada",
+    payload: { cuenta: email, funcion: funcion ?? "completa" },
+  });
+
+  // Con los correos apagados la cuenta queda creada y no sale ningún enlace:
+  // la persona entra pidiendo el suyo en la pantalla de inicio de sesión.
+  if (!correosActivos()) {
+    revalidatePath("/super-admin");
+    return { success: true, alreadyRegistered: !ensureRes.created, sinCorreo: true };
+  }
+
   // 3. Enviar magic link. shouldCreateUser:false fuerza uso del template "Magic Link"
   //    en vez de "Confirm signup" — el usuario ya existe por el paso 2.
   const { error: otpError } = await admin.auth.signInWithOtp({
@@ -198,7 +216,7 @@ export async function inviteAdmin(formData: FormData) {
   });
 
   revalidatePath("/super-admin");
-  return { success: true, alreadyRegistered: !ensureRes.created };
+  return { success: true, alreadyRegistered: !ensureRes.created, sinCorreo: false };
 }
 
 export async function resendAdminInvite(invitationId: string) {

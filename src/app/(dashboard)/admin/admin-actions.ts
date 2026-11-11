@@ -3,7 +3,8 @@
 import { ESTADOS_ABIERTOS, estaAbierta, pendienteDe } from "@/lib/cuotas";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getCurrentProfile, getCurrentRate } from "@/lib/queries";
-import { isAdminRole, requireAdmin } from "@/lib/permissions";
+import { puede, requireAdmin, sinPermiso } from "@/lib/permissions";
+import { registrarEvento } from "@/lib/historial";
 import { revalidatePath } from "next/cache";
 import { enviarLote } from "@/lib/email/send";
 import { cuotaEmitida } from "@/lib/email/templates";
@@ -16,7 +17,7 @@ import type { FeeMode, InvoiceKind, Organization } from "@/types/database";
 export async function updateExchangeRate(rate: number) {
   const profile = await getCurrentProfile();
   if (!profile?.organization_id) return { error: "No autorizado" };
-  if (!isAdminRole(profile)) return { error: "Solo administradores" };
+  if (!puede(profile, "administrar")) return { error: sinPermiso(profile) };
 
   const supabase = createAdminClient();
   const today = new Date().toISOString().split("T")[0];
@@ -129,7 +130,10 @@ export async function generateMonthlyInvoices(formData: FormData) {
 
   // Fondo de reserva: el porcentaje sale de la base, no del formulario.
   const fondoTodo = kind === "extraordinary" && formData.get("fondo_todo") === "on";
-  const pctFondo = kind === "monthly" && formData.get("incluir_fondo") === "on" ? Number(org.reserve_fund_pct ?? 0) : 0;
+  const conFondos = kind === "monthly" && formData.get("incluir_fondo") === "on";
+  const pctFondo = conFondos ? Number(org.reserve_fund_pct ?? 0) : 0;
+  const pctConting = conFondos ? Number(org.contingency_fund_pct ?? 0) : 0;
+  const fondoDestino = formData.get("fondo_destino") === "contingencia" ? "contingencia" : "reserva";
 
   if (mode === "flat") {
     const raw =
@@ -230,7 +234,9 @@ export async function generateMonthlyInvoices(formData: FormData) {
     group_total,
     group_aliquot_sum: (gruposAparte ?? []).reduce((s, g) => s + Number(g.aliquot), 0),
     reserve_pct: pctFondo,
+    contingency_pct: pctConting,
     reserve_all: fondoTodo,
+    fund_all: fondoDestino,
   });
 
   if (result.errors.length > 0) {
@@ -277,10 +283,11 @@ export async function generateMonthlyInvoices(formData: FormData) {
   }
 
   const omitidas = result.invoices.length - aEmitir.length;
+  const r2 = (n: number) => Math.round(n * 100) / 100;
 
   const { data: insertadas, error } = await supabase
     .from("invoices")
-    .insert(aEmitir)
+    .insert(aEmitir.map((i) => ({ ...i, created_by: profile!.id })))
     .select("id, unit_id");
   if (error) {
     if ((error as { code?: string }).code === "23505") {
@@ -291,6 +298,22 @@ export async function generateMonthlyInvoices(formData: FormData) {
     }
     return { error: error.message };
   }
+
+  await registrarEvento({
+    orgId: profile!.organization_id!,
+    actorId: profile!.id,
+    evento: "invoices_issued",
+    datos: {
+      descripcion: description,
+      vence: dueDate,
+      tipo: kind,
+      modo: mode,
+      recibos: aEmitir.length,
+      total: r2(aEmitir.reduce((s, i) => s + i.amount, 0)),
+      al_fondo_de_reserva: r2(aEmitir.reduce((s, i) => s + i.reserve_amount, 0)),
+      al_fondo_de_contingencia: r2(aEmitir.reduce((s, i) => s + i.contingency_amount, 0)),
+    },
+  });
 
   // Saldo a favor: se descuenta de la cuota recién emitida, como la columna
   // CRÉDITO del recibo en Excel. Va ANTES del aviso por correo, para que el
@@ -388,10 +411,7 @@ export async function addUnit(formData: FormData) {
     console.error("[addUnit] no organization_id", { profile });
     return { error: "No tienes un condominio asignado. Como super_admin, primero usa 'Entrar como admin' desde /super-admin." };
   }
-  if (!isAdminRole(profile)) {
-    console.error("[addUnit] not admin role", { role: profile.role, viewAs: profile.view_as });
-    return { error: "Solo administradores pueden agregar unidades" };
-  }
+  if (!puede(profile, "administrar")) return { error: sinPermiso(profile) };
 
   const unitNumber = (formData.get("unit_number") as string)?.trim();
   const floor = formData.get("floor") ? parseInt(formData.get("floor") as string) : null;
@@ -422,7 +442,12 @@ export async function addUnit(formData: FormData) {
     return { error: `No se pudo guardar: ${error.message}` };
   }
 
-  console.log("[addUnit] inserted:", data);
+  await registrarEvento({
+    orgId: profile.organization_id,
+    actorId: profile.id,
+    evento: "unit_created",
+    datos: { unidad: unitNumber, torre: block },
+  });
 
   revalidatePath("/admin");
   revalidatePath("/admin/units");
@@ -452,7 +477,7 @@ export async function voidInvoiceRun(params: {
 }) {
   const profile = await getCurrentProfile();
   if (!profile?.organization_id) return { error: "Sin organización" };
-  if (!isAdminRole(profile)) return { error: "Solo administradores" };
+  if (!puede(profile, "administrar")) return { error: sinPermiso(profile) };
 
   const motivo = (params.reason ?? "").replace(/\s+/g, " ").trim().slice(0, 200);
   if (motivo.length < 10) {

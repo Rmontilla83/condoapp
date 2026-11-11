@@ -4,7 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { CORREOS_APAGADOS, correosActivos } from "@/lib/email/send";
 import { getCurrentProfile } from "@/lib/queries";
-import { isAdminRole } from "@/lib/permissions";
+import { puede, sinPermiso } from "@/lib/permissions";
 import { revalidatePath } from "next/cache";
 import { randomBytes } from "node:crypto";
 import {
@@ -55,8 +55,8 @@ async function ensureUserExists(admin: ReturnType<typeof createAdminClient>, ema
 async function requireAdminOrSuper() {
   const profile = await getCurrentProfile();
   if (!profile) throw new Error("No autenticado");
-  if (!isAdminRole(profile)) {
-    throw new Error("Solo administradores");
+  if (!puede(profile, "administrar")) {
+    throw new Error(sinPermiso(profile));
   }
   if (!profile.organization_id) throw new Error("Sin organización");
   return profile;
@@ -68,8 +68,9 @@ async function requireUnitAccess(unitId: string, requireRole?: MemberRole) {
 
   const supabase = await createClient();
 
-  // Admins tienen acceso a cualquier unidad de su org
-  if (isAdminRole(profile)) {
+  // Quien administra tiene acceso a cualquier unidad de su org. Una cuenta de
+  // la Junta o del contador sigue de largo: solo actúa sobre su propia unidad.
+  if (puede(profile, "administrar")) {
     const { data: unit } = await supabase
       .from("units")
       .select("id, organization_id")
@@ -113,6 +114,12 @@ export async function setUnitOwnershipMode(unitId: string, mode: OwnershipMode) 
     .eq("organization_id", profile.organization_id);
 
   if (error) return { error: error.message };
+  await logAuthEvent({
+    organization_id: profile.organization_id,
+    actor_id: profile.id,
+    event: "ownership_mode_updated",
+    payload: { unit_id: unitId, modo: mode },
+  });
 
   revalidatePath("/admin/units");
   revalidatePath("/admin");
@@ -408,7 +415,7 @@ export async function removeUnitMember(memberId: string) {
 
   const { error } = await admin
     .from("unit_members")
-    .update({ active: false, removed_at: new Date().toISOString() })
+    .update({ active: false, removed_at: new Date().toISOString(), removed_by: profile.id })
     .eq("id", memberId);
   if (error) return { error: error.message };
 
@@ -461,6 +468,15 @@ export async function setTenantPermissions(params: {
     .update({ permissions })
     .eq("id", memberId);
   if (error) return { error: error.message };
+  const orgDelMiembro = Array.isArray(member.units)
+    ? (member.units[0] as { organization_id?: string } | undefined)?.organization_id
+    : (member.units as { organization_id?: string } | null)?.organization_id;
+  await logAuthEvent({
+    organization_id: orgDelMiembro ?? null,
+    actor_id: profile.id,
+    event: "tenant_permissions_updated",
+    payload: { unit_id: member.unit_id, alcance: permissions, por: access.isAdmin ? "administracion" : "propietario" },
+  });
 
   revalidatePath("/mi-unidad");
   revalidatePath("/admin/units");
@@ -474,6 +490,7 @@ export async function setOrgPolicies(policies: {
   tenant_can_vote?: boolean;
   tenant_can_see_delinquents?: boolean;
   tenant_can_reserve?: boolean;
+  tenant_can_see_decisions?: boolean;
 }) {
   const profile = await requireAdminOrSuper();
   const admin = createAdminClient();
@@ -518,6 +535,8 @@ export async function setUnitAliquots(formData: FormData) {
         "Escribe por qué cambias las alícuotas (mínimo 10 caracteres). Es un dato con efectos de cobranza y de voto.",
     };
   }
+
+  const acta = ((formData.get("acta") as string) ?? "").trim().slice(0, 200);
 
   let crudo: unknown;
   try {
@@ -656,6 +675,18 @@ export async function setUnitAliquots(formData: FormData) {
     return { success: true, changed: 0, sum: antes };
   }
 
+  // Completar una unidad sin alícuota es parte de la carga. Cambiar una que ya
+  // estaba cargada es modificar el reparto, y eso lleva su acta (pedido de la
+  // Junta de Costa de Plata, 2026-11-09).
+  const modificadas = cambios.filter((c) => c.antes !== null).length;
+  if (modificadas > 0 && acta.length < 5) {
+    return {
+      error:
+        `Vas a cambiar ${modificadas} alícuota${modificadas !== 1 ? "s" : ""} que ya estaba${modificadas !== 1 ? "n" : ""} cargada${modificadas !== 1 ? "s" : ""}. ` +
+        "Indica el acta de asamblea que lo aprueba.",
+    };
+  }
+
   // Un solo statement dentro de la transacción implícita de Postgres
   // (migration 035): o entran todas o no entra ninguna. Con N updates sueltos,
   // un fallo a mitad del lote dejaba la mitad escrita y la acción devolvía
@@ -683,6 +714,7 @@ export async function setUnitAliquots(formData: FormData) {
     event: "aliquots_updated",
     payload: {
       reason: motivo,
+      acta: acta || null,
       sum_before: antes,
       sum_after: despues,
       decimals: ALIQUOT_MAX_DECIMALS,

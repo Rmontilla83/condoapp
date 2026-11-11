@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { todayInTimeZone } from "@/lib/utils";
 import { resumenFondo } from "@/lib/contabilidad/fondo-reserva";
+import { puede } from "@/lib/permissions";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { esGastoDelPeriodo, gastoEnUsd, ingresoEnUsd, saldosPorPagar, salidaEnUsd, serieDeTasas, textoPeriodo } from "@/lib/contabilidad/gastos";
 import { estaAbierta, pendienteDe } from "@/lib/cuotas";
@@ -43,6 +44,7 @@ interface ExpenseRow {
   cost_center_id: string | null;
   paid_from_reserve: boolean;
   reserve_acta: string | null;
+  fund?: "reserva" | "contingencia";
   cost_centers: { id: string; name: string } | null;
 }
 
@@ -75,7 +77,7 @@ export default async function FinanzasPage({ searchParams }: { searchParams: Pro
 
   const { centro: centroElegido } = await searchParams;
 
-  const [invoicesRes, expensesRes, transactionsRes, categoriesData, currentBudgetData, otrosRes, centrosRes, fondo] = await Promise.all([
+  const [invoicesRes, expensesRes, transactionsRes, categoriesData, currentBudgetData, otrosRes, centrosRes, fondo, contingencia] = await Promise.all([
     supabase
       .from("invoices")
       .select("amount, paid_amount, status")
@@ -83,7 +85,7 @@ export default async function FinanzasPage({ searchParams }: { searchParams: Pro
     supabase
       .from("expense_records")
       .select(
-        "id, description, amount, currency, expense_date, receipt_url, voided_at, voided_reason, category_id, vendor_id, cost_center_id, paid_from_reserve, reserve_acta, tipo_contable, retencion_islr, expense_categories(id, code, label, icon), vendors(id, name), cost_centers(id, name)",
+        "id, description, amount, currency, expense_date, receipt_url, voided_at, voided_reason, category_id, vendor_id, cost_center_id, paid_from_reserve, reserve_acta, fund, tipo_contable, retencion_islr, expense_categories(id, code, label, icon), vendors(id, name), cost_centers(id, name)",
       )
       .eq("organization_id", profile.organization_id)
       .order("expense_date", { ascending: false }),
@@ -110,6 +112,7 @@ export default async function FinanzasPage({ searchParams }: { searchParams: Pro
       .order("name"),
     // Con el cliente de servicio: solo salen agregados, y un vecino no puede leer las cuotas de los demás.
     resumenFondo(createAdminClient(), profile.organization_id),
+    resumenFondo(createAdminClient(), profile.organization_id, "contingencia"),
   ]);
 
   const expensesRaw = (expensesRes.data ?? []) as unknown as ExpenseRow[];
@@ -148,7 +151,8 @@ export default async function FinanzasPage({ searchParams }: { searchParams: Pro
   const totalExpenses = expenses.reduce((s, e) => s + Number(e.amount), 0);
   // Un gasto con el fondo resta aquí, así que lo que el fondo trajo tiene que
   // sumar: si no, el balance sale negativo con dinero en el banco.
-  const aportesFondo = Math.round((fondo.inicial + fondo.aportes + fondo.ajustes) * 100) / 100;
+  const aportesFondo =
+    Math.round((fondo.inicial + fondo.aportes + fondo.ajustes + contingencia.inicial + contingencia.aportes + contingencia.ajustes) * 100) / 100;
   // El balance es dinero: una provisión todavía no sale del banco y lo retenido sale al enterarlo.
   const totalSalidas = noAnulados.reduce((s, e) => s + Number(e.salida_usd ?? e.amount), 0);
   const balance = totalIncome + aportesFondo - totalSalidas;
@@ -230,10 +234,10 @@ export default async function FinanzasPage({ searchParams }: { searchParams: Pro
             Exactamente en qué se gasta el dinero de tu condominio.
           </p>
         </div>
-        {isAdmin && (
+        {puede(profile, "cargar") && (
           <div className="flex flex-wrap justify-end gap-2">
             <NewIncomeDialog centros={centros} hoy={hoy} tasas={tasas} />
-            <NewExpenseDialog categories={categories} centros={centros} saldoFondo={fondo.saldo} tasas={tasas} porPagar={porPagar} />
+            <NewExpenseDialog categories={categories} centros={centros} saldoFondo={fondo.saldo} saldoContingencia={contingencia.saldo} tasas={tasas} porPagar={porPagar} />
           </div>
         )}
       </div>
@@ -265,7 +269,7 @@ export default async function FinanzasPage({ searchParams }: { searchParams: Pro
           >
             {usd(balance)}
           </p>
-          {aportesFondo !== 0 && <p className="mt-2 text-[12px] text-mute">Incluye {usd(aportesFondo)} del saldo inicial y los aportes del fondo</p>}
+          {aportesFondo !== 0 && <p className="mt-2 text-[12px] text-mute">Incluye {usd(aportesFondo)} del saldo inicial y los aportes de los fondos</p>}
         </div>
         <div className="rounded-2xl bg-card border border-border p-5">
           <p className="font-meta text-mute">POR COBRAR</p>
@@ -287,6 +291,23 @@ export default async function FinanzasPage({ searchParams }: { searchParams: Pro
           </p>
           {isAdmin && (
             <Link href="/admin/fondo-reserva" className="mt-3 inline-block text-[13px] text-cyan-ink hover:underline">
+              Ver movimientos
+            </Link>
+          )}
+        </div>
+      )}
+
+      {(contingencia.saldo !== 0 || contingencia.porCobrar !== 0 || contingencia.usado !== 0) && (
+        <div className="rounded-2xl bg-card border border-border p-6">
+          <p className="font-meta text-mute">FONDO DE CONTINGENCIA</p>
+          <p className="mt-3 font-display text-[28px] leading-none tracking-[-0.02em] text-marine-deep">{usd(contingencia.saldo)}</p>
+          <p className="mt-3 text-[14px] text-mute">
+            Disponible. Del balance de arriba, esta parte está apartada para contingencias.
+            {contingencia.porCobrar > 0 && ` Faltan por cobrar ${usd(contingencia.porCobrar)} de las cuotas emitidas.`}
+            {contingencia.usado > 0 && ` Se han usado ${usd(contingencia.usado)}.`}
+          </p>
+          {isAdmin && (
+            <Link href="/admin/fondo-reserva?fondo=contingencia" className="mt-3 inline-block text-[13px] text-cyan-ink hover:underline">
               Ver movimientos
             </Link>
           )}
@@ -439,7 +460,7 @@ export default async function FinanzasPage({ searchParams }: { searchParams: Pro
                       </p>
                       {expense.paid_from_reserve && (
                         <p className="mt-1 text-[12px] text-mute whitespace-normal">
-                          Pagado con el fondo de reserva{expense.reserve_acta ? ` · ${expense.reserve_acta}` : ""}
+                          Pagado con el fondo de {expense.fund === "contingencia" ? "contingencia" : "reserva"}{expense.reserve_acta ? ` · ${expense.reserve_acta}` : ""}
                         </p>
                       )}
                       {expense.tipo_contable && expense.tipo_contable !== "gasto" && (
@@ -483,7 +504,7 @@ export default async function FinanzasPage({ searchParams }: { searchParams: Pro
                         </span>
                       )}
                     </span>
-                    {isAdmin && !voided && (
+                    {puede(profile, "administrar") && !voided && (
                       <VoidExpenseDialog
                         expenseId={expense.id}
                         expenseDescription={expense.description}
@@ -532,7 +553,7 @@ export default async function FinanzasPage({ searchParams }: { searchParams: Pro
                         <span className="block text-right text-[11px] font-normal text-mute">{bs(o.monto_original)}</span>
                       )}
                     </span>
-                    {isAdmin && !anulado && <VoidIncome id={o.id} />}
+                    {puede(profile, "administrar") && !anulado && <VoidIncome id={o.id} />}
                   </div>
                 </div>
               );

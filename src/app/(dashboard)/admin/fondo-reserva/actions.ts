@@ -4,7 +4,8 @@ import { revalidatePath } from "next/cache";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getCurrentProfile } from "@/lib/queries";
 import { requireAdmin } from "@/lib/permissions";
-import { resumenFondo } from "@/lib/contabilidad/fondo-reserva";
+import { NOMBRE_FONDO, resumenFondo, type Fondo } from "@/lib/contabilidad/fondo-reserva";
+import { registrarEvento } from "@/lib/historial";
 import { usd } from "@/lib/format";
 
 type Resultado = { error: string } | { success: true };
@@ -15,16 +16,29 @@ function refrescar() {
   revalidatePath("/finanzas");
 }
 
-export async function guardarConfigFondo(pct: number | null, acta: string): Promise<Resultado> {
+const fondoDe = (v: unknown): Fondo => (v === "contingencia" ? "contingencia" : "reserva");
+
+export async function guardarConfigFondo(fondoCrudo: string, pct: number | null, acta: string): Promise<Resultado> {
+  const fondo = fondoDe(fondoCrudo);
   const profile = await getCurrentProfile();
   const guard = requireAdmin(profile);
   if (guard) return guard;
   if (pct !== null && !(pct >= 0 && pct <= 100)) return { error: "El porcentaje va de 0 a 100." };
   const { error } = await createAdminClient()
     .from("organizations")
-    .update({ reserve_fund_pct: pct, reserve_fund_acta: acta.trim().slice(0, 200) || null })
+    .update(
+      fondo === "contingencia"
+        ? { contingency_fund_pct: pct, contingency_fund_acta: acta.trim().slice(0, 200) || null }
+        : { reserve_fund_pct: pct, reserve_fund_acta: acta.trim().slice(0, 200) || null },
+    )
     .eq("id", profile!.organization_id!);
   if (error) return { error: error.message };
+  await registrarEvento({
+    orgId: profile!.organization_id!,
+    actorId: profile!.id,
+    evento: "fund_config_updated",
+    datos: { fondo: NOMBRE_FONDO[fondo], porcentaje: pct, acta: acta.trim().slice(0, 200) || null },
+  });
   refrescar();
   revalidatePath("/admin");
   return { success: true };
@@ -36,6 +50,7 @@ export async function registrarMovimientoFondo(fd: FormData): Promise<Resultado>
   if (guard) return guard;
   const orgId = profile!.organization_id!;
 
+  const fondo = fondoDe(fd.get("fund"));
   const kind = String(fd.get("kind") ?? "");
   if (!["opening", "contribution", "adjustment"].includes(kind)) return { error: "Tipo de movimiento inválido." };
   const fecha = String(fd.get("movement_date") ?? "");
@@ -49,11 +64,12 @@ export async function registrarMovimientoFondo(fd: FormData): Promise<Resultado>
 
   const db = createAdminClient();
   if (monto < 0) {
-    const { saldo } = await resumenFondo(db, orgId);
+    const { saldo } = await resumenFondo(db, orgId, fondo);
     if (saldo + monto < 0) return { error: `El fondo tiene ${usd(saldo)}: el ajuste lo dejaría en negativo.` };
   }
   const { error } = await db.from("reserve_fund_movements").insert({
     organization_id: orgId,
+    fund: fondo,
     kind,
     movement_date: fecha,
     amount: monto,
@@ -64,6 +80,12 @@ export async function registrarMovimientoFondo(fd: FormData): Promise<Resultado>
   if (error) {
     return { error: error.code === "23505" ? "El saldo inicial ya está cargado. Anúlalo si necesitas corregirlo." : error.message };
   }
+  await registrarEvento({
+    orgId,
+    actorId: profile!.id,
+    evento: "fund_movement_recorded",
+    datos: { fondo: NOMBRE_FONDO[fondo], tipo: kind, monto, concepto, soporte: referencia },
+  });
   refrescar();
   return { success: true };
 }
@@ -79,13 +101,13 @@ export async function anularMovimientoFondo(id: string, motivo: string): Promise
   const db = createAdminClient();
   const { data: mov } = await db
     .from("reserve_fund_movements")
-    .select("amount, voided_at")
+    .select("amount, voided_at, fund, concept")
     .eq("id", id)
     .eq("organization_id", orgId)
     .maybeSingle();
   if (!mov) return { error: "Ese movimiento no existe." };
   if (mov.voided_at) return { error: "Ese movimiento ya está anulado." };
-  const { saldo } = await resumenFondo(db, orgId);
+  const { saldo } = await resumenFondo(db, orgId, fondoDe(mov.fund));
   if (saldo - Number(mov.amount) < 0) return { error: `El fondo tiene ${usd(saldo)}: anularlo lo dejaría en negativo.` };
 
   const { error } = await db
@@ -94,6 +116,12 @@ export async function anularMovimientoFondo(id: string, motivo: string): Promise
     .eq("id", id)
     .eq("organization_id", orgId);
   if (error) return { error: error.message };
+  await registrarEvento({
+    orgId,
+    actorId: profile!.id,
+    evento: "fund_movement_voided",
+    datos: { fondo: NOMBRE_FONDO[fondoDe(mov.fund)], monto: Number(mov.amount), concepto: mov.concept, motivo: razon },
+  });
   refrescar();
   return { success: true };
 }
