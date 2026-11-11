@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 /**
  * `decision_questions.options` es JSONB y en producción llegó a tener una fila
@@ -50,6 +51,79 @@ export async function getVoterAliquot(profileId: string, orgId: string): Promise
       const u = Array.isArray(m.units) ? m.units[0] : m.units;
       return sum + Number(u?.aliquot ?? 0);
     }, 0);
+}
+
+/**
+ * Cuánto pesa el voto de una persona en UNA decisión ponderada (migration 072).
+ *
+ * Una unidad pesa una sola vez. Si una unidad tiene dos copropietarios con
+ * cuenta, la representa el primero que vota en esa decisión: antes cada uno
+ * sumaba la alícuota completa y la unidad contaba doble en el resultado y en el
+ * quórum. Si TODAS sus unidades ya están representadas por otro copropietario,
+ * `bloqueado` es true y la persona no vota en esa decisión.
+ */
+export async function pesoDelVoto(
+  profileId: string,
+  orgId: string,
+  decisionId: string,
+): Promise<{ peso: number; unidades: number; representadas: number; bloqueado: boolean }> {
+  const db = createAdminClient();
+  const { data: mias } = await db
+    .from("unit_members")
+    .select("unit_id, units!inner(organization_id, aliquot)")
+    .eq("profile_id", profileId)
+    .eq("active", true)
+    .eq("role", "owner")
+    .eq("units.organization_id", orgId);
+  const unidades = (mias ?? []).map((m) => {
+    const u = (Array.isArray(m.units) ? m.units[0] : m.units) as { aliquot: number | null } | null;
+    return { id: m.unit_id as string, alicuota: Number(u?.aliquot ?? 0) };
+  });
+  if (unidades.length === 0) return { peso: 0, unidades: 0, representadas: 0, bloqueado: false };
+
+  const { data: otros } = await db
+    .from("unit_members")
+    .select("unit_id, profile_id")
+    .in("unit_id", unidades.map((u) => u.id))
+    .eq("active", true)
+    .eq("role", "owner")
+    .neq("profile_id", profileId);
+  const copropietarios = [...new Set((otros ?? []).map((o) => o.profile_id as string))];
+  const tomadas = new Set<string>();
+  if (copropietarios.length > 0) {
+    const { data: votos } = await db
+      .from("decision_responses")
+      .select("voter_id, decision_questions!inner(decision_id)")
+      .eq("decision_questions.decision_id", decisionId)
+      .in("voter_id", copropietarios);
+    const yaVotaron = new Set((votos ?? []).map((v) => v.voter_id as string));
+    for (const o of otros ?? []) if (yaVotaron.has(o.profile_id as string)) tomadas.add(o.unit_id as string);
+  }
+  const libres = unidades.filter((u) => !tomadas.has(u.id));
+  return {
+    peso: libres.reduce((s, u) => s + u.alicuota, 0),
+    unidades: unidades.length,
+    representadas: tomadas.size,
+    bloqueado: libres.length === 0,
+  };
+}
+
+/**
+ * Quita la identidad de los votos antes de mandarlos al navegador (migration
+ * 072). Cada persona conserva su propio id, para saber qué votó; los demás
+ * pasan a ser «anon-1», «anon-2»… El mismo votante lleva el mismo alias en
+ * todas las preguntas de la decisión, así los conteos y el quórum no cambian.
+ */
+export function anonimizarVotos<R extends { voter_id: string }, Q extends { decision_responses: R[] }>(preguntas: Q[], miId: string): Q[] {
+  const alias = new Map<string, string>();
+  return preguntas.map((q) => ({
+    ...q,
+    decision_responses: (q.decision_responses ?? []).map((r) => {
+      if (r.voter_id === miId) return r;
+      if (!alias.has(r.voter_id)) alias.set(r.voter_id, `anon-${alias.size + 1}`);
+      return { ...r, voter_id: alias.get(r.voter_id)! };
+    }),
+  }));
 }
 
 export interface QuorumStats {

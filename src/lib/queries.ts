@@ -1,6 +1,7 @@
 import { esGastoDelPeriodo, gastoEnUsd, ingresoEnUsd, salidaEnUsd, serieDeTasas, textoPeriodo } from "@/lib/contabilidad/gastos";
 import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { todayInTimeZone, isInvoiceOverdue } from "@/lib/utils";
 import { ESTADOS_ABIERTOS, comoPendiente } from "@/lib/cuotas";
 import type {
@@ -798,7 +799,7 @@ export async function getDashboardContext(
       .order("start_time", { ascending: true })
       .limit(1)
       .maybeSingle(),
-    supabase
+    createAdminClient()
       .from("decisions")
       .select("id, kind, title, closes_at, decision_questions(id, decision_responses(voter_id))")
       .eq("organization_id", orgId)

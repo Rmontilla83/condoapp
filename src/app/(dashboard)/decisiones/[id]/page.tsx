@@ -1,13 +1,14 @@
 import { redirect, notFound } from "next/navigation";
 import Link from "next/link";
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { getCurrentProfile, getEffectiveRole } from "@/lib/queries";
 import { canTenantAct, puede } from "@/lib/permissions";
 import {
   computeQuorum,
   getOrgQuorumUniverse,
   normalizeOptions,
-  getVoterAliquot,
+  anonimizarVotos,
+  pesoDelVoto,
 } from "@/lib/decisions";
 import { QuestionVoter } from "./question-voter";
 import { CloseDecisionButton } from "./close-decision-button";
@@ -75,7 +76,9 @@ export default async function DecisionDetailPage({ params }: { params: Promise<{
   const acceso = await canTenantAct(profile, "tenant_can_see_decisions");
   if (!acceso.allowed) redirect("/dashboard");
 
-  const supabase = await createClient();
+  // Con el cliente de servicio: por RLS cada persona solo lee sus propios votos
+  // (migration 072). Aquí se cuentan todos y al navegador viajan sin identidad.
+  const supabase = createAdminClient();
 
   const { data } = await supabase
     .from("decisions")
@@ -92,9 +95,10 @@ export default async function DecisionDetailPage({ params }: { params: Promise<{
     redirect(`/decisiones#decision-${decision.id}`);
   }
 
-  const questions = (decision.decision_questions ?? [])
+  const questionsCrudas = (decision.decision_questions ?? [])
     .map((q) => ({ ...q, options: normalizeOptions(q.options) }))
     .sort((a, b) => a.position - b.position);
+  const questions = anonimizarVotos(questionsCrudas, profile.id);
   const status = statusBadge[decision.status];
   const isOpen = decision.status === "open";
   const isExpired = !!(decision.closes_at && new Date(decision.closes_at) <= new Date());
@@ -103,7 +107,7 @@ export default async function DecisionDetailPage({ params }: { params: Promise<{
   // voteDecision al registrar, para que lo que se anuncia y lo que se computa
   // sean el mismo número.
   const miPeso = decision.weighted_by_aliquot
-    ? await getVoterAliquot(profile.id, decision.organization_id as string)
+    ? (await pesoDelVoto(profile.id, decision.organization_id as string, decision.id)).peso
     : 0;
 
   // El acta congelada al cerrar (migration 039). Mientras la asamblea está
@@ -138,7 +142,7 @@ export default async function DecisionDetailPage({ params }: { params: Promise<{
     };
   } else if (decision.quorum_pct !== null && !cerradaConActa) {
     quorumUniverse = await getOrgQuorumUniverse(decision.organization_id, decision.weighted_by_aliquot);
-    const allResponses = questions.flatMap((q) => q.decision_responses);
+    const allResponses = questionsCrudas.flatMap((q) => q.decision_responses);
     quorumStats = computeQuorum({
       weighted_by_aliquot: decision.weighted_by_aliquot,
       quorum_pct: decision.quorum_pct,

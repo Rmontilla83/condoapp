@@ -5,7 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getCurrentProfile } from "@/lib/queries";
 import { puede, canTenantAct } from "@/lib/permissions";
 import {
-  getVoterAliquot,
+  pesoDelVoto,
   getAliquotCoverage,
   normalizeOptions,
   computeQuorum,
@@ -264,7 +264,11 @@ export async function voteDecision(questionId: string, option: string, decisionI
   // Computar weight
   let weight = 1.0;
   if (decision.weighted_by_aliquot) {
-    weight = await getVoterAliquot(profile.id, decision.organization_id as string);
+    const mio = await pesoDelVoto(profile.id, decision.organization_id as string, decisionId);
+    if (mio.bloqueado) {
+      return { error: "Tu unidad ya está votando en esta decisión por medio de otro copropietario. Cada unidad vota una sola vez." };
+    }
+    weight = mio.peso;
     // Si el user es tenant (sin owner active) en este org, weight=0 pero el voto se registra
   }
 

@@ -1,8 +1,8 @@
 import { redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { getCurrentProfile, getEffectiveRole } from "@/lib/queries";
 import { canTenantAct, puede } from "@/lib/permissions";
-import { computeQuorum, getOrgQuorumUniverse, normalizeOptions } from "@/lib/decisions";
+import { anonimizarVotos, computeQuorum, getOrgQuorumUniverse, normalizeOptions } from "@/lib/decisions";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DecisionCard } from "./decision-card";
 import { NewDecisionDialog } from "./new-decision-dialog";
@@ -49,7 +49,9 @@ export default async function DecisionesPage() {
   const acceso = await canTenantAct(profile, "tenant_can_see_decisions");
   if (!acceso.allowed) redirect("/dashboard");
 
-  const supabase = await createClient();
+  // Con el cliente de servicio: por RLS cada persona solo lee sus propios votos
+  // (migration 072). Aquí se cuentan todos y al navegador viajan sin identidad.
+  const supabase = createAdminClient();
 
   const { data } = await supabase
     .from("decisions")
@@ -58,19 +60,21 @@ export default async function DecisionesPage() {
     .order("created_at", { ascending: false })
     .limit(50);
 
-  const decisions = ((data ?? []) as unknown as DecisionWithQuestions[]).map((d) => ({
+  const crudas = ((data ?? []) as unknown as DecisionWithQuestions[]).map((d) => ({
     ...d,
     decision_questions: (d.decision_questions ?? [])
       .map((q) => ({ ...q, options: normalizeOptions(q.options) }))
       .sort((a, b) => a.position - b.position),
   }));
 
+  const decisions = crudas.map((d) => ({ ...d, decision_questions: anonimizarVotos(d.decision_questions, profile.id) }));
+
   const openDecisions = decisions.filter((d) => d.status === "open" || d.status === "draft");
   const closedDecisions = decisions.filter((d) => d.status === "closed" || d.status === "cancelled");
 
   // Pre-compute quorum stats para formal_assembly weighted
   const quorumByDecision: Record<string, { achieved_pct: number; required_pct: number | null; met: boolean; reliable: boolean }> = {};
-  for (const d of decisions) {
+  for (const d of crudas) {
     if (d.kind !== "formal_assembly" || d.quorum_pct === null) continue;
 
     // Si la asamblea ya se cerró, el número sale del acta congelada (migration
