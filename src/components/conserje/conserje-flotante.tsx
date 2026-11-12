@@ -27,7 +27,10 @@ export function ConserjeFlotante({
   condominio,
   fabDePago,
   soloEscritorio = false,
+  oculto = false,
 }: {
+  /** La administración no lleva la carita flotante: tapaba la última columna de sus tablas. Atri sigue en el menú. */
+  oculto?: boolean;
   /** El residente en el teléfono abre a Atri desde el inicio: la carita flotante solo sale en pantallas grandes. */
   soloEscritorio?: boolean;
   primerNombre: string;
@@ -86,7 +89,7 @@ export function ConserjeFlotante({
     return () => window.removeEventListener("keydown", k);
   }, [abierto]);
 
-  if (pathname?.startsWith("/conserje")) return null;
+  if (oculto || pathname?.startsWith("/conserje")) return null;
 
   const fabVisible =
     fabDePago && !pathname?.startsWith("/pagos") && pathname !== "/dashboard";

@@ -125,7 +125,7 @@ export default async function ReservasPage() {
         <div>
           <span className="font-meta-loose text-cyan-ink">ÁREAS COMUNES</span>
           <h1 className="mt-4 font-display text-[clamp(1.75rem,3.5vw,2.5rem)] leading-[1.1] tracking-[-0.03em] text-marine-deep">
-            Reserva <em className="font-editorial text-cyan">espacios</em>
+            Reservas
           </h1>
         </div>
         {areas.length > 0 && (

@@ -228,7 +228,7 @@ export default async function FinanzasPage({ searchParams }: { searchParams: Pro
         <div>
           <span className="font-meta-loose text-cyan-ink">FINANZAS</span>
           <h1 className="mt-4 font-display text-[clamp(1.75rem,3.5vw,2.5rem)] leading-[1.1] tracking-[-0.03em] text-marine-deep">
-            Transparencia <em className="font-editorial text-cyan">financiera</em>
+            Finanzas del condominio
           </h1>
           <p className="mt-3 text-[15px] text-mute">
             Exactamente en qué se gasta el dinero de tu condominio.

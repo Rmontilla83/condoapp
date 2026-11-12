@@ -105,7 +105,7 @@ export default async function MantenimientoPage() {
         <div>
           <span className="font-meta-loose text-cyan-ink">MANTENIMIENTO</span>
           <h1 className="mt-4 font-display text-[clamp(1.75rem,3.5vw,2.5rem)] leading-[1.1] tracking-[-0.03em] text-marine-deep">
-            Reporta y da <em className="font-editorial text-cyan">seguimiento</em>
+            Mantenimiento
           </h1>
         </div>
         <NewRequestDialog units={units} commonAreas={commonAreas as CommonArea[]} />

@@ -24,7 +24,7 @@ export default async function ComunicadosPage() {
         <div>
           <span className="font-meta-loose text-cyan-ink">COMUNICADOS</span>
           <h1 className="mt-4 font-display text-[clamp(1.75rem,3.5vw,2.5rem)] leading-[1.1] tracking-[-0.03em] text-marine-deep">
-            Noticias de tu <em className="font-editorial text-cyan">comunidad</em>
+            Comunicados
           </h1>
         </div>
         {(getEffectiveRole(profile) === "admin" || getEffectiveRole(profile) === "super_admin") && (

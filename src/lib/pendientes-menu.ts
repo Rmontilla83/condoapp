@@ -43,7 +43,10 @@ export async function pendientesDelMenu(profile: Perfil, orgId: string): Promise
     tareas.push(
       (async () => {
         const { count } = await db.from("maintenance_requests").select("id", { count: "exact", head: true }).eq("organization_id", orgId).eq("status", "new");
-        if (count) out["/mantenimiento"] = count;
+        if (count) {
+          out["/mantenimiento"] = count; // barra del teléfono
+          out["/admin/mantenimiento"] = count; // menú de la administración
+        }
       })(),
     );
   }

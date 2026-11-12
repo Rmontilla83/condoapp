@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import { usd } from "@/lib/format";
 import { coincide } from "@/lib/buscar";
+import { Paginacion, POR_PAGINA } from "@/components/paginacion";
 import { tabla, Vacio } from "@/components/contabilidad/ui";
 import { EtiquetaVerificacion } from "@/components/contabilidad/aviso-verificacion";
 
@@ -38,6 +39,7 @@ export function TablaAntiguedad({ filas, fecha }: { filas: Fila[]; fecha: string
   const [soloDeuda, setSoloDeuda] = useState(true);
   const [busca, setBusca] = useState("");
   const [orden, setOrden] = useState<"unidad" | "deuda">("deuda");
+  const [pagina, setPagina] = useState(1);
 
   const torres = useMemo(() => [...new Set(filas.map((f) => f.torre).filter(Boolean))], [filas]);
   const visibles = useMemo(() => {
@@ -49,6 +51,9 @@ export function TablaAntiguedad({ filas, fecha }: { filas: Fila[]; fecha: string
     );
     return orden === "deuda" ? [...v].sort((a, b) => b.vencido - a.vencido || b.total - a.total) : v;
   }, [filas, torre, soloDeuda, busca, orden]);
+  const paginas = Math.max(1, Math.ceil(visibles.length / POR_PAGINA));
+  const actual = Math.min(pagina, paginas);
+  const enPagina = visibles.slice((actual - 1) * POR_PAGINA, actual * POR_PAGINA);
 
   const suma = (k: Tramo) => visibles.reduce((s, f) => s + f.tramos[k], 0);
   const total = visibles.reduce((s, f) => s + f.total, 0);
@@ -78,15 +83,18 @@ export function TablaAntiguedad({ filas, fecha }: { filas: Fila[]; fecha: string
 
   return (
     <section className="space-y-3">
-      <div className="flex flex-wrap items-center gap-2" data-print-hide>
+      <div className="sticky top-0 z-20 -mx-2 flex flex-wrap items-center gap-2 bg-background/95 px-2 py-2 backdrop-blur" data-print-hide>
         <input
           value={busca}
-          onChange={(e) => setBusca(e.target.value)}
+          onChange={(e) => {
+            setBusca(e.target.value);
+            setPagina(1);
+          }}
           placeholder="Buscar unidad o propietario"
           className="h-9 min-w-[14rem] flex-1 rounded-lg border border-border bg-background px-3 text-[14px]"
           aria-label="Buscar"
         />
-        <select value={torre} onChange={(e) => setTorre(e.target.value)} className="h-9 rounded-lg border border-border bg-background px-2 text-[13px]" aria-label="Torre">
+        <select value={torre} onChange={(e) => { setTorre(e.target.value); setPagina(1); }} className="h-9 rounded-lg border border-border bg-background px-2 text-[13px]" aria-label="Torre">
           <option value="">Todas las torres</option>
           {torres.map((t) => (
             <option key={t}>{t}</option>
@@ -97,7 +105,7 @@ export function TablaAntiguedad({ filas, fecha }: { filas: Fila[]; fecha: string
           <option value="unidad">Por unidad</option>
         </select>
         <label className="flex items-center gap-2 text-[13px] text-marine-deep">
-          <input type="checkbox" checked={soloDeuda} onChange={(e) => setSoloDeuda(e.target.checked)} className="h-4 w-4" />
+          <input type="checkbox" checked={soloDeuda} onChange={(e) => { setSoloDeuda(e.target.checked); setPagina(1); }} className="h-4 w-4" />
           Solo con saldo
         </label>
         <button type="button" onClick={exportar} className="ml-auto h-9 rounded-lg border border-border px-3 text-[13px] font-medium text-marine-deep hover:bg-frost">
@@ -122,7 +130,7 @@ export function TablaAntiguedad({ filas, fecha }: { filas: Fila[]; fecha: string
               </tr>
             </thead>
             <tbody>
-              {visibles.map((f) => (
+              {enPagina.map((f) => (
                 <tr key={f.unitId} className="hover:bg-frost/50">
                   <td className={tabla.td}>
                     <Link href={`/admin/cuentas/${f.unitId}`} className="font-medium text-marine-deep hover:underline">

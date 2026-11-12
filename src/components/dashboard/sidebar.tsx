@@ -38,6 +38,62 @@ const adminItems = [
   { href: "/admin/settings", label: "Configuración", icon: "settings" },
 ];
 
+/**
+ * El menú de quien administra: su trabajo primero, agrupado, y que quepa sin
+ * deslizar. Lo que es del vecino (su estado de cuenta, invitar visitas, Atri)
+ * queda al final, plegado.
+ */
+const GRUPOS_ADMIN: { titulo: string | null; items: { href: string; label: string; icon: string }[] }[] = [
+  { titulo: null, items: [{ href: "/admin", label: "Hoy", icon: "admin" }] },
+  {
+    titulo: "Cobranza",
+    items: [
+      { href: "/admin/cuentas", label: "Cuentas por cobrar", icon: "payments" },
+      { href: "/admin/saldos", label: "Saldos a favor", icon: "payments" },
+    ],
+  },
+  {
+    titulo: "Condominio",
+    items: [
+      { href: "/admin/units", label: "Unidades", icon: "units" },
+      { href: "/admin/contactos", label: "Contactos", icon: "contactos" },
+      { href: "/comunicados", label: "Comunicados", icon: "announcements" },
+      { href: "/admin/mantenimiento", label: "Mantenimiento", icon: "maintenance" },
+      { href: "/reservas", label: "Reservas", icon: "reservas" },
+      { href: "/admin/documentos", label: "Documentos", icon: "documentos" },
+    ],
+  },
+  {
+    titulo: "Contabilidad",
+    items: [
+      { href: "/finanzas", label: "Gastos e ingresos", icon: "finanzas" },
+      { href: "/admin/libro", label: "Libro contable", icon: "finanzas" },
+      { href: "/admin/fondo-reserva", label: "Fondos", icon: "finanzas" },
+      { href: "/admin/budget", label: "Presupuesto", icon: "finanzas" },
+      { href: "/admin/grupos", label: "Grupos de prorrateo", icon: "units" },
+    ],
+  },
+  {
+    titulo: "Junta y control",
+    items: [
+      { href: "/decisiones", label: "Decisiones", icon: "votaciones" },
+      { href: "/admin/junta", label: "Tareas de la Junta", icon: "votaciones" },
+      { href: "/admin/censo", label: "Censo documental", icon: "contactos" },
+      { href: "/admin/equipo", label: "Equipo y funciones", icon: "contactos" },
+      { href: "/admin/historial", label: "Historial", icon: "documentos" },
+    ],
+  },
+  { titulo: null, items: [{ href: "/admin/settings", label: "Configuración", icon: "settings" }] },
+];
+const VISTA_DEL_VECINO = [
+  { href: "/pagos", label: "Pagos", icon: "payments" },
+  { href: "/mantenimiento", label: "Reportar avería", icon: "maintenance" },
+  { href: "/visitantes", label: "Visitantes", icon: "qr" },
+  { href: "/conserje", label: "Conserje", icon: "conserje" },
+  { href: "/servicios", label: "Servicios", icon: "servicios" },
+  { href: "/documentos", label: "Documentos del vecino", icon: "documentos" },
+];
+
 const iconMap: Record<string, React.ReactNode> = {
   documentos: (
     <svg className="h-[18px] w-[18px]" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
@@ -142,12 +198,12 @@ export function Sidebar({
   return (
     <aside className="hidden md:flex md:w-64 md:shrink-0 md:flex-col md:overflow-y-auto bg-sidebar text-sidebar-foreground [scrollbar-width:thin]">
       {/* Manda el condominio: su logo (o sus iniciales) y su nombre. */}
-      <div className="flex flex-col items-center gap-3 px-4 pt-7 pb-6 text-center">
+      <div className={`flex flex-col items-center gap-3 px-4 text-center ${isAdmin ? "pt-5 pb-4" : "pt-7 pb-6"}`}>
         {condominio?.logoOscuroUrl || condominio?.logoUrl ? (
           <>
             {condominio.logoOscuroUrl ? (
               // eslint-disable-next-line @next/next/no-img-element -- logo del condominio, subido por la administración
-              <img src={condominio.logoOscuroUrl} alt={condominio.nombre} className="h-auto w-[228px]" />
+              <img src={condominio.logoOscuroUrl} alt={condominio.nombre} className={`h-auto ${isAdmin ? "w-[190px]" : "w-[228px]"}`} />
             ) : (
               <span className="rounded-2xl bg-white p-3">
                 {/* eslint-disable-next-line @next/next/no-img-element -- logo del condominio */}
@@ -175,56 +231,90 @@ export function Sidebar({
         )}
       </div>
 
-      <nav aria-label="Secciones" className="flex-1 space-y-0.5 px-3 pb-6">
-        {navItems.map((item) => {
-          const isActive = estaActivo(pathname, item.href);
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              onClick={() => setDestino(item.href)}
-              aria-current={isActive ? 'page' : undefined}
-              className={`flex items-center gap-3 rounded-lg px-3 py-2 text-[13.5px] font-medium transition-colors ${
-                isActive
-                  ? "bg-sidebar-primary text-sidebar-primary-foreground"
-                  : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground"
-              }`}
-            >
-              {iconMap[item.icon]}
-              {item.label}
-              <Burbuja n={pendientes[item.href]} activo={isActive} className="ml-auto" />
-            </Link>
-          );
-        })}
-
-        {isAdmin && (
-          <>
-            <div className="my-5 px-3">
-              <p className="font-meta text-sidebar-foreground/40">ADMINISTRACIÓN</p>
+      {isAdmin ? (
+        <nav aria-label="Secciones" className="flex-1 px-3 pb-4">
+          {GRUPOS_ADMIN.map((g, gi) => (
+            <div key={gi} className={g.titulo ? "mt-4" : gi === 0 ? "" : "mt-4"}>
+              {g.titulo && <p className="mb-1 px-3 text-[11px] font-semibold uppercase tracking-[0.1em] text-sidebar-foreground/40">{g.titulo}</p>}
+              <div className="space-y-px">
+                {g.items.map((item) => {
+                  const isActive = estaActivo(pathname, item.href);
+                  return (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      onClick={() => setDestino(item.href)}
+                      aria-current={isActive ? "page" : undefined}
+                      className={`flex items-center gap-3 rounded-lg px-3 py-[7px] text-[13.5px] font-medium transition-colors ${
+                          isActive
+                            ? "bg-sidebar-primary text-sidebar-primary-foreground"
+                            : "text-sidebar-foreground/75 hover:bg-sidebar-accent hover:text-sidebar-foreground"
+                        }`}
+                    >
+                      {iconMap[item.icon]}
+                      {item.label}
+                      <Burbuja n={pendientes[item.href]} activo={isActive} className="ml-auto" />
+                    </Link>
+                  );
+                })}
+              </div>
             </div>
-            {adminItems.map((item) => {
-              const isActive = estaActivo(pathname, item.href);
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  onClick={() => setDestino(item.href)}
-                  aria-current={isActive ? 'page' : undefined}
-                  className={`flex items-center gap-3 rounded-lg px-3 py-2 text-[13.5px] font-medium transition-colors ${
-                    isActive
-                      ? "bg-sidebar-primary text-sidebar-primary-foreground"
-                      : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground"
-                  }`}
-                >
-                  {iconMap[item.icon]}
-                  {item.label}
-                  <Burbuja n={pendientes[item.href]} activo={isActive} className="ml-auto" />
-                </Link>
-              );
-            })}
-          </>
-        )}
-      </nav>
+          ))}
+          <details className="group mt-4" open={VISTA_DEL_VECINO.some((i) => estaActivo(pathname, i.href))}>
+            <summary className="flex cursor-pointer list-none items-center justify-between rounded-lg px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.1em] text-sidebar-foreground/40 hover:text-sidebar-foreground/70 [&::-webkit-details-marker]:hidden">
+              Lo que ve el vecino
+              <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="h-3.5 w-3.5 transition-transform group-open:rotate-90">
+                <path d="m9 6 6 6-6 6" />
+              </svg>
+            </summary>
+            <div className="mt-1 space-y-px">
+              {VISTA_DEL_VECINO.map((item) => {
+                const isActive = estaActivo(pathname, item.href);
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    onClick={() => setDestino(item.href)}
+                    aria-current={isActive ? "page" : undefined}
+                    className={`flex items-center gap-3 rounded-lg px-3 py-[7px] text-[13.5px] font-medium transition-colors ${
+                          isActive
+                            ? "bg-sidebar-primary text-sidebar-primary-foreground"
+                            : "text-sidebar-foreground/75 hover:bg-sidebar-accent hover:text-sidebar-foreground"
+                        }`}
+                  >
+                    {iconMap[item.icon]}
+                    {item.label}
+                  </Link>
+                );
+              })}
+            </div>
+          </details>
+        </nav>
+      ) : (
+        <nav aria-label="Secciones" className="flex-1 space-y-0.5 px-3 pb-6">
+          {navItems.map((item) => {
+            const isActive = estaActivo(pathname, item.href);
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                onClick={() => setDestino(item.href)}
+                aria-current={isActive ? 'page' : undefined}
+                className={`flex items-center gap-3 rounded-lg px-3 py-2 text-[13.5px] font-medium transition-colors ${
+                  isActive
+                    ? "bg-sidebar-primary text-sidebar-primary-foreground"
+                    : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground"
+                }`}
+              >
+                {iconMap[item.icon]}
+                {item.label}
+                <Burbuja n={pendientes[item.href]} activo={isActive} className="ml-auto" />
+              </Link>
+            );
+          })}
+  
+        </nav>
+      )}
 
       {/* Atryum firma abajo, en segundo plano. */}
       <div className="flex items-center gap-2 px-6 pb-6 opacity-60">

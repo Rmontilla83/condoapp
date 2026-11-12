@@ -75,7 +75,7 @@ export default async function AdminSettingsPage() {
       <div>
         <span className="font-meta-loose text-cyan-ink">CONFIGURACIÓN</span>
         <h1 className="mt-4 font-display text-[clamp(1.75rem,3.5vw,2.5rem)] leading-[1.1] tracking-[-0.03em] text-marine-deep">
-          <em className="font-editorial">{org.name}</em>
+          Configuración
         </h1>
         <p className="mt-3 text-[15px] text-mute">
           Datos bancarios, cómo se cobra, qué puede hacer un inquilino y qué áreas comunes

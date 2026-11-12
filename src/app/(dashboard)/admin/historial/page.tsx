@@ -14,7 +14,7 @@ import { Encabezado, Vacio, tabla } from "@/components/contabilidad/ui";
 const POR_PAGINA = 100;
 
 /** Claves del detalle que son identificadores internos: no le dicen nada a quien lee. */
-const OCULTAS = new Set(["id", "transaccion", "recibo", "presupuesto", "convenio", "profile_id", "reportado_por", "changes", "decimals", "documento", "version", "tarea"]);
+const OCULTAS = new Set(["id", "transaccion", "recibo", "presupuesto", "convenio", "profile_id", "reportado_por", "changes", "decimals", "documento", "version", "tarea", "code_id", "invite_id", "member_id"]);
 
 const ETIQUETA: Record<string, string> = {
   reason: "Motivo",
@@ -58,12 +58,29 @@ const ETIQUETA: Record<string, string> = {
   con_fondo: "Pagado con",
   anio: "Año",
   partidas: "Partidas",
-  role: "Rol en la unidad",
+  role: "Como",
+  rol: "Como",
   por: "Hecho por",
   comentario: "Comentario",
 };
 
+/** Valores internos que aparecen en el detalle, dichos como los diría una persona. */
+const VALOR: Record<string, string> = {
+  owner: "propietario",
+  tenant: "inquilino",
+  owner_occupied: "vive el propietario",
+  tenant_with_active_owner: "alquilada, con propietario activo",
+  tenant_only: "alquilada, propietario ausente",
+  transfer: "transferencia",
+  cash: "efectivo",
+  mobile_payment: "pago móvil",
+  zelle: "Zelle",
+  USD: "dólares",
+  VES: "bolívares",
+};
+
 function texto(v: unknown): string {
+  if (typeof v === "string" && v in VALOR) return VALOR[v];
   if (v === null || v === undefined || v === "") return "";
   if (typeof v === "boolean") return v ? "sí" : "no";
   if (typeof v === "number") return v.toLocaleString("es-VE", { maximumFractionDigits: 5 });

@@ -201,19 +201,40 @@ export default async function AdminPage() {
   ).length;
 
   return (
-    <div className="space-y-10">
-      <div>
-        <span className="font-meta-loose text-cyan-ink">PANEL ADMINISTRADOR</span>
+    <div className="flex flex-col gap-10">
+      <div className="order-1">
+        <span className="font-meta-loose text-cyan-ink">ADMINISTRACIÓN</span>
         <h1 className="mt-4 font-display text-[clamp(2rem,4.5vw,3.25rem)] leading-[1.05] tracking-[-0.035em] text-marine-deep">
-          Vista <em className="font-editorial text-cyan">general</em>
+          Hoy
         </h1>
         <p className="mt-3 text-[15px] text-mute">
           {stats.totalUnits} unidades · {cobranza.pctCobranza === null ? "sin cuotas este mes" : `${cobranza.pctCobranza.toLocaleString("es-VE")} % de cobranza en ${cobranza.mes}`} · {stats.openRequests} solicitud{stats.openRequests !== 1 ? "es" : ""} de mantenimiento abierta{stats.openRequests !== 1 ? "s" : ""}
         </p>
       </div>
 
+      <nav aria-label="Acciones de todos los días" className="order-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        {(
+          [
+            ["/admin/units", "Buscar una unidad", "Su ficha, sus personas y su deuda; ahí se registra un pago recibido"],
+            ["/finanzas", "Registrar un gasto", "O un ingreso que no es cuota"],
+            ["/comunicados", "Publicar un comunicado", "Con fotos, para todos los vecinos"],
+            ["/admin/cuentas", "Ver cuentas por cobrar", "Quién debe y desde cuándo"],
+          ] as const
+        ).map(([href, titulo, detalle]) => (
+          <Link key={href} href={href} className="group flex min-h-[92px] flex-col justify-center rounded-2xl border border-border bg-card px-5 py-4 transition-colors hover:border-marine/40 hover:bg-frost">
+            <span className="flex items-center justify-between gap-3 text-[17px] font-semibold text-marine-deep">
+              {titulo}
+              <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5 shrink-0 text-mute transition-transform group-hover:translate-x-0.5">
+                <path d="m9 6 6 6-6 6" />
+              </svg>
+            </span>
+            <span className="mt-1 text-[14px] text-mute">{detalle}</span>
+          </Link>
+        ))}
+      </nav>
+
       {/* Cobranza del mes: lo que entró, lo que falta de este mes y lo que viene arrastrado */}
-      <section aria-label={`Cobranza de ${cobranza.mes}`} className="space-y-3">
+      <section aria-label={`Cobranza de ${cobranza.mes}`} className="order-5 space-y-3">
         <div className="flex flex-wrap items-baseline justify-between gap-2">
           <p className="font-meta text-mute">COBRANZA DE {cobranza.mes.toUpperCase()}</p>
           <Link href="/admin/cuentas" className="text-[13px] text-cyan-ink hover:underline">
@@ -296,7 +317,7 @@ export default async function AdminPage() {
       </section>
 
       {/* KPI cards — manual style con count-up */}
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+      <div className="order-7 grid grid-cols-2 md:grid-cols-3 gap-3">
         <div className="group rounded-2xl bg-card border border-border p-5 transition-[border-color,box-shadow,transform,background-color] duration-200 hover:border-cyan/40 hover:-translate-y-0.5 hover:shadow-[0_18px_50px_-18px_rgb(15,46,90,0.18)]">
           <p className="font-meta text-mute">UNIDADES</p>
           <p className="mt-3 font-display text-[32px] leading-none tracking-[-0.02em] text-marine-deep tabular-nums">
@@ -320,8 +341,8 @@ export default async function AdminPage() {
         </div>
       </div>
 
-      {/* Acciones rápidas */}
-      <div className="grid gap-3 md:grid-cols-3">
+      {/* Tasa, emisión de cuotas y unidades */}
+      <div className="order-6 grid gap-3 md:grid-cols-3">
         <RateUpdater currentRate={Number(rateData.rate)} effectiveDate={rateData.effective_date} />
         <div className="rounded-2xl bg-card border border-border p-5 flex flex-col justify-between gap-4">
           <div>
@@ -354,9 +375,10 @@ export default async function AdminPage() {
         </div>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-2">
+      {/* Estos dos bloques se ordenan por separado: los comprobantes van arriba y los morosos más abajo. */}
+      <div className="contents">
         {/* Comprobantes */}
-        <div className="rounded-2xl bg-card border border-border p-6">
+        <div id="pagos" className="order-2 rounded-2xl bg-card border border-border p-6">
           <div className="flex items-center justify-between mb-5">
             <div>
               <p className="font-meta text-mute">COMPROBANTES POR REVISAR</p>
@@ -370,7 +392,7 @@ export default async function AdminPage() {
         </div>
 
         {/* Morosos */}
-        <div className="rounded-2xl bg-card border border-border p-6">
+        <div className="order-8 rounded-2xl bg-card border border-border p-6">
           <div className="flex items-center justify-between mb-5">
             <div>
               <p className="font-meta text-mute">MOROSOS</p>
@@ -390,8 +412,8 @@ export default async function AdminPage() {
         </div>
       </div>
 
-      {/* Solicitudes — gestión */}
-      <div className="rounded-2xl bg-card border border-border p-6">
+      {/* Solicitudes — gestión. Con reportes abiertos sube junto a lo pendiente. */}
+      <div className={`rounded-2xl bg-card border border-border p-6 ${openMaintenance.length > 0 ? "order-3" : "order-9"}`}>
         <div className="mb-5">
           <p className="font-meta text-mute">SOLICITUDES DE MANTENIMIENTO</p>
           <p className="mt-2 text-[15px] font-medium text-marine-deep">
@@ -402,7 +424,7 @@ export default async function AdminPage() {
       </div>
 
       {/* Resumen financiero */}
-      <div className="rounded-2xl bg-card border border-border p-6">
+      <div className="order-10 rounded-2xl bg-card border border-border p-6">
         <div className="mb-5 flex flex-wrap items-baseline justify-between gap-2">
           <p className="font-meta text-mute">RESUMEN FINANCIERO · ACUMULADO</p>
           <p className="text-[13px] text-mute">{stats.periodo}. En dólares; los gastos en bolívares, a la tasa BCV de su día.</p>

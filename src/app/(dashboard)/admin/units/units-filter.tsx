@@ -2,6 +2,7 @@
 
 import { useMemo, useState, type ReactNode } from "react";
 import { coincide } from "@/lib/buscar";
+import { Paginacion, POR_PAGINA } from "@/components/paginacion";
 
 export interface FilaUnidad {
   id: string;
@@ -20,6 +21,7 @@ const TODAS = "__todas__";
 export function UnitsFilter({ filas }: { filas: FilaUnidad[] }) {
   const [torre, setTorre] = useState(TODAS);
   const [q, setQ] = useState("");
+  const [pagina, setPagina] = useState(1);
 
   const torres = useMemo(
     () => [...new Set(filas.map((f) => f.torre).filter(Boolean) as string[])],
@@ -29,17 +31,24 @@ export function UnitsFilter({ filas }: { filas: FilaUnidad[] }) {
   const visibles = useMemo(() => {
     return filas.filter((f) => (torre === TODAS || f.torre === torre) && coincide(f.busqueda, q));
   }, [filas, torre, q]);
+  // Al filtrar se vuelve a la primera página; si la lista se acorta, no queda en una página vacía.
+  const paginas = Math.max(1, Math.ceil(visibles.length / POR_PAGINA));
+  const actual = Math.min(pagina, paginas);
+  const enPagina = visibles.slice((actual - 1) * POR_PAGINA, actual * POR_PAGINA);
 
   return (
     <div className="space-y-3">
-      <div className="flex flex-wrap items-center gap-2">
+      <div className="sticky top-0 z-20 -mx-2 flex flex-wrap items-center gap-2 bg-background/95 px-2 py-2 backdrop-blur">
         {torres.length > 1 && (
           <div className="flex flex-wrap gap-1" role="group" aria-label="Filtrar por torre">
             {[TODAS, ...torres].map((t) => (
               <button
                 key={t}
                 type="button"
-                onClick={() => setTorre(t)}
+                onClick={() => {
+                  setTorre(t);
+                  setPagina(1);
+                }}
                 aria-pressed={torre === t}
                 className={`rounded-full px-3 py-1.5 text-[12px] font-medium transition-colors ${
                   torre === t
@@ -58,7 +67,10 @@ export function UnitsFilter({ filas }: { filas: FilaUnidad[] }) {
         <input
           id="buscar-unidad"
           value={q}
-          onChange={(e) => setQ(e.target.value)}
+          onChange={(e) => {
+            setQ(e.target.value);
+            setPagina(1);
+          }}
           placeholder="Buscar apto, propietario o inquilino (pb8, 1 1, rocha)…"
           className="h-9 min-w-[12rem] flex-1 rounded-lg border border-border bg-background px-3 text-sm focus-visible:outline-2 focus-visible:outline-cyan"
         />
@@ -76,11 +88,12 @@ export function UnitsFilter({ filas }: { filas: FilaUnidad[] }) {
         </p>
       ) : (
         <ul className="divide-y divide-border rounded-2xl border border-border bg-card">
-          {visibles.map((f) => (
+          {enPagina.map((f) => (
             <li key={f.id}>{f.fila}</li>
           ))}
         </ul>
       )}
+      <Paginacion pagina={actual} total={visibles.length} alCambiar={setPagina} />
     </div>
   );
 }
