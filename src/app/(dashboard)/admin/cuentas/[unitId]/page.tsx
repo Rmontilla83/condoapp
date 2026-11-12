@@ -337,14 +337,14 @@ export default async function CuentaUnidadPage({ params }: { params: Promise<{ u
                     target="_blank"
                     className="inline-flex h-8 shrink-0 items-center rounded-lg border border-border px-3 text-[13px] font-medium text-marine-deep hover:bg-frost"
                   >
-                    Ver constancia
+                    Constancia y envío
                   </Link>
                 </li>
               ))}
             </ul>
             <p className="text-[12px] text-mute">
-              La constancia se abre lista para imprimir. Para enviarla, toca «Imprimir», elige «Guardar como PDF» y adjunta ese archivo por WhatsApp o por correo. El
-              vecino también puede sacarla él mismo desde Pagos.
+              Al abrir la constancia puedes enviarla por WhatsApp o por correo con el resumen del pago ya escrito, y guardarla en PDF para adjuntarla. El vecino
+              también puede sacarla él mismo desde Pagos.
             </p>
           </>
         )}

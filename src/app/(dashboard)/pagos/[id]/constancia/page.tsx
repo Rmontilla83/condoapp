@@ -5,6 +5,8 @@ import { createClient } from "@/lib/supabase/server";
 import { isAdminRole } from "@/lib/permissions";
 import { PAYMENT_METHOD_LABELS } from "@/lib/labels";
 import { PrintButton } from "./print-button";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { ContactoDeLaUnidad, type PersonaDeLaUnidad } from "@/app/(dashboard)/admin/cuentas/[unitId]/contacto";
 import type { Organization } from "@/types/database";
 
 /**
@@ -152,14 +154,67 @@ export default async function ConstanciaPage({
       | null
       | undefined;
 
+  // Envío a mano, solo para la administración: a quién escribirle y el resumen ya redactado.
+  // Sale del WhatsApp o del correo de quien administra, no de Atryum.
+  let personas: PersonaDeLaUnidad[] = [];
+  if (esAdminDelCondo) {
+    const { data: miembros } = await createAdminClient()
+      .from("unit_members")
+      .select("role, profiles(full_name, email, phone)")
+      .eq("unit_id", invoice.unit_id as string)
+      .eq("active", true)
+      .order("role");
+    personas = (miembros ?? []).map((m) => {
+      const p = (Array.isArray(m.profiles) ? m.profiles[0] : m.profiles) as { full_name?: string; email?: string; phone?: string } | null;
+      return {
+        nombre: p?.full_name ?? "",
+        rol: m.role === "tenant" ? "tenant" : "owner",
+        telefono: p?.phone ?? null,
+        correo: p?.email && !/\.(test|example|invalid)$/i.test(p.email) ? p.email : null,
+      };
+    });
+  }
+  const etiquetaUnidad = `${unidad?.unit_number ?? ""}${unidad?.block ? ` · ${unidad.block}` : ""}`;
+  const numero = pago.id.slice(0, 8).toUpperCase();
+  const resumen = [
+    `te confirmamos el pago del apartamento ${etiquetaUnidad} en ${org?.name ?? "el condominio"}.`,
+    "",
+    `Concepto: ${invoice.description as string}`,
+    `Monto: ${usd(Number(invoice.amount), invoice.currency as string)}${equivalencia && !equivalencia.referencial ? ` (${bs(equivalencia.monto)} a tasa ${tasa(equivalencia.tasa)})` : ""}`,
+    `Fecha del pago: ${fmtFecha(pago.paid_at)}`,
+    `Método: ${PAYMENT_METHOD_LABELS[pago.payment_method] ?? pago.payment_method}${pago.reference ? `, referencia ${pago.reference}` : ""}`,
+    `Constancia N.º ${numero}`,
+    "",
+    "Gracias. La administración.",
+  ].join("\n");
+
   return (
     <div className="mx-auto max-w-2xl">
       <div className="print:hidden mb-6 flex flex-wrap items-center justify-between gap-3">
-        <a href="/pagos" className="font-meta text-cyan-ink hover:text-marine-deep transition-colors">
-          ← PAGOS
-        </a>
+        {esAdminDelCondo ? (
+          <a href={`/admin/cuentas/${invoice.unit_id}`} className="font-meta text-cyan-ink hover:text-marine-deep transition-colors">
+            ← FICHA DE LA UNIDAD
+          </a>
+        ) : (
+          <a href="/pagos" className="font-meta text-cyan-ink hover:text-marine-deep transition-colors">
+            ← PAGOS
+          </a>
+        )}
         <PrintButton />
       </div>
+
+      {esAdminDelCondo && (
+        <section className="print:hidden mb-6 rounded-2xl border border-border bg-card p-5">
+          <h2 className="font-display text-[19px] text-marine-deep">Enviar esta constancia</h2>
+          <ol className="mb-4 mt-2 list-decimal space-y-1 pl-5 text-[13px] text-mute">
+            <li>Toca WhatsApp o Correo junto a la persona: se abre con el resumen del pago ya escrito.</li>
+            <li>
+              Si quieres adjuntar el documento, toca antes «Descargar o imprimir», elige «Guardar como PDF» y adjunta ese archivo en el mismo mensaje.
+            </li>
+          </ol>
+          <ContactoDeLaUnidad personas={personas} mensaje={resumen} asunto={`Constancia de pago ${numero}: apartamento ${etiquetaUnidad}`} />
+        </section>
+      )}
 
       <div className="rounded-2xl bg-card border border-border p-8 md:p-10 print:border-0 print:p-0">
         <div className="flex items-start justify-between gap-6 pb-6 border-b border-border">
