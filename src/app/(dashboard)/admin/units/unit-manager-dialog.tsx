@@ -65,6 +65,37 @@ export function UnitManagerDialog({
     setTimeout(() => setFeedback(null), 4000);
   }
 
+  /**
+   * Copia el código completo y solo dice «copiado» si de verdad se copió. Si el
+   * navegador no deja usar el portapapeles (pasa en algunos teléfonos y dentro
+   * de un diálogo), prueba la vía antigua; si tampoco, pide copiarlo a mano.
+   */
+  async function copiar(texto: string) {
+    let hecho = false;
+    try {
+      await navigator.clipboard.writeText(texto);
+      hecho = true;
+    } catch {
+      hecho = false;
+    }
+    if (!hecho) {
+      const caja = document.createElement("textarea");
+      caja.value = texto;
+      caja.setAttribute("readonly", "");
+      caja.style.position = "fixed";
+      caja.style.opacity = "0";
+      document.body.appendChild(caja);
+      caja.select();
+      try {
+        hecho = document.execCommand("copy");
+      } catch {
+        hecho = false;
+      }
+      caja.remove();
+    }
+    showFeedback(hecho ? "ok" : "error", hecho ? `Código ${texto} copiado` : "No se pudo copiar. Toca el código para marcarlo entero y cópialo a mano.");
+  }
+
   function run(fn: () => Promise<{ error?: string; success?: boolean }>, successMsg: string) {
     startTransition(async () => {
       const res = await fn();
@@ -304,7 +335,8 @@ export function UnitManagerDialog({
             {newCode && (
               <div className="rounded-lg border-2 border-primary bg-primary/5 p-3 text-center">
                 <p className="text-xs text-muted-foreground uppercase font-semibold">Código nuevo</p>
-                <p className="text-2xl font-mono font-extrabold text-primary mt-1">{newCode.code}</p>
+                {/* select-all: un clic o doble clic marca el código entero, con sus guiones. */}
+                <p className="text-2xl font-mono font-extrabold text-primary mt-1 select-all">{newCode.code}</p>
                 <p className="text-xs text-muted-foreground mt-1">
                   Expira: {new Date(newCode.expires_at).toLocaleDateString("es")}
                 </p>
@@ -313,8 +345,7 @@ export function UnitManagerDialog({
                   size="sm"
                   className="mt-2"
                   onClick={() => {
-                    navigator.clipboard.writeText(newCode.code);
-                    showFeedback("ok", "Copiado al portapapeles");
+                    void copiar(newCode.code);
                   }}
                 >
                   Copiar
@@ -335,12 +366,15 @@ export function UnitManagerDialog({
                     <div>
                       <div className="flex items-center gap-2">
                         <Badge variant="outline">{c.assigned_role === "owner" ? "Propietario" : "Inquilino"}</Badge>
-                        <span className="font-mono text-sm font-bold">{c.code}</span>
+                        <span className="font-mono text-sm font-bold select-all">{c.code}</span>
                       </div>
                       <p className="text-xs text-muted-foreground">
                         Expira: {new Date(c.expires_at).toLocaleDateString("es")}
                       </p>
                     </div>
+                    <Button variant="ghost" size="sm" className="ml-auto" onClick={() => void copiar(c.code)}>
+                      Copiar
+                    </Button>
                     <Button
                       variant="ghost"
                       size="sm"
