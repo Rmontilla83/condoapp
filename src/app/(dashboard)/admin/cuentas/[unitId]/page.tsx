@@ -72,7 +72,8 @@ export default async function CuentaUnidadPage({ params }: { params: Promise<{ u
   const OCUPACION: Record<string, string> = { owner_occupied: "Vive el propietario", tenant_with_active_owner: "Alquilada, con propietario activo", tenant_only: "Solo inquilino" };
   const TIPO: Record<string, string> = { apartment: "Apartamento", house: "Casa", penthouse: "Penthouse", local: "Local", office: "Oficina" };
   const ESTADO_REPORTE: Record<string, string> = { new: "Nuevo", in_review: "En revisión", in_progress: "En curso", resolved: "Resuelto", cancelled: "Descartado" };
-  const estadoCenso = ESTADOS_CENSO[((censo?.estado as EstadoCenso) ?? "rojo") as EstadoCenso];
+  // Sin fila en el censo nadie ha registrado nada: no es lo mismo que «sin entregar».
+  const estadoCenso = censo?.estado ? ESTADOS_CENSO[censo.estado as EstadoCenso] : null;
   const fechaHora = (iso: string) => new Date(iso).toLocaleString("es-VE", { timeZone: tz, day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
 
   const masAntigua = cuenta.abiertas.find((c) => c.vence < hoy);
@@ -170,18 +171,39 @@ export default async function CuentaUnidadPage({ params }: { params: Promise<{ u
               </dd>
             </div>
             <div className="flex justify-between gap-4">
-              <dt className="text-mute">Documentación</dt>
+              <dt className="text-mute">Datos de la carga</dt>
               <dd className="text-right">
-                <span className={`inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-[11px] font-medium ${estadoCenso.clase}`}>
-                  <span aria-hidden className={`h-2 w-2 rounded-full ${estadoCenso.punto}`} />
-                  {estadoCenso.nombre}
-                </span>
+                {enVerificacion.length === 0 ? (
+                  <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[11px] font-medium text-emerald-800">
+                    <span aria-hidden className="h-2 w-2 rounded-full bg-emerald-500" />
+                    Verificados
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[11px] font-medium text-amber-800">
+                    <span aria-hidden className="h-2 w-2 rounded-full bg-amber-500" />
+                    {enVerificacion.length} en verificación
+                  </span>
+                )}
+              </dd>
+            </div>
+            <div className="flex justify-between gap-4">
+              <dt className="text-mute">Documentos de propiedad</dt>
+              <dd className="text-right">
+                {estadoCenso ? (
+                  <span className={`inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-[11px] font-medium ${estadoCenso.clase}`}>
+                    <span aria-hidden className={`h-2 w-2 rounded-full ${estadoCenso.punto}`} />
+                    {estadoCenso.nombre}
+                  </span>
+                ) : (
+                  <span className="text-[13px] text-mute">Censo sin iniciar</span>
+                )}
               </dd>
             </div>
           </dl>
           <p className="mt-4 text-[12px] text-mute">
-            Las personas y la ocupación se cambian en <Link href="/admin/units" className="text-cyan-ink hover:underline">Unidades</Link>; la documentación, en{" "}
-            <Link href="/admin/censo" className="text-cyan-ink hover:underline">Censo documental</Link>.
+            «Datos de la carga» dice si el propietario, la alícuota, la marina, el contacto y el puesto ya están verificados. «Documentos de propiedad» es otra cosa: si el dueño entregó sus papeles, que se lleva en{" "}
+            <Link href="/admin/censo" className="text-cyan-ink hover:underline">Censo documental</Link>. Las personas y la ocupación se cambian en{" "}
+            <Link href="/admin/units" className="text-cyan-ink hover:underline">Unidades</Link>.
           </p>
         </section>
       </div>
