@@ -87,6 +87,8 @@ export function InicioMovil({ saludo, lineas, acciones }: { saludo: string; line
         className="mt-auto flex items-center gap-2 rounded-2xl border border-border bg-card p-1.5 pl-4"
         onSubmit={(e) => {
           e.preventDefault();
+          // Se suelta el campo para que el teclado baje y se vea la respuesta.
+          (document.activeElement as HTMLElement | null)?.blur();
           abrirAtri(texto);
           setTexto("");
         }}
@@ -98,10 +100,10 @@ export function InicioMovil({ saludo, lineas, acciones }: { saludo: string; line
           id="inicio-atri"
           value={texto}
           onChange={(e) => setTexto(e.target.value)}
-          onFocus={() => {
-            // Con el campo vacío, tocarlo ya abre la conversación completa.
-            if (!texto) abrirAtri();
-          }}
+          // Se escribe aquí mismo. La conversación se abre al enviar: abrirla al
+          // tocar el campo la ponía encima, y el teclado seguía escribiendo en
+          // este campo, ya tapado.
+          enterKeyHint="send"
           placeholder={`Escríbele a ${NOMBRE_CONSERJE}…`}
           autoComplete="off"
           className="h-12 min-w-0 flex-1 bg-transparent text-[16px] text-marine-deep placeholder:text-mute focus:outline-none"
