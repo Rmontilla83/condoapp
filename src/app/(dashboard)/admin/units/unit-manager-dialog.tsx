@@ -336,7 +336,7 @@ export function UnitManagerDialog({
               <div className="rounded-lg border-2 border-primary bg-primary/5 p-3 text-center">
                 <p className="text-xs text-muted-foreground uppercase font-semibold">Código nuevo</p>
                 {/* select-all: un clic o doble clic marca el código entero, con sus guiones. */}
-                <p className="text-2xl font-mono font-extrabold text-primary mt-1 select-all">{newCode.code}</p>
+                <p className="text-2xl font-mono font-extrabold text-primary mt-1" style={{ userSelect: "all", WebkitUserSelect: "all" }}>{newCode.code}</p>
                 <p className="text-xs text-muted-foreground mt-1">
                   Expira: {new Date(newCode.expires_at).toLocaleDateString("es")}
                 </p>
@@ -366,7 +366,7 @@ export function UnitManagerDialog({
                     <div>
                       <div className="flex items-center gap-2">
                         <Badge variant="outline">{c.assigned_role === "owner" ? "Propietario" : "Inquilino"}</Badge>
-                        <span className="font-mono text-sm font-bold select-all">{c.code}</span>
+                        <span className="font-mono text-sm font-bold" style={{ userSelect: "all", WebkitUserSelect: "all" }}>{c.code}</span>
                       </div>
                       <p className="text-xs text-muted-foreground">
                         Expira: {new Date(c.expires_at).toLocaleDateString("es")}
