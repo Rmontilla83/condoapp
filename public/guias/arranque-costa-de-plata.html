@@ -457,7 +457,7 @@ ol.pasos li{margin:6px 0}
           <h4>Acta de validación de la carga</h4>
           <p>En Lechería, el ____ de ______________ de ______, la Junta de Condominio del Conjunto Residencial Costa de Plata declara haber revisado los datos cargados en la aplicación Atryum, y que corresponden a la información suministrada por ella:</p>
           <table><thead><tr><th>Dato</th><th style="width:26%">Cifra revisada</th><th style="width:20%">Conforme (sí o no)</th></tr></thead>
-          <tbody><tr><td>Número de unidades</td><td></td><td></td></tr><tr><td>Suma de las alícuotas de las unidades</td><td></td><td></td></tr><tr><td>Puestos de la marina</td><td></td><td></td></tr><tr><td>Propietarios con correo y teléfono</td><td></td><td></td></tr><tr><td>Fecha de corte</td><td></td><td></td></tr><tr><td>Total de deuda de apertura (USD)</td><td></td><td></td></tr><tr><td>Total de saldos a favor de apertura (USD)</td><td></td><td></td></tr><tr><td>Saldo en bancos y caja a la fecha de corte</td><td></td><td></td></tr><tr><td>Saldo del fondo de reserva a la fecha de corte</td><td></td><td></td></tr><tr><td>Porcentaje de aporte al fondo de reserva</td><td></td><td></td></tr><tr><td>Cuentas bancarias publicadas</td><td></td><td></td></tr><tr><td>Total de la primera cuota (USD)</td><td></td><td></td></tr></tbody></table>
+          <tbody><tr><td>Número de unidades</td><td></td><td></td></tr><tr><td>Suma de las alícuotas de las unidades</td><td></td><td></td></tr><tr><td>Puestos de la marina</td><td></td><td></td></tr><tr><td>Propietarios con correo y teléfono</td><td></td><td></td></tr><tr><td>Fecha de corte</td><td></td><td></td></tr><tr><td>Total de deuda de apertura (USD)</td><td></td><td></td></tr><tr><td>Total de saldos a favor de apertura (USD)</td><td></td><td></td></tr><tr><td>Saldo en bancos y caja a la fecha de corte</td><td></td><td></td></tr><tr><td>Saldo del fondo de reserva a la fecha de corte</td><td></td><td></td></tr><tr><td>Porcentaje de aporte al fondo de reserva</td><td></td><td></td></tr><tr><td>Saldo del fondo de contingencia a la fecha de corte</td><td></td><td></td></tr><tr><td>Porcentaje de aporte al fondo de contingencia</td><td></td><td></td></tr><tr><td>Quién ocupa cada función en la app</td><td></td><td></td></tr><tr><td>Cuentas bancarias publicadas</td><td></td><td></td></tr><tr><td>Total de la primera cuota (USD)</td><td></td><td></td></tr></tbody></table>
           <p style="margin-top:14px">Observaciones:</p><span class="raya"></span>
           <table><thead><tr><th>Firmante</th><th style="width:36%">Nombre y cédula</th><th style="width:26%">Firma</th></tr></thead>
           <tbody><tr><td>Presidente de la Junta de Condominio</td><td></td><td></td></tr><tr><td>Miembro de la Junta de Condominio</td><td></td><td></td></tr><tr><td>Administradora</td><td></td><td></td></tr></tbody></table>
@@ -470,7 +470,7 @@ ol.pasos li{margin:6px 0}
       <section class="tarjeta" id="funciones">
         <h3>Quién hace qué</h3>
         <p class="leer">Cada cuenta de la administración tiene una función. Todas ven todo, y cada acción queda en el Historial con el nombre, la función y la hora.</p>
-        <table><thead><tr><th>Tarea</th><th>Asistente</th><th>Administradora</th><th>Junta</th><th>Contador</th></tr></thead>
+        <div style="overflow-x:auto"><table style="min-width:520px"><thead><tr><th>Tarea</th><th>Asistente</th><th>Administradora</th><th>Junta</th><th>Contador</th></tr></thead>
         <tbody>
         <tr><td>Ver cuentas, libro, informes, documentos e historial</td><td>Sí</td><td>Sí</td><td>Sí</td><td>Sí</td></tr>
         <tr><td>Registrar gastos y otros ingresos, subir documentos, atender reportes</td><td>Sí</td><td>Sí</td><td>No</td><td>No</td></tr>
@@ -481,8 +481,8 @@ ol.pasos li{margin:6px 0}
         <tr><td>Aprobar el presupuesto, publicar documentos y aprobar el censo</td><td>No</td><td>No</td><td>Sí</td><td>No</td></tr>
         <tr><td>Consultas, asambleas y tareas de la Junta</td><td>No</td><td>Sí</td><td>Sí</td><td>No</td></tr>
         <tr><td>Publicar comunicados</td><td>Sí</td><td>Sí</td><td>Sí</td><td>No</td></tr>
-        </tbody></table>
-        <p class="leer">Tres candados adicionales: quien reporta un pago no lo aprueba, quien sube un documento no lo publica y quien valida una unidad no la aprueba. Cambiar una alícuota ya cargada pide el motivo y el acta de asamblea. La cuenta del contador es de solo lectura también en la base de datos.</p>
+        </tbody></table></div>
+        <p class="leer">Tres candados adicionales: quien reporta un pago no lo aprueba, quien sube un documento no lo publica y quien valida una unidad no la aprueba. Cambiar una alícuota ya cargada pide el motivo y el acta de asamblea. Las funciones se cumplen también en la base de datos: la cuenta del contador es de solo lectura, y las de la Junta y el asistente no escriben por fuera de la app. En las consultas y asambleas el voto es reservado, y cada unidad vota una sola vez.</p>
       </section>
       <section class="tarjeta" id="mes">
         <h3>El mes tipo</h3>

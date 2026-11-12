@@ -331,6 +331,9 @@ ul.plain li { margin: 0.45rem 0; }
 @media (prefers-reduced-motion: reduce) {
   * { transition: none !important; animation: none !important; }
 }
+
+/* ancho-movil */
+@media (max-width: 859px) { .wrap { grid-template-columns: minmax(0, 1fr); } .col { min-width: 0; } }
 </style>
 </head>
 <body>
@@ -356,6 +359,7 @@ ul.plain li { margin: 0.45rem 0; }
       <a href="#votar">Votar</a>
       <a href="#visitas">Invitados con QR</a>
       <a href="#unidad">Tu unidad y tu inquilino</a>
+      <a href="#documentos">Documentos</a>
       <a href="#atri">Atri, tu conserje</a>
       <a href="#avisos">Avisos y paquetes</a>
       <a href="#dudas">Dudas frecuentes</a>
@@ -674,7 +678,9 @@ ul.plain li { margin: 0.45rem 0; }
       <p>
         Esta es la sección que convierte a Atryum en algo distinto de un cobrador. En
         <strong>Finanzas</strong> ves el gasto del condominio: cada egreso con su concepto, su
-        categoría, su monto y —cuando la administración lo carga— la foto de la factura.
+        categoría, su monto y —cuando la administración lo carga— la foto de la factura. También ves
+        cuánto tienen el fondo de reserva y el de contingencia, y el presupuesto aprobado frente a lo
+        gastado.
       </p>
 
             
@@ -843,7 +849,9 @@ ul.plain li { margin: 0.45rem 0; }
       <p>
         Cuando una asamblea es <strong>ponderada por alícuota</strong>, tu voto pesa lo que pesa
         tu apartamento en el condominio. La app te dice cuánto pesa tu voto <em>antes</em> de que
-        votes, para que no sea una sorpresa.
+        votes, para que no sea una sorpresa. Cada apartamento vota una sola vez: si tiene dos
+        copropietarios con cuenta, vota el primero que lo haga en esa decisión. Tu voto es
+        reservado: todos ven el resultado contado, y nadie ve cómo votaste tú.
       </p>
 
             <figure class="cap">
@@ -948,7 +956,9 @@ ul.plain li { margin: 0.45rem 0; }
 
       <p>
         Cuando el inquilino se va, le quitas el acceso desde la misma pantalla. Su historial de
-        actividad queda; su entrada a la unidad, no.
+        actividad queda; su entrada a la unidad, no. A tu inquilino lo registras tú: la administración
+        no lo carga por ti. La Junta decide, para todo el condominio, si los inquilinos reservan,
+        si votan y si ven las consultas y asambleas.
       </p>
     </section>
 
@@ -956,6 +966,30 @@ ul.plain li { margin: 0.45rem 0; }
 
     <!-- ══════════════════════════════════════════════════ -->
     <!-- novedades-2026-09-29 -->
+    <section id="documentos">
+      <p class="meta">Tu condominio · Documentos</p>
+      <h2>Documentos y trabajo de la Junta</h2>
+
+      <p>
+        En <strong>Documentos</strong> está lo que la Junta decidió publicar: el documento de
+        condominio, el reglamento, las actas. Abres la versión vigente con un toque, y si un
+        documento se actualizó, las versiones anteriores siguen ahí.
+      </p>
+
+      <ul class="plain">
+        <li><strong>La documentación de tu unidad.</strong> Si la Junta lo habilita, ves un semáforo: rojo si no has entregado tus documentos de propiedad, naranja si entregaste una parte o si ya están validados y falta la aprobación de la Junta, y verde cuando todo está aprobado. Solo ves el de tu unidad, nunca el de un vecino.</li>
+        <li><strong>En qué trabaja la Junta.</strong> Las tareas y objetivos que la Junta deja a la vista, con su estado: pendiente, en curso o hecha.</li>
+      </ul>
+
+      <p>
+        Los documentos se entregan a la administración, no se suben a la app. Si te falta alguno,
+        escríbele a tu administración.
+      </p>
+    </section>
+
+    <hr class="rule">
+
+    <!-- ══════════════════════════════════════════════════ -->
     <section id="atri">
       <p class="meta">12 · Ayuda</p>
       <h2>Atri, tu conserje</h2>

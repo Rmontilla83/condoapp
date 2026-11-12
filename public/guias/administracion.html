@@ -331,6 +331,9 @@ ul.plain li { margin: 0.45rem 0; }
 @media (prefers-reduced-motion: reduce) {
   * { transition: none !important; animation: none !important; }
 }
+
+/* ancho-movil */
+@media (max-width: 859px) { .wrap { grid-template-columns: minmax(0, 1fr); } .col { min-width: 0; } }
 </style>
 </head>
 <body>
@@ -361,6 +364,7 @@ ul.plain li { margin: 0.45rem 0; }
       <a href="#caseta">Caseta y paquetes</a>
       <a href="#atri">Atri, el conserje</a>
       <a href="#permisos">Quién puede qué</a>
+      <a href="#control">Funciones, historial y documentos</a>
       <a href="#mes">El mes tipo</a>
       <a href="#limites">Lo que no hace</a>
     </div>
@@ -575,6 +579,7 @@ ul.plain li { margin: 0.45rem 0; }
               <li><span class="k">∅</span><span><strong>«Sin cargar» y «0 % exento» son cosas distintas.</strong> Una unidad sin cargar es un dato que falta; una unidad en 0 es una decisión (un depósito que no paga). La app las trata distinto y no las confunde.</span></li>
               <li><span class="k">⌨</span><span><strong>Acepta el formato que uses:</strong> <code>6,50</code>, <code>6.50</code>, <code>6,50 %</code>. Hasta cuatro decimales, que es lo que suelen traer los documentos de condominio.</span></li>
               <li><span class="k">⚡</span><span><strong>Dos atajos:</strong> repartir en partes iguales entre todas las unidades, o escalar proporcionalmente lo que ya cargaste para que cierre en 100 %.</span></li>
+              <li><span class="k">§</span><span><strong>Cambiar una alícuota ya cargada pide el acta.</strong> Completar una unidad que estaba vacía es parte de la carga y solo lleva el motivo. Modificar una que ya tenía valor cambia el reparto, así que la app pide además el acta de asamblea que lo aprueba, y guarda el valor anterior.</span></li>
             </ul>
       </figure>
 
@@ -634,7 +639,7 @@ ul.plain li { margin: 0.45rem 0; }
       <ol class="steps">
         <li class="step"><span class="step-n">1</span><div><h3>Admin → Emitir cuotas</h3><p>Eliges el tipo: ordinaria (la del mes) o extraordinaria (una derrama puntual).</p></div></li>
         <li class="step"><span class="step-n">2</span><div><h3>Concepto y vencimiento</h3><p>El concepto es lo que el propietario va a leer en su teléfono. «Cuota de agosto 2026» comunica; «cuota» no.</p></div></li>
-        <li class="step"><span class="step-n">3</span><div><h3>Monto total o monto por unidad</h3><p>Según el modo. En reparto por alícuota escribes el total del mes y la app hace la división, ajustando los centavos para que la suma cierre exacta.</p></div></li>
+        <li class="step"><span class="step-n">3</span><div><h3>Monto total o monto por unidad</h3><p>Según el modo. En reparto por alícuota escribes el total del mes y la app hace la división, ajustando los centavos para que la suma cierre exacta. Si el condominio tiene porcentaje para el fondo de reserva o el de contingencia, puedes sumarlo a la cuota: la vista previa muestra cuánto va a cada fondo.</p></div></li>
         <li class="step"><span class="step-n">4</span><div><h3>Revisa la vista previa y emite</h3><p>Antes de confirmar ves la lista completa: cada unidad con su monto. Ahí se detectan los errores.</p></div></li>
       </ol>
 
@@ -763,7 +768,7 @@ ul.plain li { margin: 0.45rem 0; }
       </p>
 
       <ol class="steps">
-        <li class="step"><span class="step-n">1</span><div><h3>Finanzas → Registrar gasto</h3><p>Concepto, categoría, monto, moneda, fecha y proveedor.</p></div></li>
+        <li class="step"><span class="step-n">1</span><div><h3>Finanzas → Registrar gasto</h3><p>Concepto, categoría, centro de costo, monto, fecha y proveedor. Se registra en la moneda de la factura, bolívares o dólares, y la app calcula la otra a la tasa BCV de ese día.</p></div></li>
         <li class="step"><span class="step-n">2</span><div><h3>Adjunta la factura</h3><p>Foto o PDF. Es lo que convierte «se gastaron $420 en la bomba» en algo verificable.</p></div></li>
         <li class="step"><span class="step-n">3</span><div><h3>Se publica solo</h3><p>Aparece en la vista de Finanzas de cada residente, sin que tengas que armar un informe.</p></div></li>
       </ol>
@@ -779,7 +784,8 @@ ul.plain li { margin: 0.45rem 0; }
       <p>
         <strong>El presupuesto anual</strong> es opcional y vive aparte. Cargas cuánto esperas
         gastar por categoría por mes, con ajustes puntuales si algún mes es distinto. A partir de
-        ahí la app compara lo ejecutado contra lo presupuestado y todo el edificio lo ve.
+        ahí la app compara lo ejecutado contra lo presupuestado y todo el edificio lo ve. Lo arma la
+        administración y lo aprueba la Junta: mientras está en borrador, los vecinos no lo ven.
       </p>
 
       <p>
@@ -793,6 +799,7 @@ ul.plain li { margin: 0.45rem 0; }
         <strong>Otros ingresos.</strong> El dinero que entra sin ser el pago de una cuota, como un
         alquiler o los intereses del banco, se carga en <strong>Finanzas → Registrar ingreso</strong>.
         Suma en el balance y en la relación de gastos, y se anula con motivo, igual que un gasto.
+        También se registra en bolívares o en dólares.
       </p>
 
       <div class="note">
@@ -813,7 +820,8 @@ ul.plain li { margin: 0.45rem 0; }
       <h2>Comunicados</h2>
 
       <p>
-        Un comunicado va a todo el edificio y queda publicado. No se pierde entre memes como en un
+        Un comunicado va a todo el edificio y queda publicado. Puede llevar hasta seis fotos, por
+        ejemplo de una obra terminada. No se pierde entre memes como en un
         grupo de WhatsApp, y el vecino que se incorpora en octubre puede leer lo de julio.
       </p>
 
@@ -877,6 +885,9 @@ ul.plain li { margin: 0.45rem 0; }
         alícuota. Es lo que hace que la decisión sea la del condominio y no la de quien tenga más
         apartamentos pequeños. La app le muestra a cada propietario cuánto pesa su voto
         <em>antes</em> de que vote.
+        Cada unidad vota una sola vez: si tiene dos copropietarios con cuenta, la representa el
+        primero que vota en esa decisión, y al otro la app se lo explica. El voto es reservado:
+        todos ven el resultado contado, y nadie ve cómo votó otra persona.
       </p>
 
       <h3 style="margin-top:2rem;font-size:1.15rem">El quórum</h3>
@@ -1017,9 +1028,10 @@ ul.plain li { margin: 0.45rem 0; }
         <li><strong>Convenios de pago.</strong> La deuda vencida se reparte en cuotas mensuales. Los recibos no cambian; el convenio es un calendario. Mientras se cumpla, la unidad figura al día: puede reservar y no recibe recordatorios de morosidad.</li>
         <li><strong>Intereses de mora.</strong> Tasa anual del condominio (3 % es el interés legal; más requiere acta), interés simple por los días de atraso, sin interés sobre intereses. Se revisa unidad por unidad antes de emitir.</li>
         <li><strong>Saldos de apertura.</strong> Lo que cada unidad debía o tenía a favor al empezar con Atryum, pegado desde la planilla de la junta. Se carga una sola vez.</li>
-        <li><strong>Fondo de reserva.</strong> En <strong>Admin → Fondo de reserva</strong> defines el porcentaje que se suma a la cuota, con el acta que lo aprueba, y cargas el saldo inicial. Al emitir, cada recibo separa lo que va al fondo. Para pagar un gasto con el fondo, márcalo al registrarlo e indica el acta. El saldo disponible cuenta solo lo cobrado, y los vecinos lo ven en Finanzas.</li>
+        <li><strong>Fondos de reserva y de contingencia.</strong> En <strong>Admin → Fondos</strong> hay una pestaña para cada uno. Defines el porcentaje que se suma a la cuota, con el acta que lo aprueba, y cargas el saldo inicial. Al emitir, cada recibo separa lo que va a cada fondo. Para pagar un gasto con un fondo, márcalo al registrarlo, elige cuál e indica el acta. El saldo disponible cuenta solo lo cobrado, y los vecinos ven los dos saldos en Finanzas. En el libro van en cuentas separadas.</li>
+        <li><strong>Provisiones y retenciones.</strong> Además de un gasto común, se puede registrar una provisión (se reconoce ahora y se paga después), el pago de una provisión y el entero de retenciones de ISLR. La retención la escribe la administración: la app no decide porcentajes ni si se retiene.</li>
         <li><strong>Documentos.</strong> Recibo de condominio, estado de cuenta por unidad (el vecino también lo ve desde Pagos) y relación de gastos del período para la asamblea, con espacio para las firmas.</li>
-        <li><strong>Libro diario, mayor y balance.</strong> Cada documento genera su asiento, siempre cuadrado, en dólares y en bolívares. La diferencia entre la tasa del día de emisión y la del cobro va a Diferencial cambiario. Nadie escribe el libro a mano: sale de los documentos, así que no puede desalinearse.</li>
+        <li><strong>Libro diario, mayor y balance.</strong> Cada documento genera su asiento, siempre cuadrado, en bolívares y en dólares. El libro, el mayor, el balance y la relación de gastos abren en bolívares. La diferencia entre la tasa del día de emisión y la del cobro va a Diferencial cambiario. Nadie escribe el libro a mano: sale de los documentos, así que no puede desalinearse.</li>
       </ul>
     </section>
 
@@ -1086,8 +1098,8 @@ ul.plain li { margin: 0.45rem 0; }
           <thead><tr><th>Rol</th><th>Puede</th><th>No puede</th></tr></thead>
           <tbody>
             <tr>
-              <td><strong>Administrador</strong></td>
-              <td>Todo lo de esta guía: emitir, aprobar, rechazar, anular, cargar gastos, abrir asambleas, gestionar unidades y áreas.</td>
+              <td><strong>Administración</strong></td>
+              <td>Lo de esta guía, según la función de cada cuenta: administradora, Junta, asistente o contador. El detalle está en la sección siguiente.</td>
               <td>Ver otros condominios. Cada administración vive aislada de las demás.</td>
             </tr>
             <tr>
@@ -1097,7 +1109,7 @@ ul.plain li { margin: 0.45rem 0; }
             </tr>
             <tr>
               <td><strong>Inquilino</strong></td>
-              <td>Lo que su propietario le habilite, dentro de lo que el condominio permita.</td>
+              <td>Lo que su propietario le habilite, dentro de lo que el condominio permita: si reserva, si vota y si ve las consultas y asambleas.</td>
               <td>Cambiar sus propios permisos.</td>
             </tr>
           </tbody>
@@ -1117,6 +1129,61 @@ ul.plain li { margin: 0.45rem 0; }
           No es que la app le esconda un botón al inquilino. Si no tiene permiso de registrar
           pagos, la operación se rechaza aunque intente saltarse la pantalla. Es la diferencia
           entre una restricción real y una cortesía visual.
+        </p>
+      </div>
+    </section>
+
+    <hr class="rule">
+
+    <!-- ══════════════════════════════════════════════════ -->
+    <section id="control">
+      <p class="meta">Gobierno · Control interno</p>
+      <h2>Funciones, historial y documentos</h2>
+
+      <p>
+        En un condominio con Junta, administradora y contador, no todos hacen lo mismo. Cada cuenta
+        de la administración tiene una <strong>función</strong>, y la regla es una sola:
+        <strong>quien carga no es quien aprueba</strong>. Todas las funciones ven todo; lo que
+        cambia es lo que cada una puede hacer.
+      </p>
+
+      <div class="tablewrap">
+        <table>
+          <thead><tr><th>Tarea</th><th>Asistente</th><th>Administradora</th><th>Junta</th><th>Contador</th></tr></thead>
+          <tbody>
+            <tr><td>Ver cuentas, libro, informes, documentos e historial</td><td>Sí</td><td>Sí</td><td>Sí</td><td>Sí</td></tr>
+            <tr><td>Registrar gastos y otros ingresos, subir documentos, atender reportes</td><td>Sí</td><td>Sí</td><td>No</td><td>No</td></tr>
+            <tr><td>Marcar qué documentación entregó cada unidad</td><td>Sí</td><td>Sí</td><td>No</td><td>No</td></tr>
+            <tr><td>Validar la documentación de una unidad</td><td>No</td><td>Sí</td><td>No</td><td>No</td></tr>
+            <tr><td>Emitir cuotas, aprobar o rechazar pagos, anular, convenios</td><td>No</td><td>Sí</td><td>No</td><td>No</td></tr>
+            <tr><td>Unidades, alícuotas, contactos, fondos y configuración</td><td>No</td><td>Sí</td><td>No</td><td>No</td></tr>
+            <tr><td>Aprobar el presupuesto, publicar documentos y aprobar el censo</td><td>No</td><td>No</td><td>Sí</td><td>No</td></tr>
+            <tr><td>Consultas, asambleas y tareas de la Junta</td><td>No</td><td>Sí</td><td>Sí</td><td>No</td></tr>
+            <tr><td>Publicar comunicados</td><td>Sí</td><td>Sí</td><td>Sí</td><td>No</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p>
+        Las funciones se ven y se reparten en <strong>Admin → Equipo y funciones</strong>. Un
+        condominio pequeño, donde una sola persona lo lleva todo, puede dejar su cuenta como
+        <strong>administración completa</strong>, sin separación.
+      </p>
+
+      <ul class="plain">
+        <li><strong>Tres candados.</strong> Quien reporta un pago desde su cuenta no lo aprueba. Quien sube un documento no lo publica. Quien valida la documentación de una unidad no la aprueba.</li>
+        <li><strong>Historial.</strong> En <strong>Admin → Historial</strong> queda cada carga, aprobación, anulación y cambio de configuración, con el nombre de quien lo hizo, su función y la hora. Se filtra por área y nadie puede editarlo ni borrarlo.</li>
+        <li><strong>Documentos.</strong> En <strong>Admin → Gestión de documentos</strong> se suben el documento de condominio, el reglamento, las actas y los soportes de la gestión (PDF o imagen, hasta 40 MB). Cada versión nace «en revisión»; la Junta la publica o la devuelve con un comentario, y decide quién la ve: solo la administración, los propietarios, o propietarios e inquilinos. Una versión nueva no borra la anterior.</li>
+        <li><strong>Censo documental.</strong> En <strong>Admin → Censo documental</strong> cada unidad tiene un semáforo sobre su documentación de propiedad: rojo si no ha entregado, naranja si entregó una parte o si ya está completa y validada por la administradora, y verde cuando la Junta la aprueba. La Junta decide si cada propietario ve el estado de su unidad y si todos ven el avance general. Atryum no guarda esos documentos: los resguarda la administradora.</li>
+        <li><strong>Tareas de la Junta.</strong> En <strong>Admin → Tareas de la Junta</strong> se lleva lo que la Junta se propuso hacer, con responsable, fecha y estado. Cada tarea se puede mostrar a los vecinos o dejar solo para la administración.</li>
+      </ul>
+
+      <div class="note">
+        <p class="meta" style="margin:0">Las funciones se cumplen también en la base de datos</p>
+        <p>
+          La cuenta del contador no puede escribir nada, y las de la Junta y el asistente no pueden
+          escribir por fuera de la app. No es un botón escondido: aunque alguien intente saltarse
+          la pantalla, la operación no pasa.
         </p>
       </div>
     </section>
