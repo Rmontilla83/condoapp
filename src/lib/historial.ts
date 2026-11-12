@@ -36,6 +36,7 @@ export const EVENTOS = {
   unit_member_removed: { area: "Personas", texto: "Retiró a una persona de una unidad" },
   unit_invite_sent: { area: "Personas", texto: "Invitó a una persona a una unidad" },
   access_code_generated: { area: "Personas", texto: "Generó un código de acceso" },
+  code_redeemed: { area: "Personas", texto: "Canjeó un código y quedó asociado a la unidad" },
   tenant_permissions_updated: { area: "Personas", texto: "Cambió el alcance de un inquilino" },
   owner_contacts_imported: { area: "Personas", texto: "Aplicó una planilla de contactos" },
   portal_invite_sent: { area: "Personas", texto: "Invitó a propietarios al portal" },

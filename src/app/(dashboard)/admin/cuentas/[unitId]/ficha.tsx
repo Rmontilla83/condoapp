@@ -99,7 +99,24 @@ export async function FichaDeLaUnidad({ unitId, origen }: { unitId: string; orig
 
   // Historial de la unidad: cada registro con quién, cuándo y su detalle.
   const PRIMEROS = 15;
-  const historial = (eventos ?? []).filter((e) => (e.event as string) in EVENTOS);
+  // Los eventos de pagos (aprobado, rechazado) guardan la transacción y no la
+  // unidad: se buscan por las transacciones de los recibos de esta unidad.
+  const { data: susPagos } = await db.from("transactions").select("id, invoices!inner(unit_id)").eq("invoices.unit_id", unitId).limit(1000);
+  const idsDePagos = (susPagos ?? []).map((t) => t.id as string);
+  const { data: eventosDePagos } = idsDePagos.length
+    ? await db
+        .from("auth_events")
+        .select("id, event, created_at, payload, profiles:actor_id(full_name)")
+        .eq("organization_id", profile.organization_id)
+        .in("payload->>transaccion", idsDePagos)
+        .order("created_at", { ascending: false })
+        .limit(500)
+    : { data: [] };
+  const vistos = new Set<string>();
+  const historial = [...(eventos ?? []), ...(eventosDePagos ?? [])]
+    .filter((e) => (e.event as string) in EVENTOS)
+    .filter((e) => (vistos.has(e.id as string) ? false : (vistos.add(e.id as string), true)))
+    .sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)));
   const filaHistorial = (e: (typeof historial)[number]) => {
     const quien = ((Array.isArray(e.profiles) ? e.profiles[0] : e.profiles) as { full_name?: string } | null)?.full_name;
     const partes = partesDelDetalle((e.payload ?? {}) as Record<string, unknown>);
