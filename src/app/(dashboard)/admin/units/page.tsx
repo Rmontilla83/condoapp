@@ -203,6 +203,12 @@ export default async function AdminUnitsPage() {
                   <span className={`hidden md:inline font-meta px-2 py-0.5 rounded-md ${MODE_TONE[mode]}`}>
                     {MODE_LABEL[mode]}
                   </span>
+                  <Link
+                    href={`/admin/cuentas/${unit.id}`}
+                    className="inline-flex h-8 items-center rounded-lg border border-border px-3 text-[13px] font-medium text-marine-deep hover:bg-frost"
+                  >
+                    Ver ficha
+                  </Link>
                   <UnitManagerDialog
                     unit={{
                       id: unit.id,
