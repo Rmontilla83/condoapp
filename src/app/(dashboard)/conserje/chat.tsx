@@ -24,6 +24,18 @@ function recortar(historial: Turno[]) {
   return h.map(({ role, content }) => ({ role, content }));
 }
 
+/**
+ * Atri resalta datos con **negritas** y hace listas con guiones. El texto se
+ * muestra tal cual (sin interpretar HTML): solo se convierten las negritas y
+ * los guiones de lista, para que no se vean asteriscos sueltos.
+ */
+function conNegritas(texto: string) {
+  const limpio = texto.replace(/^\s*[-*]\s+/gm, "• ").replace(/^#{1,6}\s+/gm, "");
+  return limpio.split(/(\*\*[^*\n]+\*\*)/g).map((parte, i) =>
+    parte.startsWith("**") && parte.endsWith("**") && parte.length > 4 ? <strong key={i}>{parte.slice(2, -2)}</strong> : parte,
+  );
+}
+
 export function Chat({
   primerNombre,
   modo,
@@ -170,7 +182,7 @@ export function Chat({
                     : "bg-muted text-marine-deep rounded-bl-md"
                 }`}
               >
-                {t.content}
+                {t.role === "assistant" ? conNegritas(t.content) : t.content}
               </div>
             </div>
             {t.role === "assistant" && t.accion && (
