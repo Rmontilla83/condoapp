@@ -11,7 +11,13 @@ export function modoDelConserje(): "ia" | "demo" {
   return process.env.ANTHROPIC_API_KEY && process.env.CONSERJE_MODO !== "demo" ? "ia" : "demo";
 }
 
-const MODELO = "claude-opus-5-5";
+// Claude Haiku 5.5 es el modelo más económico y alcanza para un conserje que
+// consulta datos con herramientas y responde corto. Se puede cambiar sin tocar
+// código con CONSERJE_MODELO (por ejemplo, claude-sonnet-5-5).
+const MODELO = process.env.CONSERJE_MODELO || "claude-haiku-5-5";
+// Haiku no tiene reintento automático con otro modelo cuando un clasificador de
+// seguridad declina; en los demás sí se pide.
+const CON_RESPALDO = !MODELO.includes("haiku");
 
 /** Preguntas por persona por día. Cada una cuesta dinero en la API. */
 export const LIMITE_DIARIO = 40;
@@ -142,8 +148,7 @@ async function responderConClaude(
     // Si el modelo declina por un clasificador de seguridad, la API reintenta
     // con otro modelo dentro de la misma llamada, en vez de dejar al vecino sin
     // respuesta.
-    betas: ["server-side-fallback-2026-07-01"],
-    fallbacks: "default",
+    ...(CON_RESPALDO ? { betas: ["server-side-fallback-2026-07-01" as const], fallbacks: "default" as const } : {}),
     system: [
       { type: "text", text: SISTEMA, cache_control: { type: "ephemeral" } },
       { type: "text", text: quien },

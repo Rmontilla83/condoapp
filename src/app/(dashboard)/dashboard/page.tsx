@@ -21,6 +21,7 @@ import { RecentAnnouncementsLink } from "@/components/dashboard/recent-announcem
 import { SmartPayButton } from "./smart-pay-button";
 import { CaraConserje, NOMBRE_CONSERJE } from "@/components/conserje/cara";
 import type { BankAccount } from "@/types/database";
+import { InicioMovil, type AccionInicio } from "@/components/dashboard/inicio-movil";
 
 const statusLabels: Record<string, string> = {
   new: "NUEVO",
@@ -89,8 +90,43 @@ export default async function DashboardPage() {
     .eq("status", "waiting")
     .order("received_at", { ascending: false });
 
+  // ── El inicio en el teléfono: lo que Atri dice al entrar y sus botones ──
+  const primerNombre = (ctx.profile.full_name || "").trim().split(/\s+/)[0] || "";
+  const fechaLarga = (d: string) => new Date(`${d}T12:00:00Z`).toLocaleDateString("es-VE", { day: "numeric", month: "long", timeZone: "UTC" });
+  const lineasMovil: string[] = [];
+  if (ctx.canSeeFee) {
+    if (actionableTotal > 0 && proxima) {
+      const vence = String(proxima.due_date);
+      lineasMovil.push(
+        `Debes ${usd(actionableTotal)}${actionableInvoices.length > 1 ? ` en ${actionableInvoices.length} recibos` : `: ${String(proxima.description).toLowerCase()}`}. ${
+          vence < hoy ? `El más antiguo venció el ${fechaLarga(vence)}.` : `Vence el ${fechaLarga(vence)}.`
+        }`,
+      );
+    } else if (inReviewTotal > 0) {
+      lineasMovil.push(`Tu pago de ${usd(inReviewTotal)} está en revisión.`);
+    } else {
+      lineasMovil.push("Estás al día. Gracias.");
+    }
+    if (actionableTotal > 0 && inReviewTotal > 0) lineasMovil.push(`Además, ${usd(inReviewTotal)} están en revisión.`);
+    if (saldoAFavor > 0) lineasMovil.push(`Tienes ${usd(saldoAFavor)} de saldo a favor.`);
+    if (rechazos.size > 0) lineasMovil.push("Un comprobante tuyo fue rechazado: revísalo en Pagos.");
+  }
+  const nPaquetes = (paquetes ?? []).length;
+  if (nPaquetes > 0) lineasMovil.push(nPaquetes === 1 ? "Tienes un paquete en la garita." : `Tienes ${nPaquetes} paquetes en la garita.`);
+  const accionesMovil: AccionInicio[] = [
+    ctx.canSeeFee && actionableTotal > 0
+      ? { href: "/pagos", texto: `Pagar ${usd(actionableTotal)}`, icono: "pagar", principal: true }
+      : { href: "/pagos", texto: "Ver mis pagos", icono: "pagar" },
+    { href: "/mantenimiento", texto: "Reportar una avería", icono: "averia" },
+    { href: "/visitantes", texto: "Invitar una visita", icono: "visita" },
+    { href: "/reservas", texto: "Reservar un área", icono: "reservar" },
+    { href: "/comunicados", texto: "Ver los avisos", icono: "avisos", cuenta: ctx.urgentAnnouncements.length || undefined },
+  ];
+
   return (
-    <div className="space-y-8 md:space-y-10">
+    <>
+    <InicioMovil saludo={primerNombre ? `Hola, ${primerNombre}.` : "Hola."} lineas={lineasMovil} acciones={accionesMovil} />
+    <div className="hidden space-y-8 md:block md:space-y-10">
       <IdentityStrip ctx={ctx} />
 
       {/* Banner urgent — única excepción a la jerarquía: si hay urgent, sale antes del saldo */}
@@ -378,6 +414,7 @@ export default async function DashboardPage() {
         )}
       </div>
     </div>
+    </>
   );
 }
 

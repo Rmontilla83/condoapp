@@ -26,7 +26,10 @@ export function ConserjeFlotante({
   modo,
   condominio,
   fabDePago,
+  soloEscritorio = false,
 }: {
+  /** El residente en el teléfono abre a Atri desde el inicio: la carita flotante solo sale en pantallas grandes. */
+  soloEscritorio?: boolean;
   primerNombre: string;
   modo: "ia" | "demo";
   condominio: string;
@@ -36,6 +39,20 @@ export function ConserjeFlotante({
   const pathname = usePathname();
   const [abierto, setAbierto] = useState(false);
   const [saludo, setSaludo] = useState(false);
+  // La pregunta con la que se abrió desde el inicio; el número fuerza una conversación nueva cada vez.
+  const [inicial, setInicial] = useState<{ texto: string; n: number }>({ texto: "", n: 0 });
+
+  // El inicio del teléfono pide abrir el panel, con o sin pregunta.
+  useEffect(() => {
+    const abrir = (e: Event) => {
+      const texto = String((e as CustomEvent<{ texto?: string }>).detail?.texto ?? "").trim();
+      if (texto) setInicial((v) => ({ texto, n: v.n + 1 }));
+      setSaludo(false);
+      setAbierto(true);
+    };
+    window.addEventListener("atri:abrir", abrir);
+    return () => window.removeEventListener("atri:abrir", abrir);
+  }, []);
 
   // Un saludo breve la primera vez que el vecino lo ve, y nunca más.
   useEffect(() => {
@@ -101,14 +118,14 @@ export function ConserjeFlotante({
             </button>
           </div>
           <div className="min-h-0 flex-1 pb-[env(safe-area-inset-bottom)]">
-            <Chat primerNombre={primerNombre} modo={modo} variante="flotante" condominio={condominio} />
+            <Chat key={inicial.n} primerNombre={primerNombre} modo={modo} variante="flotante" condominio={condominio} preguntaInicial={inicial.texto || undefined} />
           </div>
         </div>
       )}
 
       {!abierto && (
         <div
-          className={`fixed right-4 z-40 flex items-end gap-2 md:bottom-6 md:right-6 ${
+          className={`fixed right-4 z-40 items-end gap-2 md:bottom-6 md:right-6 ${soloEscritorio ? "hidden md:flex" : "flex"} ${
             fabVisible ? "bottom-[9.5rem]" : "bottom-24"
           }`}
         >

@@ -41,7 +41,7 @@ export default async function VisitantesPage() {
 
   return (
     <div className="space-y-8">
-      <div className="flex items-start justify-between gap-4">
+      <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <span className="font-meta-loose text-cyan-ink">ACCESO · VISITANTES</span>
           <h1 className="mt-4 font-display text-[clamp(1.75rem,3.5vw,2.5rem)] leading-[1.1] tracking-[-0.03em] text-marine-deep">
@@ -52,7 +52,8 @@ export default async function VisitantesPage() {
       </div>
 
       {/* How it works — copy honesto del flujo real */}
-      <div className="rounded-2xl bg-marine-deep text-frost p-6 md:p-7">
+      {/* En el teléfono va primero el botón; el paso a paso ya lo explica la tarjeta de abajo. */}
+      <div className="hidden rounded-2xl bg-marine-deep text-frost p-6 md:block md:p-7">
         <p className="font-meta text-ember">CÓMO FUNCIONA</p>
         <div className="mt-5 grid grid-cols-1 md:grid-cols-3 gap-5">
           {[

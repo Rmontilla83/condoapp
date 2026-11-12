@@ -15,13 +15,17 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { AtryumLogo } from "@/components/brand/atryum-logo";
 import { CondoMarca } from "@/components/brand/condo-marca";
 import { Campana, type AvisoFila } from "./campana";
+import { MenuMovil } from "./menu-movil";
 
 export function Header({
   userEmail,
   isSuperAdmin = false,
   condominio,
   avisos = [],
+  menuMovil = false,
 }: {
+  /** El residente en el teléfono: botón «Menú» en vez de barra inferior. */
+  menuMovil?: boolean;
   userEmail: string;
   isSuperAdmin?: boolean;
   viewingAs?: string | null;
@@ -46,7 +50,7 @@ export function Header({
   return (
     <header className="flex h-16 md:h-14 items-center justify-between border-b border-border bg-background px-4 md:px-10">
       {/* En el teléfono no hay menú lateral: aquí va la marca del condominio. */}
-      <div className="flex min-w-0 items-center gap-2.5 md:hidden">
+      <Link href={menuMovil ? "/dashboard" : "/admin"} aria-label="Ir al inicio" className="flex min-w-0 items-center gap-2.5 md:hidden">
         {condominio && (condominio.logoCompactoUrl || condominio.logoUrl) ? (
           // El logo ya dice el nombre: no se repite al lado.
           // eslint-disable-next-line @next/next/no-img-element -- logo del condominio
@@ -65,7 +69,7 @@ export function Header({
         ) : (
           <AtryumLogo variant="horizontal" tone="color" className="text-[20px]" />
         )}
-      </div>
+      </Link>
       <div className="hidden md:flex items-center gap-2.5 min-w-0">
         {condominio && (
           <>
@@ -81,6 +85,7 @@ export function Header({
         )}
       </div>
       <div className="flex items-center gap-2">
+      {menuMovil && <MenuMovil />}
       <Campana avisos={avisos} />
       <DropdownMenu>
         <DropdownMenuTrigger render={<Button variant="ghost" className="relative h-9 w-9 rounded-full p-0" />}>

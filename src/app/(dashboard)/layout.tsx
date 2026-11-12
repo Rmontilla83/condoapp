@@ -7,7 +7,6 @@ import {
   getEffectiveRole,
   getCurrentRate,
   getOrganization,
-  getPendingInvoicesForFAB,
 } from "@/lib/queries";
 import { Sidebar } from "@/components/dashboard/sidebar";
 import { BottomNav } from "@/components/dashboard/bottom-nav";
@@ -15,7 +14,6 @@ import { pendientesDelMenu } from "@/lib/pendientes-menu";
 import { Header } from "@/components/dashboard/header";
 import { LiveStatusBar } from "@/components/dashboard/live-status-bar";
 import { Onboarding } from "@/components/onboarding";
-import { PendingPayFab } from "@/components/dashboard/pending-pay-fab";
 import { ConserjeFlotante } from "@/components/conserje/conserje-flotante";
 import type { AvisoFila } from "@/components/dashboard/campana";
 import { modoDelConserje } from "@/lib/conserje/conserje";
@@ -55,7 +53,7 @@ export default async function DashboardLayout({
   const viewingAs = profile?.view_as;
 
   // Todo en paralelo: antes el FAB esperaba a que terminara este bloque.
-  const [rateData, org, { data: avisos }, fabData, pendientes] = await Promise.all([
+  const [rateData, org, { data: avisos }, , pendientes] = await Promise.all([
     getCurrentRate(profile.organization_id),
     getOrganization(profile.organization_id),
     // Los propios, por RLS (migration 046).
@@ -66,7 +64,8 @@ export default async function DashboardLayout({
       .order("created_at", { ascending: false })
       .limit(20),
     // FAB de pago pendiente: solo para residentes (los admins ven su panel).
-    !isAdmin ? getPendingInvoicesForFAB(profile.id) : Promise.resolve(null),
+    // La barra flotante de pago se retiró: el botón «Pagar» está en el inicio.
+    Promise.resolve(null),
     // Burbujas del menú: solo para quien está viendo como administración.
     isAdmin ? pendientesDelMenu(profile, profile.organization_id) : Promise.resolve({}),
   ]);
@@ -102,6 +101,7 @@ export default async function DashboardLayout({
           viewingAs={viewingAs ?? null}
           condominio={condominio}
           avisos={(avisos ?? []) as AvisoFila[]}
+          menuMovil={!isAdmin}
         />
         {isSuperAdmin && viewingAs && (
           <div
@@ -114,30 +114,22 @@ export default async function DashboardLayout({
             <ExitViewAs />
           </div>
         )}
-        <main className="flex-1 overflow-y-auto pb-32 md:pb-0">
+        {/* El residente ya no tiene barra inferior en el teléfono: no hace falta el hueco. */}
+        <main className={`flex-1 overflow-y-auto md:pb-0 ${isAdmin ? "pb-32" : "pb-6"}`}>
           <div className="mx-auto max-w-6xl px-5 py-6 md:px-10 md:py-10">
             {children}
           </div>
         </main>
       </div>
-      {fabData && (
-        <PendingPayFab
-          actionable={fabData.actionable}
-          inReview={fabData.inReview}
-          rate={fabData.rate}
-          canSeeFee={fabData.canSeeFee}
-          bankAccounts={fabData.bankAccounts}
-        />
-      )}
       <ConserjeFlotante
         primerNombre={(profile.full_name ?? "").trim().split(/\s+/)[0] ?? ""}
         modo={modoDelConserje()}
         condominio={(org?.name as string) ?? "tu condominio"}
-        fabDePago={Boolean(
-          fabData?.canSeeFee && (fabData.actionable.length > 0 || fabData.inReview.length > 0),
-        )}
+        fabDePago={false}
+        soloEscritorio={!isAdmin}
       />
-      <BottomNav isAdmin={isAdmin} pendientes={pendientes} />
+      {/* En el teléfono, el residente navega con el botón «Menú» del encabezado. */}
+      {isAdmin && <BottomNav isAdmin={isAdmin} pendientes={pendientes} />}
     </div>
   );
 }
