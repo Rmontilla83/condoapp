@@ -72,7 +72,7 @@ const moreItemsBase = [
   { href: "/perfil", label: "Perfil", adminOnly: false },
 ];
 
-export function BottomNav({ isAdmin = false }: { isAdmin?: boolean }) {
+export function BottomNav({ isAdmin = false, pendientes = {} }: { isAdmin?: boolean; pendientes?: Record<string, number> }) {
   const actual = usePathname();
   const [showMore, setShowMore] = useState(false);
   // Se marca al tocar, sin esperar a que llegue la página.
@@ -81,6 +81,9 @@ export function BottomNav({ isAdmin = false }: { isAdmin?: boolean }) {
   const pathname = destino ?? actual;
 
   const moreItems = moreItemsBase.filter((item) => !item.adminOnly || isAdmin);
+  // Lo que espera dentro de «Más»: sin contar lo que ya tiene burbuja en la barra.
+  const enLaBarra = new Set(mainItems.map((i) => i.href));
+  const pendientesEnMas = moreItems.reduce((s, i) => s + (enLaBarra.has(i.href) ? 0 : (pendientes[i.href] ?? 0)), 0);
 
   const isMoreActive = moreItems.some(
     (item) => estaActivo(pathname, item.href)
@@ -105,11 +108,12 @@ export function BottomNav({ isAdmin = false }: { isAdmin?: boolean }) {
                       setDestino(item.href);
                     }}
                     aria-current={isActive ? "page" : undefined}
-                    className={`flex items-center justify-center rounded-lg px-3 py-3 text-[12px] font-medium transition-colors ${
+                    className={`flex items-center justify-center gap-1.5 rounded-lg px-3 py-3 text-[12px] font-medium transition-colors ${
                       isActive ? "bg-marine-deep text-frost" : "text-marine-deep/70 hover:bg-cloud/50"
                     }`}
                   >
                     {item.label}
+                    <Burbuja n={pendientes[item.href]} />
                   </Link>
                 );
               })}
@@ -134,12 +138,13 @@ export function BottomNav({ isAdmin = false }: { isAdmin?: boolean }) {
                 href={item.href}
                 onClick={() => setDestino(item.href)}
                 aria-current={isActive ? "page" : undefined}
-                className={`flex flex-col items-center gap-1 px-2 py-1.5 text-[10px] font-medium whitespace-nowrap transition-colors ${
+                className={`relative flex flex-col items-center gap-1 px-2 py-1.5 text-[10px] font-medium whitespace-nowrap transition-colors ${
                   isActive ? "text-ember" : "text-sidebar-foreground/60"
                 }`}
               >
                 {item.icon}
                 {item.label}
+                <Burbuja n={pendientes[item.href]} className="absolute -top-0.5 left-1/2 ml-1.5" />
               </Link>
             );
           })}
@@ -148,10 +153,11 @@ export function BottomNav({ isAdmin = false }: { isAdmin?: boolean }) {
             aria-expanded={showMore}
             aria-haspopup="menu"
             aria-label="Más secciones"
-            className={`flex flex-col items-center gap-1 px-3 py-1.5 text-[10px] font-medium transition-colors ${
+            className={`relative flex flex-col items-center gap-1 px-3 py-1.5 text-[10px] font-medium transition-colors ${
               isMoreActive || showMore ? "text-ember" : "text-sidebar-foreground/60"
             }`}
           >
+            <Burbuja n={pendientesEnMas} className="absolute -top-0.5 left-1/2 ml-1.5" />
             <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
             </svg>
@@ -160,6 +166,21 @@ export function BottomNav({ isAdmin = false }: { isAdmin?: boolean }) {
         </div>
       </nav>
     </>
+  );
+}
+
+/** La burbuja de pendientes de una sección. Sin pendientes no pinta nada. */
+function Burbuja({ n, activo = false, className = "" }: { n?: number; activo?: boolean; className?: string }) {
+  if (!n) return null;
+  return (
+    <span
+      aria-label={`${n} pendiente${n === 1 ? "" : "s"}`}
+      className={`inline-flex h-5 min-w-5 items-center justify-center rounded-full px-1.5 text-[11px] font-semibold leading-none tabular-nums ${
+        activo ? "bg-marine-deep text-frost" : "bg-ember text-marine-deep"
+      } ${className}`}
+    >
+      {n > 99 ? "99+" : n}
+    </span>
   );
 }
 

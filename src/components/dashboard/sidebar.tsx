@@ -120,8 +120,11 @@ const iconMap: Record<string, React.ReactNode> = {
 export function Sidebar({
   isAdmin = false,
   condominio,
+  pendientes = {},
 }: {
   isAdmin?: boolean;
+  /** Cuántas cosas esperan a esta persona en cada sección (ruta del menú a cantidad). */
+  pendientes?: Record<string, number>;
   condominio?: {
     nombre: string;
     ciudad: string | null;
@@ -189,6 +192,7 @@ export function Sidebar({
             >
               {iconMap[item.icon]}
               {item.label}
+              <Burbuja n={pendientes[item.href]} activo={isActive} className="ml-auto" />
             </Link>
           );
         })}
@@ -214,6 +218,7 @@ export function Sidebar({
                 >
                   {iconMap[item.icon]}
                   {item.label}
+                  <Burbuja n={pendientes[item.href]} activo={isActive} className="ml-auto" />
                 </Link>
               );
             })}
@@ -227,6 +232,21 @@ export function Sidebar({
         <AtryumLogo variant="horizontal" tone="white" className="text-[14px]" />
       </div>
     </aside>
+  );
+}
+
+/** La burbuja de pendientes de una sección. Sin pendientes no pinta nada. */
+function Burbuja({ n, activo = false, className = "" }: { n?: number; activo?: boolean; className?: string }) {
+  if (!n) return null;
+  return (
+    <span
+      aria-label={`${n} pendiente${n === 1 ? "" : "s"}`}
+      className={`inline-flex h-5 min-w-5 items-center justify-center rounded-full px-1.5 text-[11px] font-semibold leading-none tabular-nums ${
+        activo ? "bg-marine-deep text-frost" : "bg-ember text-marine-deep"
+      } ${className}`}
+    >
+      {n > 99 ? "99+" : n}
+    </span>
   );
 }
 

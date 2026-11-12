@@ -11,6 +11,7 @@ import {
 } from "@/lib/queries";
 import { Sidebar } from "@/components/dashboard/sidebar";
 import { BottomNav } from "@/components/dashboard/bottom-nav";
+import { pendientesDelMenu } from "@/lib/pendientes-menu";
 import { Header } from "@/components/dashboard/header";
 import { LiveStatusBar } from "@/components/dashboard/live-status-bar";
 import { Onboarding } from "@/components/onboarding";
@@ -54,7 +55,7 @@ export default async function DashboardLayout({
   const viewingAs = profile?.view_as;
 
   // Todo en paralelo: antes el FAB esperaba a que terminara este bloque.
-  const [rateData, org, { data: avisos }, fabData] = await Promise.all([
+  const [rateData, org, { data: avisos }, fabData, pendientes] = await Promise.all([
     getCurrentRate(profile.organization_id),
     getOrganization(profile.organization_id),
     // Los propios, por RLS (migration 046).
@@ -66,6 +67,8 @@ export default async function DashboardLayout({
       .limit(20),
     // FAB de pago pendiente: solo para residentes (los admins ven su panel).
     !isAdmin ? getPendingInvoicesForFAB(profile.id) : Promise.resolve(null),
+    // Burbujas del menú: solo para quien está viendo como administración.
+    isAdmin ? pendientesDelMenu(profile, profile.organization_id) : Promise.resolve({}),
   ]);
   const initialRate = Number(rateData.rate) || null;
   const initialDate = rateData.effective_date || null;
@@ -82,7 +85,7 @@ export default async function DashboardLayout({
 
   return (
     <div className="flex h-screen bg-background">
-      <Sidebar isAdmin={isAdmin} condominio={condominio} />
+      <Sidebar isAdmin={isAdmin} condominio={condominio} pendientes={pendientes} />
       <div className="flex flex-1 flex-col overflow-hidden">
         {/* Cintillo live: hora Venezuela + tasa BCV actualizada.
             data-print-hide: la constancia de pago se imprime, y la tasa de HOY
@@ -134,7 +137,7 @@ export default async function DashboardLayout({
           fabData?.canSeeFee && (fabData.actionable.length > 0 || fabData.inReview.length > 0),
         )}
       />
-      <BottomNav isAdmin={isAdmin} />
+      <BottomNav isAdmin={isAdmin} pendientes={pendientes} />
     </div>
   );
 }
