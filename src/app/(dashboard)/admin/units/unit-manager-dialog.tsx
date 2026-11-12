@@ -58,7 +58,7 @@ export function UnitManagerDialog({
   const [open, setOpen] = useState(false);
   const [pending, startTransition] = useTransition();
   const [feedback, setFeedback] = useState<{ type: "ok" | "error"; msg: string } | null>(null);
-  const [newCode, setNewCode] = useState<{ code: string; expires_at: string } | null>(null);
+  const [newCode, setNewCode] = useState<{ code: string; expires_at: string; assigned_role: MemberRole } | null>(null);
 
   function showFeedback(type: "ok" | "error", msg: string) {
     setFeedback({ type, msg });
@@ -70,7 +70,21 @@ export function UnitManagerDialog({
    * navegador no deja usar el portapapeles (pasa en algunos teléfonos y dentro
    * de un diálogo), prueba la vía antigua; si tampoco, pide copiarlo a mano.
    */
-  async function copiar(texto: string) {
+  /** El mensaje completo para el vecino: lo que la administración le manda por WhatsApp junto con el código. */
+  function instrucciones(c: { code: string; assigned_role: MemberRole; expires_at: string }) {
+    const vence = new Date(c.expires_at).toLocaleDateString("es-VE", { day: "numeric", month: "long" });
+    return [
+      `Hola. Este es tu acceso a Atryum como ${c.assigned_role === "owner" ? "propietario" : "inquilino"} del apartamento ${unit.unit_number}.`,
+      "",
+      "1. Abre portal.atryum.net y escribe tu correo. Te llega un código de números a ese correo: pégalo para entrar.",
+      "2. Ya dentro, abre portal.atryum.net/join",
+      `3. Pega ahí este código de apartamento: ${c.code}`,
+      "",
+      `El código sirve una sola vez y vence el ${vence}. Ojo: el código de números del correo es para entrar; este, con letras, es para asociarte al apartamento.`,
+    ].join("\n");
+  }
+
+  async function copiar(texto: string, hechoMsg?: string) {
     let hecho = false;
     try {
       await navigator.clipboard.writeText(texto);
@@ -93,7 +107,7 @@ export function UnitManagerDialog({
       }
       caja.remove();
     }
-    showFeedback(hecho ? "ok" : "error", hecho ? `Código ${texto} copiado` : "No se pudo copiar. Toca el código para marcarlo entero y cópialo a mano.");
+    showFeedback(hecho ? "ok" : "error", hecho ? (hechoMsg ?? `Código ${texto} copiado`) : "No se pudo copiar. Toca el código para marcarlo entero y cópialo a mano.");
   }
 
   function run(fn: () => Promise<{ error?: string; success?: boolean }>, successMsg: string) {
@@ -294,10 +308,25 @@ export function UnitManagerDialog({
           </TabsContent>
 
           <TabsContent value="code" className="space-y-3 pt-4">
-            <p className="text-xs text-muted-foreground">
-              Genera un código de un solo uso que el residente puede canjear en{" "}
-              <span className="font-mono">/join</span>. Útil cuando no tienes su email.
-            </p>
+            <div className="space-y-2 rounded-lg border bg-muted/40 p-3 text-xs leading-relaxed text-muted-foreground">
+              <p className="text-foreground font-semibold">Cómo funciona</p>
+              <p>
+                El código asocia a una persona con este apartamento, como propietario o como inquilino. Sirve una sola vez y vence a los 7 días. Úsalo cuando no tengas su
+                correo o cuando las invitaciones por correo estén apagadas.
+              </p>
+              <ol className="list-decimal space-y-1 pl-4">
+                <li>Elige si la persona es propietario o inquilino y toca «Generar código».</li>
+                <li>Toca «Copiar instrucciones» y envíaselas por WhatsApp. Ya llevan el código y los pasos.</li>
+                <li>
+                  La persona entra a <span className="font-mono">portal.atryum.net</span> con su correo, abre <span className="font-mono">portal.atryum.net/join</span> y pega el
+                  código.
+                </li>
+                <li>Cuando lo canjea, aparece en la pestaña «Miembros» y el código deja de estar activo.</li>
+              </ol>
+              <p>
+                No es el código para iniciar sesión: ese es de números y le llega a cada quien a su correo. El de aquí tiene letras y guiones.
+              </p>
+            </div>
 
             <form
               onSubmit={(e) => {
@@ -310,8 +339,8 @@ export function UnitManagerDialog({
                     showFeedback("error", res.error);
                     setNewCode(null);
                   } else if (res.code) {
-                    setNewCode({ code: res.code, expires_at: res.expires_at! });
-                    showFeedback("ok", "Código generado — compártelo por WhatsApp");
+                    setNewCode({ code: res.code, expires_at: res.expires_at!, assigned_role: role });
+                    showFeedback("ok", "Código generado. Copia las instrucciones y envíalas por WhatsApp.");
                   }
                 });
               }}
@@ -340,16 +369,15 @@ export function UnitManagerDialog({
                 <p className="text-xs text-muted-foreground mt-1">
                   Expira: {new Date(newCode.expires_at).toLocaleDateString("es")}
                 </p>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="mt-2"
-                  onClick={() => {
-                    void copiar(newCode.code);
-                  }}
-                >
-                  Copiar
-                </Button>
+                <div className="mt-2 flex flex-wrap justify-center gap-2">
+                  <Button size="sm" onClick={() => void copiar(instrucciones(newCode), "Instrucciones copiadas: pégalas en WhatsApp")}>
+                    Copiar instrucciones
+                  </Button>
+                  <Button variant="ghost" size="sm" onClick={() => void copiar(newCode.code)}>
+                    Solo el código
+                  </Button>
+                </div>
+                <p className="mt-2 text-xs text-muted-foreground">Las instrucciones llevan el código y los pasos para la persona.</p>
               </div>
             )}
 
@@ -361,7 +389,7 @@ export function UnitManagerDialog({
                 {codes.map((c) => (
                   <div
                     key={c.id}
-                    className="flex items-center justify-between rounded-lg border p-2.5"
+                    className="flex flex-wrap items-center justify-between gap-1 rounded-lg border p-2.5"
                   >
                     <div>
                       <div className="flex items-center gap-2">
@@ -372,8 +400,11 @@ export function UnitManagerDialog({
                         Expira: {new Date(c.expires_at).toLocaleDateString("es")}
                       </p>
                     </div>
-                    <Button variant="ghost" size="sm" className="ml-auto" onClick={() => void copiar(c.code)}>
-                      Copiar
+                    <Button variant="ghost" size="sm" className="ml-auto" onClick={() => void copiar(instrucciones(c), "Instrucciones copiadas: pégalas en WhatsApp")}>
+                      Copiar instrucciones
+                    </Button>
+                    <Button variant="ghost" size="sm" onClick={() => void copiar(c.code)}>
+                      Solo el código
                     </Button>
                     <Button
                       variant="ghost"
