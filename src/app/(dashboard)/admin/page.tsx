@@ -116,6 +116,8 @@ export default async function AdminPage() {
   // (fecha, tipo, descripción normalizada), que es como se emiten.
   const runsMap = new Map<string, InvoiceRun>();
   for (const inv of overdueInvoices) {
+    // El saldo anterior no es una emisión: no se ofrece para anular por tanda.
+    if (inv.kind === "opening") continue;
     const desc = (inv.description as string) ?? "";
     const clave = `${inv.due_date}|${inv.kind}|${desc.trim().toLocaleLowerCase("es")}`;
     const actual = runsMap.get(clave) ?? {

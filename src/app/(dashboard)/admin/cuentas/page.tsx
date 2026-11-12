@@ -7,6 +7,8 @@ import { antiguedadDeSaldos, TRAMOS } from "@/lib/contabilidad/cobranza";
 import { usd } from "@/lib/format";
 import { Cifra, Cifras, Encabezado, Pestanas, PESTANAS_CUENTAS } from "@/components/contabilidad/ui";
 import { TablaAntiguedad } from "./tabla-antiguedad";
+import { pendientesDeVerificacion } from "@/lib/verificacion-pendiente";
+import { resumenPendientes } from "@/lib/verificacion-datos";
 
 export default async function CuentasPage() {
   const profile = await getCurrentProfile();
@@ -15,7 +17,11 @@ export default async function CuentasPage() {
 
   const org = await getOrganization(profile.organization_id);
   const hoy = todayInTimeZone((org?.timezone as string) || undefined);
-  const filas = await antiguedadDeSaldos(createAdminClient(), profile.organization_id, hoy);
+  const [filas, pendientes] = await Promise.all([
+    antiguedadDeSaldos(createAdminClient(), profile.organization_id, hoy),
+    pendientesDeVerificacion(profile.organization_id),
+  ]);
+  const enVerificacion = filas.filter((f) => pendientes.has(f.unitId)).length;
 
   const total = filas.reduce((s, f) => s + f.total, 0);
   const vencido = filas.reduce((s, f) => s + f.vencido, 0);
@@ -71,6 +77,12 @@ export default async function CuentasPage() {
         </section>
       )}
 
+      {enVerificacion > 0 && (
+        <p className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-[13.5px] text-amber-900" data-print-hide>
+          {enVerificacion} de {filas.length} unidades tienen algún dato en verificación con la Junta (propietario, alícuota, marina, contacto o puesto). Están marcadas en la lista, y al abrir cada una se ve cuál es. La deuda se cobra con normalidad.
+        </p>
+      )}
+
       <TablaAntiguedad
         filas={filas.map((f) => ({
           unitId: f.unitId,
@@ -83,6 +95,7 @@ export default async function CuentasPage() {
           diasMayor: f.diasMayor,
           saldoAFavor: f.saldoAFavor,
           convenio: f.convenio ? { alDia: f.convenio.alDia, atraso: f.convenio.atraso } : null,
+          verificacion: pendientes.has(f.unitId) ? resumenPendientes(pendientes.get(f.unitId)!) : null,
         }))}
         fecha={hoy}
       />

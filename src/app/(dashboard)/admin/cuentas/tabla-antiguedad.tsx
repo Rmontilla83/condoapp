@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import { usd } from "@/lib/format";
 import { tabla, Vacio } from "@/components/contabilidad/ui";
+import { EtiquetaVerificacion } from "@/components/contabilidad/aviso-verificacion";
 
 type Tramo = "corriente" | "d30" | "d60" | "d90" | "d90mas";
 interface Fila {
@@ -17,6 +18,8 @@ interface Fila {
   diasMayor: number;
   saldoAFavor: number;
   convenio: { alDia: boolean; atraso: number } | null;
+  /** Datos de la unidad que siguen en verificación, o null si no hay ninguno. */
+  verificacion?: string | null;
 }
 
 const COLUMNAS: { clave: Tramo; texto: string }[] = [
@@ -127,6 +130,7 @@ export function TablaAntiguedad({ filas, fecha }: { filas: Fila[]; fecha: string
                     </Link>
                     <span className="block max-w-[16rem] truncate text-[12px] text-mute">{f.propietario || "Sin propietario"}</span>
                     <span className="mt-1 flex flex-wrap gap-1">
+                      {f.verificacion && <EtiquetaVerificacion detalle={f.verificacion} />}
                       {f.convenio && (
                         <span className={`rounded-full px-2 py-0.5 text-[10.5px] font-medium ${f.convenio.alDia ? "bg-emerald-50 text-emerald-800" : "bg-red-50 text-red-700"}`}>
                           {f.convenio.alDia ? "Convenio al día" : `Convenio atrasado ${usd(f.convenio.atraso)}`}

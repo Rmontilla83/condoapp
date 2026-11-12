@@ -3,6 +3,9 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentProfile, getEffectiveRole } from "@/lib/queries";
 import { UnitManagerDialog } from "./unit-manager-dialog";
+import { EtiquetaVerificacion } from "@/components/contabilidad/aviso-verificacion";
+import { pendientesDeVerificacion } from "@/lib/verificacion-pendiente";
+import { resumenPendientes } from "@/lib/verificacion-datos";
 import { aliquotStatus, computeCoverage, formatAliquot } from "@/lib/units/aliquot";
 import type { OwnershipMode } from "@/types/database";
 import { UNIT_TYPE_LABELS } from "@/lib/labels";
@@ -38,6 +41,7 @@ export default async function AdminUnitsPage() {
     .order("unit_number");
 
   const unitIds = (units ?? []).map((u) => u.id);
+  const pendientes = await pendientesDeVerificacion(profile.organization_id);
 
   // Semáforo de alícuotas. Es el punto de entrada a la hoja: sin esto, la
   // pantalla no da ninguna pista de que la alícuota existe ni de que hace falta.
@@ -168,6 +172,11 @@ export default async function AdminUnitsPage() {
                     {unit.unit_number}
                     {unit.block && <span className="font-normal text-mute"> · {unit.block}</span>}
                   </p>
+                  {pendientes.has(unit.id) && (
+                    <p className="mb-1">
+                      <EtiquetaVerificacion detalle={resumenPendientes(pendientes.get(unit.id)!)} />
+                    </p>
+                  )}
                   <p className="font-meta text-mute">
                     {unit.aliquot === null || unit.aliquot === undefined ? (
                       <span className="text-ember-ink">SIN ALÍCUOTA</span>

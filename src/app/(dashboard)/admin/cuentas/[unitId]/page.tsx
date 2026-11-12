@@ -10,6 +10,8 @@ import { conveniosActivos, diasEntre } from "@/lib/contabilidad/cobranza";
 import { ETIQUETA_TIPO } from "@/lib/cuotas";
 import { Cifra, Cifras, Encabezado, EstadoRecibo, tabla, Vacio } from "@/components/contabilidad/ui";
 import { AccionesCuenta, AnularRecibo, CerrarConvenio } from "./acciones";
+import { AvisoVerificacion } from "@/components/contabilidad/aviso-verificacion";
+import { pendientesDeVerificacion } from "@/lib/verificacion-pendiente";
 
 const fechaCorta = (d: string) =>
   new Date(`${d}T12:00:00Z`).toLocaleDateString("es-VE", { day: "2-digit", month: "short", year: "numeric", timeZone: "UTC" });
@@ -27,6 +29,7 @@ export default async function CuentaUnidadPage({ params }: { params: Promise<{ u
   const cuenta = await estadoDeCuenta(db, unitId, tz);
   if (!cuenta || cuenta.unidad.organizationId !== profile.organization_id) notFound();
   const convenio = (await conveniosActivos(db, profile.organization_id, hoy)).get(unitId) ?? null;
+  const enVerificacion = (await pendientesDeVerificacion(profile.organization_id, unitId)).get(unitId) ?? [];
 
   const vencido = cuenta.abiertas.filter((c) => c.vence < hoy).reduce((s, c) => s + c.pendiente, 0);
   const masAntigua = cuenta.abiertas.find((c) => c.vence < hoy);
@@ -67,6 +70,8 @@ export default async function CuentaUnidadPage({ params }: { params: Promise<{ u
           </>
         }
       />
+
+      <AvisoVerificacion datos={enVerificacion} />
 
       <Cifras>
         <Cifra etiqueta="DEUDA TOTAL" valor={usd(cuenta.deuda)} detalle={`${cuenta.abiertas.length} recibo${cuenta.abiertas.length !== 1 ? "s" : ""} abierto${cuenta.abiertas.length !== 1 ? "s" : ""}`} />
