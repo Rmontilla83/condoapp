@@ -115,7 +115,7 @@ export default async function DashboardLayout({
           </div>
         )}
         {/* El residente ya no tiene barra inferior en el teléfono: no hace falta el hueco. */}
-        <main data-zona={isAdmin ? "admin" : undefined} className={`flex-1 overflow-y-auto md:pb-0 ${isAdmin ? "pb-32" : "pb-6"}`}>
+        <main data-zona={isAdmin ? "admin" : undefined} className={`relative flex-1 overflow-y-auto md:pb-0 ${isAdmin ? "pb-32" : "pb-6"}`}>
           <div className="mx-auto max-w-6xl px-5 py-6 md:px-10 md:py-10">
             {children}
           </div>

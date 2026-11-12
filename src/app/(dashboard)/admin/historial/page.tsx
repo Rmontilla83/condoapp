@@ -4,6 +4,7 @@ import { getCurrentProfile, getOrganization } from "@/lib/queries";
 import { FUNCIONES, isAdminRole, type FuncionAdmin } from "@/lib/permissions";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { EVENTOS, type EventoHistorial } from "@/lib/historial";
+import { partesDelDetalle } from "@/lib/historial-detalle";
 import { Encabezado, Vacio, tabla } from "@/components/contabilidad/ui";
 
 /**
@@ -12,85 +13,6 @@ import { Encabezado, Vacio, tabla } from "@/components/contabilidad/ui";
  */
 
 const POR_PAGINA = 100;
-
-/** Claves del detalle que son identificadores internos: no le dicen nada a quien lee. */
-const OCULTAS = new Set(["id", "transaccion", "recibo", "presupuesto", "convenio", "profile_id", "reportado_por", "changes", "decimals", "documento", "version", "tarea", "code_id", "invite_id", "member_id"]);
-
-const ETIQUETA: Record<string, string> = {
-  reason: "Motivo",
-  motivo: "Motivo",
-  acta: "Acta",
-  monto: "Monto",
-  moneda: "Moneda",
-  descripcion: "Descripción",
-  concepto: "Concepto",
-  nota: "Nota",
-  nombre: "Nombre",
-  campo: "Dato",
-  fondo: "Fondo",
-  porcentaje: "Porcentaje",
-  tipo: "Tipo",
-  modo: "Modo",
-  recibos: "Recibos",
-  total: "Total",
-  vence: "Vence",
-  anuladas: "Anuladas",
-  due_date: "Vence",
-  description: "Descripción",
-  sum_before: "Suma antes",
-  sum_after: "Suma después",
-  tasa_anual: "Tasa anual (%)",
-  estado: "Estado",
-  titulo: "Título",
-  funcion: "Función",
-  cuenta: "Cuenta",
-  filas: "Filas",
-  cambiadas: "Cambiadas",
-  unidad: "Unidad",
-  torre: "Torre",
-  visible: "Lo ve",
-  soporte: "Soporte",
-  metodo: "Método",
-  referencia: "Referencia",
-  saldo_a_favor: "Saldo a favor",
-  al_fondo_de_reserva: "Al fondo de reserva",
-  al_fondo_de_contingencia: "Al fondo de contingencia",
-  con_fondo: "Pagado con",
-  anio: "Año",
-  partidas: "Partidas",
-  role: "Como",
-  rol: "Como",
-  por: "Hecho por",
-  comentario: "Comentario",
-};
-
-/** Valores internos que aparecen en el detalle, dichos como los diría una persona. */
-const VALOR: Record<string, string> = {
-  owner: "propietario",
-  tenant: "inquilino",
-  owner_occupied: "vive el propietario",
-  tenant_with_active_owner: "alquilada, con propietario activo",
-  tenant_only: "alquilada, propietario ausente",
-  transfer: "transferencia",
-  cash: "efectivo",
-  mobile_payment: "pago móvil",
-  zelle: "Zelle",
-  USD: "dólares",
-  VES: "bolívares",
-};
-
-function texto(v: unknown): string {
-  if (typeof v === "string" && v in VALOR) return VALOR[v];
-  if (v === null || v === undefined || v === "") return "";
-  if (typeof v === "boolean") return v ? "sí" : "no";
-  if (typeof v === "number") return v.toLocaleString("es-VE", { maximumFractionDigits: 5 });
-  if (typeof v === "object") {
-    return Object.entries(v as Record<string, unknown>)
-      .map(([k, x]) => `${k.replace(/_/g, " ")}: ${texto(x)}`)
-      .join(", ");
-  }
-  return String(v);
-}
 
 export default async function HistorialPage({ searchParams }: { searchParams: Promise<{ area?: string; pagina?: string }> }) {
   const profile = await getCurrentProfile();
@@ -184,10 +106,7 @@ export default async function HistorialPage({ searchParams }: { searchParams: Pr
                         : "Sin cuenta, por el enlace de revisión";
                 const quien = actor?.full_name || actor?.email || (datos.nombre as string) || "Sin identificar";
                 const cambios = Array.isArray(datos.changes) ? (datos.changes as { unit_number?: string; antes?: number | null; despues?: number | null }[]) : null;
-                const partes = Object.entries(datos)
-                  .filter(([k, v]) => !OCULTAS.has(k) && k !== "nombre" && v !== null && v !== "" && v !== undefined)
-                  .map(([k, v]) => (k === "unit_id" ? ["Unidad", unidad.get(String(v)) ?? "una unidad"] : [ETIQUETA[k] ?? k.replace(/_/g, " "), texto(v)]))
-                  .filter(([, v]) => v !== "");
+                const partes = partesDelDetalle(datos, (id) => unidad.get(id) ?? "una unidad");
                 return (
                   <tr key={f.id as string}>
                     <td className={`${tabla.td} whitespace-nowrap text-mute`}>

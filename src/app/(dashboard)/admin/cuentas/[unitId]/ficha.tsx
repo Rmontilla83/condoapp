@@ -17,6 +17,7 @@ import { ContactoDeLaUnidad, type PersonaDeLaUnidad } from "./contacto";
 import { NotasDeLaUnidad, type NotaDeUnidad } from "./notas";
 import { ESTADOS_CENSO, type EstadoCenso } from "@/lib/censo";
 import { EVENTOS, type EventoHistorial } from "@/lib/historial";
+import { partesDelDetalle } from "@/lib/historial-detalle";
 
 const fechaCorta = (d: string) =>
   new Date(`${d}T12:00:00Z`).toLocaleDateString("es-VE", { day: "2-digit", month: "short", year: "numeric", timeZone: "UTC" });
@@ -54,7 +55,8 @@ export async function FichaDeLaUnidad({ unitId, origen }: { unitId: string; orig
       .eq("organization_id", profile.organization_id)
       .eq("payload->>unit_id", unitId)
       .order("created_at", { ascending: false })
-      .limit(8),
+      // Todo lo que se ha hecho sobre esta unidad. El tope es solo una red de seguridad.
+      .limit(500),
   ]);
   // Notas internas y recibos ya pagados (para sacar la constancia de cada uno).
   const [{ data: notasCrudas }, { data: pagados }] = await Promise.all([
@@ -94,6 +96,30 @@ export async function FichaDeLaUnidad({ unitId, origen }: { unitId: string; orig
   // Sin fila en el censo nadie ha registrado nada: no es lo mismo que «sin entregar».
   const estadoCenso = censo?.estado ? ESTADOS_CENSO[censo.estado as EstadoCenso] : null;
   const fechaHora = (iso: string) => new Date(iso).toLocaleString("es-VE", { timeZone: tz, day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
+
+  // Historial de la unidad: cada registro con quién, cuándo y su detalle.
+  const PRIMEROS = 15;
+  const historial = (eventos ?? []).filter((e) => (e.event as string) in EVENTOS);
+  const filaHistorial = (e: (typeof historial)[number]) => {
+    const quien = ((Array.isArray(e.profiles) ? e.profiles[0] : e.profiles) as { full_name?: string } | null)?.full_name;
+    const partes = partesDelDetalle((e.payload ?? {}) as Record<string, unknown>);
+    return (
+      <li key={e.id as string} className="grid gap-x-6 gap-y-1 py-3 text-[14px] md:grid-cols-[13rem_1fr]">
+        <span className="text-mute">
+          {fechaHora(e.created_at as string)}
+          {quien ? <span className="block">{quien}</span> : null}
+        </span>
+        <span>
+          <span className="block font-medium text-marine-deep">{EVENTOS[e.event as EventoHistorial].texto}</span>
+          {partes.length > 0 && (
+            <span className="mt-0.5 block text-mute">
+              {partes.map(([k, v]) => `${k}: ${v}`).join(" · ")}
+            </span>
+          )}
+        </span>
+      </li>
+    );
+  };
 
   const masAntigua = cuenta.abiertas.find((c) => c.vence < hoy);
   const dueno = cuenta.propietarios[0];
@@ -396,7 +422,7 @@ export async function FichaDeLaUnidad({ unitId, origen }: { unitId: string; orig
         )}
       </section>
 
-      <div className="grid gap-5 lg:grid-cols-2" data-print-hide>
+      <div className="space-y-8" data-print-hide>
         <section className="space-y-3">
           <h2 className="font-display text-[19px] text-marine-deep">Reportes de avería</h2>
           {(reportes ?? []).length === 0 ? (
@@ -415,30 +441,30 @@ export async function FichaDeLaUnidad({ unitId, origen }: { unitId: string; orig
           )}
         </section>
         <section className="space-y-3">
-          <h2 className="font-display text-[19px] text-marine-deep">Actividad de la administración</h2>
-          {(eventos ?? []).filter((e) => (e.event as string) in EVENTOS).length === 0 ? (
+          <h2 className="font-display text-[19px] text-marine-deep">Historial de la unidad</h2>
+          {historial.length === 0 ? (
             <Vacio>Todavía no hay acciones registradas sobre esta unidad.</Vacio>
           ) : (
-            <ul className="divide-y divide-border rounded-2xl border border-border bg-card px-4">
-              {(eventos ?? [])
-                .filter((e) => (e.event as string) in EVENTOS)
-                .map((e) => {
-                  const quien = ((Array.isArray(e.profiles) ? e.profiles[0] : e.profiles) as { full_name?: string } | null)?.full_name;
-                  return (
-                    <li key={e.id as string} className="py-3 text-[14px]">
-                      <span className="block text-marine-deep">{EVENTOS[e.event as EventoHistorial].texto}</span>
-                      <span className="block text-[12px] text-mute">
-                        {fechaHora(e.created_at as string)}
-                        {quien ? ` · ${quien}` : ""}
-                      </span>
-                    </li>
-                  );
-                })}
-            </ul>
+            <>
+              <p className="text-[14px] text-mute">
+                Todo lo que se ha hecho sobre esta unidad, de lo más reciente a lo más antiguo: {historial.length} registro{historial.length !== 1 ? "s" : ""}.
+              </p>
+              <ul className="divide-y divide-border rounded-2xl border border-border bg-card px-5">
+                {historial.slice(0, PRIMEROS).map(filaHistorial)}
+              </ul>
+              {historial.length > PRIMEROS && (
+                <details className="group">
+                  <summary className="inline-flex h-9 cursor-pointer list-none items-center rounded-lg border border-border bg-card px-3.5 text-[14px] font-medium text-marine-deep hover:bg-frost [&::-webkit-details-marker]:hidden">
+                    <span className="group-open:hidden">Ver los {historial.length - PRIMEROS} anteriores</span>
+                    <span className="hidden group-open:inline">Ocultar los anteriores</span>
+                  </summary>
+                  <ul className="mt-3 divide-y divide-border rounded-2xl border border-border bg-card px-5">
+                    {historial.slice(PRIMEROS).map(filaHistorial)}
+                  </ul>
+                </details>
+              )}
+            </>
           )}
-          <p className="text-[12px] text-mute">
-            Todo el detalle está en <Link href="/admin/historial" className="text-cyan-ink hover:underline">Historial</Link>.
-          </p>
         </section>
       </div>
     </div>
