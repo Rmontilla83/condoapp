@@ -111,6 +111,15 @@ export default function RootLayout({
   }).catch(function(){});
 })();`}
         </Script>
+        {/*
+          Chrome en Android avisa que la app se puede instalar con este evento,
+          que puede llegar antes de que React monte. Se guarda aquí para que
+          «Instalar ahora» (instalar-app.tsx) lo use; preventDefault evita la
+          barrita propia de Chrome, porque la invitación es la nuestra.
+        */}
+        <Script id="instalar-app" strategy="beforeInteractive">
+          {`window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();window.__atryumInstalar=e;});`}
+        </Script>
         {children}
       </body>
     </html>

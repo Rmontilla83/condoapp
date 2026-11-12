@@ -14,6 +14,7 @@ import { pendientesDelMenu } from "@/lib/pendientes-menu";
 import { Header } from "@/components/dashboard/header";
 import { LiveStatusBar } from "@/components/dashboard/live-status-bar";
 import { Onboarding } from "@/components/onboarding";
+import { InstalarApp } from "@/components/dashboard/instalar-app";
 import { ConserjeFlotante } from "@/components/conserje/conserje-flotante";
 import type { AvisoFila } from "@/components/dashboard/campana";
 import { modoDelConserje } from "@/lib/conserje/conserje";
@@ -114,6 +115,8 @@ export default async function DashboardLayout({
             <ExitViewAs />
           </div>
         )}
+        {/* Solo el residente, y solo en el teléfono: la administración trabaja en computadora. */}
+        {!isAdmin && <InstalarApp />}
         {/* El residente ya no tiene barra inferior en el teléfono: no hace falta el hueco. */}
         <main data-zona={isAdmin ? "admin" : undefined} className={`relative flex-1 overflow-y-auto md:pb-0 ${isAdmin ? "pb-32" : "pb-6"}`}>
           <div className="mx-auto max-w-6xl px-5 py-6 md:px-10 md:py-10">
