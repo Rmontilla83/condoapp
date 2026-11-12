@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -43,6 +43,8 @@ interface Code {
   expires_at: string;
 }
 
+const CLAVE_ABIERTO = "atryum:unidad-abierta";
+
 export function UnitManagerDialog({
   unit,
   members,
@@ -56,6 +58,24 @@ export function UnitManagerDialog({
 }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
+  const [tab, setTab] = useState("mode");
+  const [aviso, setAviso] = useState<string | null>(null);
+
+  // Tras guardar se recarga la página; si este diálogo era el que estaba abierto, vuelve a abrirse donde estaba.
+  useEffect(() => {
+    try {
+      const crudo = sessionStorage.getItem(CLAVE_ABIERTO);
+      if (!crudo) return;
+      const guardado = JSON.parse(crudo) as { id?: string; tab?: string; msg?: string };
+      if (guardado.id !== unit.id) return;
+      sessionStorage.removeItem(CLAVE_ABIERTO);
+      setTab(guardado.tab ?? "mode");
+      setAviso(guardado.msg ?? null);
+      setOpen(true);
+    } catch {
+      // Sin almacenamiento, el diálogo simplemente queda cerrado.
+    }
+  }, [unit.id]);
   const [pending, startTransition] = useTransition();
   const [feedback, setFeedback] = useState<{ type: "ok" | "error"; msg: string } | null>(null);
   const [newCode, setNewCode] = useState<{ code: string; expires_at: string; assigned_role: MemberRole } | null>(null);
@@ -117,13 +137,18 @@ export function UnitManagerDialog({
         showFeedback("error", res.error);
       } else {
         showFeedback("ok", successMsg);
+        try {
+          sessionStorage.setItem(CLAVE_ABIERTO, JSON.stringify({ id: unit.id, tab, msg: successMsg }));
+        } catch {
+          // Si no se puede guardar, se recarga igual.
+        }
         window.location.reload();
       }
     });
   }
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) setAviso(null); }}>
       <DialogTrigger render={<Button variant="outline" size="sm" className="shrink-0" />}>
         Gestionar
       </DialogTrigger>
@@ -134,6 +159,12 @@ export function UnitManagerDialog({
             Configura modo de ocupación, miembros, invitaciones y códigos.
           </DialogDescription>
         </DialogHeader>
+
+        {aviso && !feedback && (
+          <div role="status" className="rounded-lg border border-emerald-200 bg-emerald-50 p-2.5 text-sm text-emerald-900">
+            {aviso}. Guardado. Puedes seguir en las otras pestañas o cerrar.
+          </div>
+        )}
 
         {feedback && (
           <div
@@ -147,7 +178,7 @@ export function UnitManagerDialog({
           </div>
         )}
 
-        <Tabs defaultValue="mode" className="mt-2">
+        <Tabs value={tab} onValueChange={(v) => setTab(String(v))} className="mt-2">
           <TabsList className="w-full grid grid-cols-4 h-auto">
             <TabsTrigger value="mode" className="text-xs">Modo</TabsTrigger>
             <TabsTrigger value="members" className="text-xs">Miembros</TabsTrigger>

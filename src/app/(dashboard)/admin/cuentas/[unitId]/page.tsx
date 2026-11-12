@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { getCurrentProfile, getOrganization } from "@/lib/queries";
-import { isAdminRole } from "@/lib/permissions";
+import { isAdminRole, puede } from "@/lib/permissions";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { todayInTimeZone } from "@/lib/utils";
 import { usd } from "@/lib/format";
@@ -13,6 +13,7 @@ import { AccionesCuenta, AnularRecibo, CerrarConvenio } from "./acciones";
 import { AvisoVerificacion } from "@/components/contabilidad/aviso-verificacion";
 import { pendientesDeVerificacion } from "@/lib/verificacion-pendiente";
 import { ContactoDeLaUnidad, type PersonaDeLaUnidad } from "./contacto";
+import { NotasDeLaUnidad, type NotaDeUnidad } from "./notas";
 import { ESTADOS_CENSO, type EstadoCenso } from "@/lib/censo";
 import { EVENTOS, type EventoHistorial } from "@/lib/historial";
 
@@ -51,6 +52,20 @@ export default async function CuentaUnidadPage({ params }: { params: Promise<{ u
       .order("created_at", { ascending: false })
       .limit(8),
   ]);
+  // Notas internas y recibos ya pagados (para sacar la constancia de cada uno).
+  const [{ data: notasCrudas }, { data: pagados }] = await Promise.all([
+    db.from("unit_notas").select("id, texto, creada_en, creada_por, profiles(full_name)").eq("unit_id", unitId).is("retirada_en", null).order("creada_en", { ascending: false }).limit(50),
+    db.from("invoices").select("id, description, amount, due_date").eq("unit_id", unitId).eq("status", "paid").order("due_date", { ascending: false }).limit(12),
+  ]);
+  const administra = puede(profile, "administrar");
+  const notas: NotaDeUnidad[] = (notasCrudas ?? []).map((n) => ({
+    id: n.id as string,
+    texto: n.texto as string,
+    autor: ((Array.isArray(n.profiles) ? n.profiles[0] : n.profiles) as { full_name?: string } | null)?.full_name || "Administración",
+    fecha: new Date(n.creada_en as string).toLocaleDateString("es-VE", { timeZone: tz, day: "2-digit", month: "short", year: "numeric" }),
+    puedeRetirar: administra || n.creada_por === profile.id,
+  }));
+
   const personas: PersonaDeLaUnidad[] = (miembros ?? []).map((m) => {
     const p = (Array.isArray(m.profiles) ? m.profiles[0] : m.profiles) as { full_name?: string; email?: string; phone?: string } | null;
     return {
@@ -208,6 +223,12 @@ export default async function CuentaUnidadPage({ params }: { params: Promise<{ u
         </section>
       </div>
 
+      <section className="rounded-2xl border border-border bg-card p-5" data-print-hide>
+        <h2 className="font-display text-[19px] text-marine-deep">Notas internas</h2>
+        <p className="mb-4 mt-1 text-[13px] text-mute">Solo las ve la administración. El propietario y el inquilino no las ven.</p>
+        <NotasDeLaUnidad unitId={unitId} notas={notas} puedeEscribir={puede(profile, "cargar")} />
+      </section>
+
       {convenio && (
         <section className="space-y-3 rounded-2xl border border-border bg-card p-5">
           <div className="flex flex-wrap items-start justify-between gap-3">
@@ -295,6 +316,37 @@ export default async function CuentaUnidadPage({ params }: { params: Promise<{ u
               </tbody>
             </table>
           </div>
+        )}
+      </section>
+
+      <section className="space-y-3" data-print-hide>
+        <h2 className="font-display text-[19px] text-marine-deep">Recibos pagados y constancias</h2>
+        {(pagados ?? []).length === 0 ? (
+          <Vacio>Esta unidad todavía no tiene recibos pagados.</Vacio>
+        ) : (
+          <>
+            <ul className="divide-y divide-border rounded-2xl border border-border bg-card px-4">
+              {(pagados ?? []).map((r) => (
+                <li key={r.id as string} className="flex flex-wrap items-center justify-between gap-3 py-3 text-[14px]">
+                  <span className="min-w-0 text-marine-deep">
+                    {r.description as string}
+                    <span className="ml-2 tabular-nums text-mute">{usd(Number(r.amount))}</span>
+                  </span>
+                  <Link
+                    href={`/pagos/${r.id}/constancia`}
+                    target="_blank"
+                    className="inline-flex h-8 shrink-0 items-center rounded-lg border border-border px-3 text-[13px] font-medium text-marine-deep hover:bg-frost"
+                  >
+                    Ver constancia
+                  </Link>
+                </li>
+              ))}
+            </ul>
+            <p className="text-[12px] text-mute">
+              La constancia se abre lista para imprimir. Para enviarla, toca «Imprimir», elige «Guardar como PDF» y adjunta ese archivo por WhatsApp o por correo. El
+              vecino también puede sacarla él mismo desde Pagos.
+            </p>
+          </>
         )}
       </section>
 
