@@ -1,5 +1,7 @@
 import { pendienteDe } from "@/lib/cuotas";
 import { usd } from "@/lib/format";
+import Link from "next/link";
+import { cobranzaDelMes } from "@/lib/contabilidad/cobranza-del-mes";
 import { redirect } from "next/navigation";
 import {
   getCurrentProfile,
@@ -112,6 +114,7 @@ export default async function AdminPage() {
   // todas las impagas porque también alimenta el detalle; el corte por fecha va
   // acá, con la zona horaria del condominio.
   const hoy = todayInTimeZone(org?.timezone ?? undefined);
+  const cobranza = await cobranzaDelMes(createAdminClient(), profile.organization_id, hoy, org?.timezone ?? "America/Caracas");
   // Tandas de cuotas, para poder anular una mal emitida. Se agrupa por
   // (fecha, tipo, descripción normalizada), que es como se emiten.
   const runsMap = new Map<string, InvoiceRun>();
@@ -205,27 +208,78 @@ export default async function AdminPage() {
           Vista <em className="font-editorial text-cyan">general</em>
         </h1>
         <p className="mt-3 text-[15px] text-mute">
-          {stats.totalUnits} unidades · {stats.paymentRate}% de cobranza · {stats.openRequests} solicitud{stats.openRequests !== 1 ? "es" : ""} de mantenimiento abierta{stats.openRequests !== 1 ? "s" : ""}
+          {stats.totalUnits} unidades · {cobranza.pctCobranza === null ? "sin cuotas este mes" : `${cobranza.pctCobranza.toLocaleString("es-VE")} % de cobranza en ${cobranza.mes}`} · {stats.openRequests} solicitud{stats.openRequests !== 1 ? "es" : ""} de mantenimiento abierta{stats.openRequests !== 1 ? "s" : ""}
         </p>
       </div>
 
+      {/* Cobranza del mes: lo que entró, lo que falta de este mes y lo que viene arrastrado */}
+      <section aria-label={`Cobranza de ${cobranza.mes}`} className="space-y-3">
+        <div className="flex flex-wrap items-baseline justify-between gap-2">
+          <p className="font-meta text-mute">COBRANZA DE {cobranza.mes.toUpperCase()}</p>
+          <Link href="/admin/cuentas" className="text-[13px] text-cyan-ink hover:underline">
+            Ver cuentas por cobrar
+          </Link>
+        </div>
+        <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
+          <div className="rounded-2xl bg-card border border-border p-5">
+            <p className="font-meta text-mute">RECAUDADO EN EL MES</p>
+            <p className="mt-3 font-display text-[26px] leading-none tracking-[-0.02em] text-marine-deep tabular-nums">{usd(cobranza.recaudado)}</p>
+            <p className="mt-2 text-[12px] text-mute">
+              {cobranza.pagos === 0
+                ? "Todavía no hay pagos registrados este mes"
+                : `${cobranza.pagos} pago${cobranza.pagos !== 1 ? "s" : ""}: ${usd(cobranza.recaudadoACuotasDelMes)} a cuotas del mes y ${usd(cobranza.recaudadoADeudaAnterior)} a deuda anterior`}
+            </p>
+          </div>
+          <div className="rounded-2xl bg-card border border-border p-5">
+            <p className="font-meta text-mute">COBRANZA DEL MES</p>
+            <p className="mt-3 font-display text-[26px] leading-none tracking-[-0.02em] text-cyan tabular-nums">
+              {cobranza.pctCobranza === null ? "—" : `${cobranza.pctCobranza.toLocaleString("es-VE")} %`}
+            </p>
+            <p className="mt-2 text-[12px] text-mute">
+              {cobranza.pctCobranza === null ? "Este mes no hay cuotas emitidas" : `${usd(cobranza.cobradoDelMes)} cobrados de ${usd(cobranza.facturadoDelMes)}`}
+            </p>
+          </div>
+          <div className="rounded-2xl bg-card border border-border p-5">
+            <p className="font-meta text-mute">DEUDA DEL MES</p>
+            <p className="mt-3 font-display text-[26px] leading-none tracking-[-0.02em] text-marine-deep tabular-nums">{usd(cobranza.deudaDelMes)}</p>
+            <p className="mt-2 text-[12px] text-mute">
+              {cobranza.unidadesConDeudaDelMes} de {cobranza.totalUnidades} unidades deben la cuota del mes
+            </p>
+          </div>
+          <div className="rounded-2xl bg-card border border-border p-5">
+            <p className="font-meta text-mute">DEUDA ANTERIOR</p>
+            <p className={`mt-3 font-display text-[26px] leading-none tracking-[-0.02em] tabular-nums ${cobranza.deudaAnterior > 0 ? "text-destructive" : "text-marine-deep"}`}>{usd(cobranza.deudaAnterior)}</p>
+            <p className="mt-2 text-[12px] text-mute">
+              Morosidad: {cobranza.unidadesMorosas} unidad{cobranza.unidadesMorosas !== 1 ? "es" : ""} con meses anteriores sin pagar
+            </p>
+          </div>
+          <div className="rounded-2xl bg-card border border-border p-5 col-span-2 lg:col-span-1">
+            <p className="font-meta text-mute">MOROSIDAD</p>
+            <p className={`mt-3 font-display text-[26px] leading-none tracking-[-0.02em] tabular-nums ${(cobranza.pctMorosidad ?? 0) > 0 ? "text-destructive" : "text-marine-deep"}`}>
+              {cobranza.pctMorosidad === null ? "—" : `${cobranza.pctMorosidad.toLocaleString("es-VE")} %`}
+            </p>
+            <p className="mt-2 text-[12px] text-mute">
+              {cobranza.pctMorosidad === null ? "No hay nada por cobrar" : `De los ${usd(cobranza.totalPorCobrar)} por cobrar, lo que viene de meses anteriores`}
+            </p>
+          </div>
+        </div>
+        {cobranza.mesDeApertura && (
+          <p className="text-[12px] text-mute">
+            La cuota de {cobranza.mes} entró como saldo anterior. Su porcentaje de cobranza se mide sobre lo que estaba pendiente el día de corte, y lo recaudado cuenta desde ese día: lo cobrado antes quedó fuera de Atryum.
+          </p>
+        )}
+      </section>
+
       {/* KPI cards — manual style con count-up */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
         <div className="group rounded-2xl bg-card border border-border p-5 transition-[border-color,box-shadow,transform,background-color] duration-200 hover:border-cyan/40 hover:-translate-y-0.5 hover:shadow-[0_18px_50px_-18px_rgb(15,46,90,0.18)]">
           <p className="font-meta text-mute">UNIDADES</p>
           <p className="mt-3 font-display text-[32px] leading-none tracking-[-0.02em] text-marine-deep tabular-nums">
             <AnimatedCounter animate={false} value={stats.totalUnits} duration={1200} />
           </p>
         </div>
-        <div className="group rounded-2xl bg-card border border-border p-5 transition-[border-color,box-shadow,transform,background-color] duration-200 hover:border-cyan/40 hover:-translate-y-0.5 hover:shadow-[0_18px_50px_-18px_rgb(15,46,90,0.18)]">
-          <p className="font-meta text-mute">COBRANZA</p>
-          <p className="mt-3 font-display text-[32px] leading-none tracking-[-0.02em] text-cyan tabular-nums">
-            <AnimatedCounter animate={false} value={stats.paymentRate} duration={1500} />
-            <span className="text-mute text-[20px]">%</span>
-          </p>
-        </div>
         <div className="group rounded-2xl bg-card border border-border p-5 transition-[border-color,box-shadow,transform,background-color] duration-200 hover:border-destructive/40 hover:-translate-y-0.5 hover:shadow-[0_18px_50px_-18px_rgb(15,46,90,0.18)]">
-          <p className="font-meta text-mute">MOROSOS</p>
+          <p className="font-meta text-mute">UNIDADES CON ATRASO</p>
           <p className="mt-3 font-display text-[32px] leading-none tracking-[-0.02em] text-destructive tabular-nums">
             <AnimatedCounter animate={false} value={morosos.length} duration={1100} />
           </p>
