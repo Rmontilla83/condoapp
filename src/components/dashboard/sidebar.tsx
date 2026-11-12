@@ -43,7 +43,7 @@ const adminItems = [
  * deslizar. Lo que es del vecino (su estado de cuenta, invitar visitas, Atri)
  * queda al final, plegado.
  */
-const GRUPOS_ADMIN: { titulo: string | null; items: { href: string; label: string; icon: string }[] }[] = [
+const GRUPOS_ADMIN: { titulo: string | null; plegable?: boolean; items: { href: string; label: string; icon: string }[] }[] = [
   { titulo: null, items: [{ href: "/admin", label: "Hoy", icon: "admin" }] },
   {
     titulo: "Cobranza",
@@ -75,6 +75,8 @@ const GRUPOS_ADMIN: { titulo: string | null; items: { href: string; label: strin
   },
   {
     titulo: "Junta y control",
+    // Se usa de vez en cuando: plegado, el menú completo cabe en una pantalla.
+    plegable: true,
     items: [
       { href: "/decisiones", label: "Decisiones", icon: "votaciones" },
       { href: "/admin/junta", label: "Tareas de la Junta", icon: "votaciones" },
@@ -198,19 +200,19 @@ export function Sidebar({
   return (
     <aside className="hidden md:flex md:w-64 md:shrink-0 md:flex-col md:overflow-y-auto bg-sidebar text-sidebar-foreground [scrollbar-width:thin]">
       {/* Manda el condominio: su logo (o sus iniciales) y su nombre. */}
-      <div className={`flex flex-col items-center gap-3 px-4 text-center ${isAdmin ? "pt-5 pb-4" : "pt-7 pb-6"}`}>
+      <div className={`flex flex-col items-center gap-3 px-4 text-center ${isAdmin ? "pt-4 pb-3" : "pt-7 pb-6"}`}>
         {condominio?.logoOscuroUrl || condominio?.logoUrl ? (
           <>
             {condominio.logoOscuroUrl ? (
               // eslint-disable-next-line @next/next/no-img-element -- logo del condominio, subido por la administración
-              <img src={condominio.logoOscuroUrl} alt={condominio.nombre} className={`h-auto ${isAdmin ? "w-[190px]" : "w-[228px]"}`} />
+              <img src={condominio.logoOscuroUrl} alt={condominio.nombre} className={`h-auto ${isAdmin ? "w-[168px]" : "w-[228px]"}`} />
             ) : (
               <span className="rounded-2xl bg-white p-3">
                 {/* eslint-disable-next-line @next/next/no-img-element -- logo del condominio */}
                 <img src={condominio.logoUrl!} alt={condominio.nombre} className="h-auto w-[176px]" />
               </span>
             )}
-            {condominio.ciudad && (
+            {condominio.ciudad && !isAdmin && (
               <p className="font-meta text-sidebar-foreground/45">{condominio.ciudad.toUpperCase()}</p>
             )}
           </>
@@ -232,10 +234,9 @@ export function Sidebar({
       </div>
 
       {isAdmin ? (
-        <nav aria-label="Secciones" className="flex-1 px-3 pb-4">
-          {GRUPOS_ADMIN.map((g, gi) => (
-            <div key={gi} className={g.titulo ? "mt-4" : gi === 0 ? "" : "mt-4"}>
-              {g.titulo && <p className="mb-1 px-3 text-[11px] font-semibold uppercase tracking-[0.1em] text-sidebar-foreground/40">{g.titulo}</p>}
+        <nav aria-label="Secciones" className="flex-1 px-3 pb-2">
+          {GRUPOS_ADMIN.map((g, gi) => {
+            const enlaces = (
               <div className="space-y-px">
                 {g.items.map((item) => {
                   const isActive = estaActivo(pathname, item.href);
@@ -245,7 +246,7 @@ export function Sidebar({
                       href={item.href}
                       onClick={() => setDestino(item.href)}
                       aria-current={isActive ? "page" : undefined}
-                      className={`flex items-center gap-3 rounded-lg px-3 py-[7px] text-[13.5px] font-medium transition-colors ${
+                      className={`flex items-center gap-3 rounded-lg px-3 py-[5px] text-[13.5px] font-medium transition-colors ${
                           isActive
                             ? "bg-sidebar-primary text-sidebar-primary-foreground"
                             : "text-sidebar-foreground/75 hover:bg-sidebar-accent hover:text-sidebar-foreground"
@@ -258,9 +259,28 @@ export function Sidebar({
                   );
                 })}
               </div>
-            </div>
-          ))}
-          <details className="group mt-4" open={VISTA_DEL_VECINO.some((i) => estaActivo(pathname, i.href))}>
+            );
+            if (g.plegable) {
+              return (
+                <details key={gi} className="group/junta mt-3" open={g.items.some((i) => estaActivo(pathname, i.href))}>
+                  <summary className="flex cursor-pointer list-none items-center justify-between rounded-lg px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.1em] text-sidebar-foreground/40 hover:text-sidebar-foreground/70 [&::-webkit-details-marker]:hidden">
+                    {g.titulo}
+                    <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="h-3.5 w-3.5 transition-transform group-open/junta:rotate-90">
+                      <path d="m9 6 6 6-6 6" />
+                    </svg>
+                  </summary>
+                  <div className="mt-1">{enlaces}</div>
+                </details>
+              );
+            }
+            return (
+              <div key={gi} className={gi === 0 ? "" : "mt-3"}>
+                {g.titulo && <p className="mb-1 px-3 text-[11px] font-semibold uppercase tracking-[0.1em] text-sidebar-foreground/40">{g.titulo}</p>}
+                {enlaces}
+              </div>
+            );
+          })}
+          <details className="group mt-3" open={VISTA_DEL_VECINO.some((i) => estaActivo(pathname, i.href))}>
             <summary className="flex cursor-pointer list-none items-center justify-between rounded-lg px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.1em] text-sidebar-foreground/40 hover:text-sidebar-foreground/70 [&::-webkit-details-marker]:hidden">
               Lo que ve el vecino
               <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="h-3.5 w-3.5 transition-transform group-open:rotate-90">
@@ -276,7 +296,7 @@ export function Sidebar({
                     href={item.href}
                     onClick={() => setDestino(item.href)}
                     aria-current={isActive ? "page" : undefined}
-                    className={`flex items-center gap-3 rounded-lg px-3 py-[7px] text-[13.5px] font-medium transition-colors ${
+                    className={`flex items-center gap-3 rounded-lg px-3 py-[5px] text-[13.5px] font-medium transition-colors ${
                           isActive
                             ? "bg-sidebar-primary text-sidebar-primary-foreground"
                             : "text-sidebar-foreground/75 hover:bg-sidebar-accent hover:text-sidebar-foreground"
@@ -317,7 +337,7 @@ export function Sidebar({
       )}
 
       {/* Atryum firma abajo, en segundo plano. */}
-      <div className="flex items-center gap-2 px-6 pb-6 opacity-60">
+      <div className={`flex items-center gap-2 px-6 opacity-60 ${isAdmin ? "pb-3" : "pb-6"}`}>
         <span className="font-meta text-sidebar-foreground/60">CON</span>
         <AtryumLogo variant="horizontal" tone="white" className="text-[14px]" />
       </div>
