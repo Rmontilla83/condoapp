@@ -250,7 +250,7 @@ export default async function AdminPage() {
             <p className="font-meta text-mute">DEUDA ANTERIOR</p>
             <p className={`mt-3 font-display text-[26px] leading-none tracking-[-0.02em] tabular-nums ${cobranza.deudaAnterior > 0 ? "text-destructive" : "text-marine-deep"}`}>{usd(cobranza.deudaAnterior)}</p>
             <p className="mt-2 text-[12px] text-mute">
-              Morosidad: {cobranza.unidadesMorosas} unidad{cobranza.unidadesMorosas !== 1 ? "es" : ""} con meses anteriores sin pagar
+              Lo que se debe de meses anteriores, de los {usd(cobranza.totalPorCobrar)} por cobrar en total
             </p>
           </div>
           <div className="rounded-2xl bg-card border border-border p-5 col-span-2 lg:col-span-1">
@@ -259,10 +259,35 @@ export default async function AdminPage() {
               {cobranza.pctMorosidad === null ? "—" : `${cobranza.pctMorosidad.toLocaleString("es-VE")} %`}
             </p>
             <p className="mt-2 text-[12px] text-mute">
-              {cobranza.pctMorosidad === null ? "No hay nada por cobrar" : `De los ${usd(cobranza.totalPorCobrar)} por cobrar, lo que viene de meses anteriores`}
+              {cobranza.pctMorosidad === null
+                ? "No hay unidades cargadas"
+                : `${cobranza.unidadesMorosas} de ${cobranza.totalUnidades} unidades deben meses anteriores; ${cobranza.unidadesAlDia} están al día`}
             </p>
           </div>
         </div>
+        <details className="rounded-2xl border border-border bg-card px-4 py-3 text-[13px] text-marine-deep/85">
+          <summary className="cursor-pointer font-medium text-marine-deep">Cómo se calculan estas cifras</summary>
+          <ul className="mt-3 space-y-2">
+            <li>
+              <strong>Cada recibo pertenece al mes en que vence.</strong> Los que vencen en {cobranza.mes} son «del mes»; los que vencieron antes son «deuda anterior».
+            </li>
+            <li>
+              <strong>Recaudado en el mes:</strong> la suma de los pagos aprobados con fecha de este mes, sin importar a qué recibo se aplicaron. No cuenta el saldo a favor que se usa para pagar, porque ese dinero ya se contó cuando entró.
+            </li>
+            <li>
+              <strong>Cobranza del mes:</strong> lo cobrado de los recibos del mes, dividido entre lo facturado en el mes. Un pago a una deuda vieja sube lo recaudado, pero no este porcentaje.
+            </li>
+            <li>
+              <strong>Deuda del mes:</strong> lo que falta por cobrar de los recibos que vencen este mes.
+            </li>
+            <li>
+              <strong>Deuda anterior:</strong> lo que falta por cobrar de recibos de meses pasados.
+            </li>
+            <li>
+              <strong>Morosidad:</strong> las unidades que deben algún mes anterior, divididas entre todas las unidades. Se mide por unidades y no por montos: dice cuántos apartamentos no están al día. Una unidad que solo debe el mes en curso no cuenta como morosa hasta que el mes termine.
+            </li>
+          </ul>
+        </details>
         {cobranza.mesDeApertura && (
           <p className="text-[12px] text-mute">
             La cuota de {cobranza.mes} entró como saldo anterior. Su porcentaje de cobranza se mide sobre lo que estaba pendiente el día de corte, y lo recaudado cuenta desde ese día: lo cobrado antes quedó fuera de Atryum.

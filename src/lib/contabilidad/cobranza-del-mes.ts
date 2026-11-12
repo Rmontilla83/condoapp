@@ -12,7 +12,10 @@ import { estaAbierta, pendienteDe } from "@/lib/cuotas";
  * Y dos porcentajes:
  *
  *   cobranza del mes  de lo facturado este mes, cuánto ya se cobró.
- *   morosidad         de todo lo por cobrar, cuánto es deuda de meses pasados.
+ *   morosidad         de todas las unidades, cuántas deben algún mes pasado.
+ *                     Se mide por unidades y no por montos (Rafael, 2026-11-12):
+ *                     es la cifra que una Junta espera, «cuántos vecinos no
+ *                     están al día». El monto va aparte, en la deuda anterior.
  *
  * «Recaudado» es dinero que entró este mes, se haya aplicado a un recibo de
  * este mes o a uno viejo. Por eso no es lo mismo que «cobrado de las cuotas
@@ -36,8 +39,10 @@ export interface CobranzaDelMes {
   unidadesConDeudaDelMes: number;
   deudaAnterior: number;
   unidadesMorosas: number;
+  /** Unidades sin ningún mes anterior pendiente. Pueden deber el mes en curso, que no ha vencido. */
+  unidadesAlDia: number;
   totalPorCobrar: number;
-  /** 0 a 100, o null si no hay nada por cobrar. */
+  /** Unidades morosas ÷ unidades, de 0 a 100. null si el condominio no tiene unidades. */
   pctMorosidad: number | null;
   totalUnidades: number;
   /**
@@ -106,6 +111,8 @@ export async function cobranzaDelMes(db: SupabaseClient, orgId: string, hoy: str
   const deudaAnterior = r2(pendienteAnterior.reduce((s, r) => s + pendienteDe(r), 0));
   const totalPorCobrar = r2(abiertas.reduce((s, r) => s + pendienteDe(r), 0));
   const cobradoDelMes = r2(facturadoDelMes - deudaDelMes);
+  const morosas = new Set(pendienteAnterior.filter((r) => pendienteDe(r) > 0).map((r) => r.unit_id)).size;
+  const unidades = totalUnidades ?? 0;
 
   return {
     mes: new Date(Date.UTC(anio, mesN - 1, 15)).toLocaleDateString("es-VE", { month: "long", year: "numeric", timeZone: "UTC" }),
@@ -119,10 +126,11 @@ export async function cobranzaDelMes(db: SupabaseClient, orgId: string, hoy: str
     deudaDelMes,
     unidadesConDeudaDelMes: new Set(pendienteMes.filter((r) => pendienteDe(r) > 0).map((r) => r.unit_id)).size,
     deudaAnterior,
-    unidadesMorosas: new Set(pendienteAnterior.filter((r) => pendienteDe(r) > 0).map((r) => r.unit_id)).size,
+    unidadesMorosas: morosas,
+    unidadesAlDia: Math.max(unidades - morosas, 0),
     totalPorCobrar,
-    pctMorosidad: totalPorCobrar > 0 ? Math.round((deudaAnterior / totalPorCobrar) * 1000) / 10 : null,
-    totalUnidades: totalUnidades ?? 0,
+    pctMorosidad: unidades > 0 ? Math.round((morosas / unidades) * 1000) / 10 : null,
+    totalUnidades: unidades,
     mesDeApertura: delMes.some((r) => r.kind === "opening"),
   };
 }
