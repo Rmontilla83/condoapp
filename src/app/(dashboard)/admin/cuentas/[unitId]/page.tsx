@@ -146,7 +146,7 @@ export default async function CuentaUnidadPage({ params }: { params: Promise<{ u
               <dt className="text-mute">Tipo</dt>
               <dd className="text-right text-marine-deep">
                 {TIPO[(datos?.type as string) ?? ""] ?? "—"}
-                {datos?.floor != null ? `, piso ${datos.floor}` : ""}
+                {datos?.floor == null ? "" : datos.floor === 0 ? ", planta baja" : `, piso ${datos.floor}`}
               </dd>
             </div>
             <div className="flex justify-between gap-4">
