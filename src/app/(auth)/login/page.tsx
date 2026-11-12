@@ -20,6 +20,7 @@ export default function LoginPage() {
   const [stage, setStage] = useState<Stage>("email");
   const [email, setEmail] = useState("");
   const [token, setToken] = useState("");
+  const [esDeApartamento, setEsDeApartamento] = useState(false);
   const [loading, setLoading] = useState(false);
   const [codeSent, setCodeSent] = useState(false);
   const [changingEmail, setChangingEmail] = useState(false);
@@ -247,7 +248,7 @@ export default function LoginPage() {
                 ? "Te enviamos un código por correo. Sin contraseñas, sin complicaciones."
                 : codeSent
                 ? `Enviamos un código a ${email || "tu correo"}.`
-                : "Si ya pediste un código, pégalo aquí."}
+                : "Si ya pediste un código por correo, pégalo aquí."}
             </p>
           </div>
 
@@ -410,6 +411,8 @@ export default function LoginPage() {
                       placeholder="········"
                       value={token}
                       onChange={(e) => {
+                        // Un código con letras no es el del correo: es el de un apartamento, que va después de entrar.
+                        setEsDeApartamento(/[a-z]/i.test(e.target.value));
                         const clean = e.target.value.replace(/\D/g, "").slice(0, 10);
                         setToken(clean);
                       }}
@@ -418,6 +421,16 @@ export default function LoginPage() {
                       disabled={loading}
                     />
                   </div>
+
+                  {esDeApartamento ? (
+                    <p role="status" className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5 text-[13px] leading-relaxed text-amber-900">
+                      Ese parece el código de un apartamento, el que tiene letras y guiones. Aquí va otro: el código de números que llega a tu correo. Primero entra con tu correo; el código del apartamento se canjea después, ya dentro.
+                    </p>
+                  ) : (
+                    <p className="text-[12px] leading-relaxed text-mute">
+                      Es el código de números que llega a tu correo. Si la administración te dio un código de apartamento, con letras y guiones, se canjea después de entrar.
+                    </p>
+                  )}
 
                   {error && <p className="text-[13px] text-destructive">{error}</p>}
 
