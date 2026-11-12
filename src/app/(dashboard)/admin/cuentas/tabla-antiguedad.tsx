@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { usd } from "@/lib/format";
+import { coincide } from "@/lib/buscar";
 import { tabla, Vacio } from "@/components/contabilidad/ui";
 import { EtiquetaVerificacion } from "@/components/contabilidad/aviso-verificacion";
 
@@ -40,12 +41,11 @@ export function TablaAntiguedad({ filas, fecha }: { filas: Fila[]; fecha: string
 
   const torres = useMemo(() => [...new Set(filas.map((f) => f.torre).filter(Boolean))], [filas]);
   const visibles = useMemo(() => {
-    const q = busca.trim().toLowerCase();
     const v = filas.filter(
       (f) =>
         (!torre || f.torre === torre) &&
         (!soloDeuda || f.total > 0) &&
-        (!q || f.etiqueta.toLowerCase().includes(q) || f.propietario.toLowerCase().includes(q)),
+        coincide(`${f.etiqueta} ${f.propietario}`, busca),
     );
     return orden === "deuda" ? [...v].sort((a, b) => b.vencido - a.vencido || b.total - a.total) : v;
   }, [filas, torre, soloDeuda, busca, orden]);

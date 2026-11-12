@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState, type ReactNode } from "react";
+import { coincide } from "@/lib/buscar";
 
 export interface FilaUnidad {
   id: string;
@@ -26,10 +27,7 @@ export function UnitsFilter({ filas }: { filas: FilaUnidad[] }) {
   );
 
   const visibles = useMemo(() => {
-    const t = q.trim().toLowerCase();
-    return filas.filter(
-      (f) => (torre === TODAS || f.torre === torre) && (!t || f.busqueda.includes(t)),
-    );
+    return filas.filter((f) => (torre === TODAS || f.torre === torre) && coincide(f.busqueda, q));
   }, [filas, torre, q]);
 
   return (
@@ -61,7 +59,7 @@ export function UnitsFilter({ filas }: { filas: FilaUnidad[] }) {
           id="buscar-unidad"
           value={q}
           onChange={(e) => setQ(e.target.value)}
-          placeholder="Buscar apto, propietario o inquilino…"
+          placeholder="Buscar apto, propietario o inquilino (pb8, 1 1, rocha)…"
           className="h-9 min-w-[12rem] flex-1 rounded-lg border border-border bg-background px-3 text-sm focus-visible:outline-2 focus-visible:outline-cyan"
         />
       </div>
