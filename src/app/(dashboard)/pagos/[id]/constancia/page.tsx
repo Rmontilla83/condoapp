@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { isAdminRole } from "@/lib/permissions";
 import { PAYMENT_METHOD_LABELS } from "@/lib/labels";
 import { PrintButton } from "./print-button";
+import { Volver } from "@/components/volver";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { ContactoDeLaUnidad, type PersonaDeLaUnidad } from "@/app/(dashboard)/admin/cuentas/[unitId]/contacto";
 import type { Organization } from "@/types/database";
@@ -192,13 +193,9 @@ export default async function ConstanciaPage({
     <div className="mx-auto max-w-2xl">
       <div className="print:hidden mb-6 flex flex-wrap items-center justify-between gap-3">
         {esAdminDelCondo ? (
-          <a href={`/admin/cuentas/${invoice.unit_id}`} className="font-meta text-cyan-ink hover:text-marine-deep transition-colors">
-            ← FICHA DE LA UNIDAD
-          </a>
+          <Volver href={`/admin/cuentas/${invoice.unit_id}`} texto="Volver a la ficha" historial />
         ) : (
-          <a href="/pagos" className="font-meta text-cyan-ink hover:text-marine-deep transition-colors">
-            ← PAGOS
-          </a>
+          <Volver href="/pagos" texto="Volver a Pagos" historial />
         )}
         <PrintButton />
       </div>

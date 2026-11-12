@@ -165,7 +165,7 @@ export default async function AdminUnitsPage() {
             torre: unit.block,
             busqueda: `${unit.unit_number} ${unit.block ?? ""} ${propietario} ${inquilino}`.toLowerCase(),
             fila: (
-              <div className="flex flex-wrap items-center gap-x-4 gap-y-2 px-4 py-3">
+              <div className="relative flex flex-wrap items-center gap-x-4 gap-y-2 px-4 py-3 transition-colors hover:bg-frost/60">
                 <div className="w-full sm:w-44 shrink-0">
                   <p className="text-[15px] font-semibold text-marine-deep">
                     {unit.type === "penthouse" ? "" : `${tipo} `}
@@ -204,8 +204,9 @@ export default async function AdminUnitsPage() {
                     {MODE_LABEL[mode]}
                   </span>
                   <Link
-                    href={`/admin/cuentas/${unit.id}`}
-                    className="inline-flex h-8 items-center rounded-lg border border-border px-3 text-[13px] font-medium text-marine-deep hover:bg-frost"
+                    href={`/admin/units/${unit.id}`}
+                    // El enlace cubre toda la tarjeta: se entra a la ficha tocando en cualquier parte.
+                    className="inline-flex h-8 items-center rounded-lg border border-border bg-card px-3 text-[13px] font-medium text-marine-deep after:absolute after:inset-0 after:content-[''] focus-visible:outline-2 focus-visible:outline-cyan"
                   >
                     Ver ficha
                   </Link>

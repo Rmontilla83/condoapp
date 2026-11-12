@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Volver } from "@/components/volver";
 import { BotonImprimir } from "./imprimir";
 
 export interface Membrete {
@@ -47,9 +48,7 @@ export function Documento({
     <div className={`mx-auto ${ancho}`}>
       <div className="mb-5 flex flex-wrap items-center justify-between gap-3 print:hidden">
         {volver ? (
-          <Link href={volver.href} className="font-meta text-cyan-ink hover:text-marine-deep">
-            ← {volver.texto.toUpperCase()}
-          </Link>
+          <Volver href={volver.href} texto={`Volver a ${volver.texto}`} historial />
         ) : (
           <span />
         )}

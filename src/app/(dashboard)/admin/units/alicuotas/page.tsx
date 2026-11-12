@@ -1,4 +1,5 @@
 import { ESTADOS_ABIERTOS, estaAbierta, pendienteDe } from "@/lib/cuotas";
+import { Volver } from "@/components/volver";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { getCurrentProfile, getEffectiveRole } from "@/lib/queries";
@@ -62,12 +63,7 @@ export default async function AlicuotasPage() {
   return (
     <div className="space-y-8">
       <div>
-        <Link
-          href="/admin/units"
-          className="font-meta text-cyan-ink hover:text-marine-deep transition-colors"
-        >
-          ← UNIDADES
-        </Link>
+        <Volver href="/admin/units" texto="Volver a Unidades" />
         <h1 className="mt-4 font-display text-[clamp(1.75rem,3.5vw,2.5rem)] leading-[1.1] tracking-[-0.03em] text-marine-deep">
           Alícuotas del <em className="font-editorial text-cyan">condominio</em>
         </h1>

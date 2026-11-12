@@ -48,7 +48,10 @@ async function tasaEn(db: ReturnType<typeof createAdminClient>, orgId: string, f
 
 function refrescar(unitId?: string) {
   revalidatePath("/admin/cuentas");
-  if (unitId) revalidatePath(`/admin/cuentas/${unitId}`);
+  if (unitId) {
+    revalidatePath(`/admin/cuentas/${unitId}`);
+    revalidatePath(`/admin/units/${unitId}`);
+  }
   revalidatePath("/admin");
   revalidatePath("/pagos");
   revalidatePath("/dashboard");

@@ -1,4 +1,5 @@
 import { redirect, notFound } from "next/navigation";
+import { Volver } from "@/components/volver";
 import Link from "next/link";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getCurrentProfile, getEffectiveRole } from "@/lib/queries";
@@ -162,9 +163,7 @@ export default async function DecisionDetailPage({ params }: { params: Promise<{
   return (
     <div className="space-y-6">
       <div>
-        <Link href="/decisiones" className="font-meta text-cyan hover:text-marine-deep transition-colors">
-          ← VOLVER A DECISIONES
-        </Link>
+        <Volver href="/decisiones" texto="Volver a Decisiones" />
         <div className="mt-3 flex items-center gap-2 flex-wrap">
           <Badge variant="outline" className="border-marine-deep/30 text-marine-deep bg-marine-deep/5">
             ASAMBLEA FORMAL

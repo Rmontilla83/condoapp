@@ -149,7 +149,7 @@ export function UnitManagerDialog({
 
   return (
     <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) setAviso(null); }}>
-      <DialogTrigger render={<Button variant="outline" size="sm" className="shrink-0" />}>
+      <DialogTrigger render={<Button variant="outline" size="sm" className="relative z-10 shrink-0" />}>
         Gestionar
       </DialogTrigger>
       <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
