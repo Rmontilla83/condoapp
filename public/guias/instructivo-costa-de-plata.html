@@ -1,0 +1,363 @@
+<!doctype html>
+<html lang="es-VE">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<meta name="description" content="Guía paso a paso, con imágenes y audio, para usar la aplicación de Costa de Plata en el teléfono y en la computadora.">
+<title>Cómo usar la aplicación de Costa de Plata</title>
+<link rel="canonical" href="https://atryum.net/guias/instructivo-costa-de-plata">
+<link rel="icon" href="/icon-192.png">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="Costa de Plata">
+<meta property="og:locale" content="es_ES">
+<meta property="og:title" content="Cómo usar la aplicación de Costa de Plata">
+<meta property="og:description" content="Guía paso a paso, con imágenes y audio, para el teléfono y la computadora.">
+<meta property="og:url" content="https://atryum.net/guias/instructivo-costa-de-plata">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;600;700;800&display=swap">
+<style>
+:root{color-scheme:light;--marino:#0F2E5A;--marino2:#1E4D8F;--plata:#8795A8;--niebla:#F3F5F8;--linea:#D6DDE7;--tinta:#13233C;--suave:#4A5A72;--blanco:#fff;--brasa:#C2551A;--brasa-f:#FDF1E8}
+*{box-sizing:border-box}
+html{font-size:112.5%;scroll-behavior:smooth;-webkit-text-size-adjust:100%;scroll-padding-top:5.2rem}
+html.grande{font-size:131%}
+body{margin:0;background:var(--niebla);color:var(--tinta);font:400 1rem/1.55 Archivo,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+img{max-width:100%;height:auto;display:block}
+a{color:var(--marino2)}
+button{font:inherit;color:inherit;cursor:pointer}
+:focus-visible{outline:3px solid #2FB4E6;outline-offset:3px}
+.ancho{max-width:60rem;margin:0 auto;padding:0 1rem}
+
+.barra{position:sticky;top:0;z-index:20;background:var(--marino);color:#fff}
+.barra .ancho{display:flex;align-items:center;gap:.6rem;min-height:3.9rem;padding-top:.45rem;padding-bottom:.45rem}
+.modo{display:flex;flex:1;background:rgba(255,255,255,.12);border-radius:.8rem;padding:.2rem;max-width:26rem}
+.modo button{flex:1;display:flex;align-items:center;justify-content:center;gap:.45rem;min-height:2.9rem;border:0;border-radius:.62rem;background:transparent;color:#fff;font-weight:600;font-size:.94rem;padding:0 .5rem}
+.modo button svg{width:1.3rem;height:1.3rem;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.modo button[aria-pressed=true]{background:#fff;color:var(--marino)}
+.letra{margin-left:auto;min-height:2.9rem;border:1.5px solid rgba(255,255,255,.55);border-radius:.8rem;background:transparent;color:#fff;font-weight:600;font-size:.94rem;padding:0 .8rem;white-space:nowrap}
+.letra[aria-pressed=true]{background:#fff;color:var(--marino)}
+.modo{min-width:0}
+@media(max-width:34rem){.modo button svg{display:none}.modo button,.letra{font-size:.84rem;padding:0 .45rem}.barra .ancho{gap:.4rem;padding-left:.6rem;padding-right:.6rem}}
+
+.portada{background:var(--blanco);border-bottom:1px solid var(--linea);padding:2rem 0 2.2rem}
+.portada img.logo{width:13rem;margin-left:-.3rem}
+h1{font-size:clamp(1.85rem,5.4vw,2.9rem);line-height:1.08;letter-spacing:-.02em;font-weight:800;color:var(--marino);margin:1.4rem 0 .7rem;max-width:17ch;text-wrap:balance}
+.portada p.entrada{font-size:1.1rem;color:var(--suave);max-width:36rem;margin:0 0 1.4rem}
+
+.oir{position:relative;display:flex;align-items:center;gap:.9rem;width:100%;max-width:24rem;min-height:4rem;padding:.55rem 1.1rem .55rem .6rem;border:0;border-radius:1rem;background:var(--brasa);color:#fff;text-align:left;overflow:hidden}
+.oir svg{width:2.9rem;height:2.9rem;flex:none;border-radius:50%;background:#fff;fill:var(--brasa);padding:.62rem}
+.oir .i-pausa{display:none}
+.oir.suena .i-play{display:none}.oir.suena .i-pausa{display:block}
+.oir-t{display:flex;flex-direction:column;line-height:1.2}
+.oir-a{font-weight:700;font-size:1.12rem}
+.oir-b{font-size:.86rem;opacity:.92}
+.oir-barra{position:absolute;left:0;right:0;bottom:0;height:.32rem;background:rgba(255,255,255,.28)}
+.oir-barra i{display:block;height:100%;width:0;background:#fff}
+
+.indice{padding:2rem 0 .6rem}
+.indice h2{font-size:1.35rem;font-weight:800;color:var(--marino);margin:0 0 .9rem}
+.indice ol{list-style:none;margin:0;padding:0;display:grid;gap:.6rem}
+@media(min-width:44rem){.indice ol{grid-template-columns:1fr 1fr}}
+.indice a{display:flex;align-items:center;gap:.9rem;min-height:3.7rem;padding:.6rem 1rem;background:var(--blanco);border:1.5px solid var(--linea);border-radius:1rem;text-decoration:none;color:var(--marino);font-weight:600;line-height:1.25}
+.indice a:hover{border-color:var(--marino2)}
+.indice a span{flex:none;width:2.1rem;height:2.1rem;border-radius:50%;background:var(--marino);color:#fff;display:grid;place-items:center;font-weight:700;font-size:.95rem}
+
+.paso{background:var(--blanco);border:1px solid var(--linea);border-radius:1.4rem;padding:1.4rem 1.15rem 1.2rem;margin:1.4rem 0}
+@media(min-width:44rem){.paso{padding:2.1rem 2.2rem 1.6rem}}
+.paso-cab{display:flex;gap:1rem;align-items:flex-start;margin-bottom:1.1rem}
+.num{flex:none;width:3.3rem;height:3.3rem;border-radius:50%;background:var(--marino);color:#fff;display:grid;place-items:center;font-weight:800;font-size:1.55rem}
+.paso h2{font-size:clamp(1.4rem,4.2vw,1.85rem);line-height:1.15;letter-spacing:-.01em;font-weight:800;color:var(--marino);margin:.1rem 0 .35rem;text-wrap:balance}
+.resumen{margin:0;color:var(--suave)}
+.hacer{margin:1.3rem 0 .4rem;padding:0;list-style:none;counter-reset:h;max-width:40rem}
+.hacer li{counter-increment:h;position:relative;padding:.7rem 0 .7rem 2.7rem;border-top:1px solid var(--linea);font-size:1.06rem}
+.hacer li:first-child{border-top:0}
+.hacer li::before{content:counter(h);position:absolute;left:0;top:.68rem;width:1.85rem;height:1.85rem;border-radius:50%;border:2px solid var(--marino);color:var(--marino);display:grid;place-items:center;font-weight:700;font-size:.92rem}
+.hacer b,.nota b{color:var(--marino);font-weight:700}
+b.dir{display:inline-block;background:var(--niebla);border:1.5px solid var(--linea);border-radius:.5rem;padding:.05rem .5rem;font-weight:700;white-space:nowrap}
+.nota,.en-pc,.aviso-pc{max-width:40rem;margin:.9rem 0 0;padding:.75rem 1rem;border-radius:.8rem;font-size:.98rem}
+.nota{background:var(--brasa-f);color:#6B2F0C}
+.en-pc,.aviso-pc{background:#E9F1FB;color:var(--marino)}
+
+.caps{display:flex;flex-wrap:wrap;gap:1.2rem 1.4rem;margin-top:1.5rem;justify-content:flex-start}
+.cap{margin:0}
+.cap figcaption{margin-top:.6rem;font-size:.92rem;color:var(--suave);max-width:17rem}
+.ver{display:block;padding:0;border:0;background:none;cursor:zoom-in}
+.cap-tel{flex:0 1 15.2rem}
+.cap-tel .ver{border:.5rem solid var(--tinta);border-radius:2.1rem;overflow:hidden;background:var(--tinta)}
+.cap-tel img{border-radius:1.5rem;width:100%}
+@media(max-width:34rem){.cap-tel{flex:0 1 100%;max-width:19rem}}
+.caps-pc{display:grid;gap:1.4rem}
+.cap-pc .ver{width:100%;border:1px solid var(--plata);border-top:1.5rem solid #C9D3DF;border-radius:.7rem;overflow:hidden;position:relative}
+.cap-pc .ver::before{content:"";position:absolute;top:-1.02rem;left:.7rem;width:.55rem;height:.55rem;border-radius:50%;background:#8795A8;box-shadow:.95rem 0 #8795A8,1.9rem 0 #8795A8}
+.cap-pc figcaption{max-width:none}
+.arriba{display:inline-block;margin-top:1.4rem;font-size:.95rem;font-weight:600;padding:.4rem 0}
+
+body[data-modo=tel] .solo-pc{display:none}
+body[data-modo=pc] .solo-tel:not(.siempre){display:none}
+
+.ayuda{background:var(--marino);color:#fff;border-radius:1.4rem;padding:1.6rem 1.15rem;margin:1.4rem 0 2rem}
+@media(min-width:44rem){.ayuda{padding:2.2rem}}
+.ayuda h2{font-size:clamp(1.4rem,4.2vw,1.85rem);font-weight:800;margin:0 0 .5rem;line-height:1.15}
+.ayuda p{margin:0 0 1.2rem;color:#D5DEEC;max-width:36rem}
+.ayuda .oir{background:#fff;color:var(--marino)}
+.ayuda .oir svg{background:var(--marino);fill:#fff}
+.ayuda .oir-barra{background:rgba(15,46,90,.15)}.ayuda .oir-barra i{background:var(--brasa)}
+.contacto{display:grid;gap:.7rem;margin:1.4rem 0 0;padding:0;list-style:none}
+@media(min-width:44rem){.contacto{grid-template-columns:repeat(3,1fr)}}
+.contacto li{background:rgba(255,255,255,.1);border-radius:1rem;padding:.9rem 1rem}
+.contacto small{display:block;font-size:.85rem;color:#B9C7DC;margin-bottom:.15rem}
+.contacto a,.contacto span{color:#fff;font-weight:700;font-size:1.08rem;text-decoration:none;overflow-wrap:anywhere}
+.contacto a{text-decoration:underline;text-underline-offset:.2em}
+footer{padding:0 0 2.5rem;color:var(--suave);font-size:.9rem}
+
+dialog.lupa{border:0;padding:0;background:transparent;max-width:100vw;max-height:100vh;width:100vw;height:100dvh}
+dialog.lupa::backdrop{background:rgba(9,22,44,.92)}
+.lupa-in{display:flex;flex-direction:column;height:100%;padding:.8rem}
+.lupa-in button{align-self:flex-end;min-height:3rem;padding:0 1.2rem;border:0;border-radius:.8rem;background:#fff;color:var(--marino);font-weight:700;margin-bottom:.7rem}
+.lupa-in div{flex:1;min-height:0;overflow:auto;display:grid;place-items:center}
+.lupa-in img{max-height:none;max-width:min(100%,75rem);border-radius:.6rem}
+.lupa-in img.alto{max-width:min(100%,27rem)}
+
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+@media print{.barra,.oir,.arriba,.letra{display:none!important}body{background:#fff}.paso{break-inside:avoid;border-color:#999}body .solo-pc,body .solo-tel{display:revert!important}.caps-pc{display:none!important}.ayuda{background:#fff;color:#000;border:1px solid #999}.ayuda p,.contacto small{color:#333}.contacto a,.contacto span{color:#000}.contacto li{background:none;border:1px solid #bbb}}
+</style>
+</head>
+<body data-modo="tel">
+<div class="barra"><div class="ancho">
+  <div class="modo" role="group" aria-label="Ver las imágenes del teléfono o de la computadora">
+    <button type="button" data-m="tel" aria-pressed="true"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="7" y="2.5" width="10" height="19" rx="2.2"/><path d="M11 18.5h2"/></svg>Teléfono</button>
+    <button type="button" data-m="pc" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="12" rx="1.8"/><path d="M8.5 20h7M12 16v4"/></svg>Computadora</button>
+  </div>
+  <button type="button" class="letra" aria-pressed="false">Letra grande</button>
+</div></div>
+
+<header class="portada"><div class="ancho">
+  <img class="logo" src="instructivo/img/logo.png" alt="Costa de Plata, conjunto residencial">
+  <h1>Cómo usar la aplicación de Costa de Plata</h1>
+  <p class="entrada">Una guía paso a paso, con imágenes de la aplicación. Ve a tu ritmo: cada paso tiene un botón para escucharlo las veces que quieras.</p>
+  <button type="button" class="oir" data-audio="instructivo/audio/00-bienvenida.mp3" aria-label="Escuchar la bienvenida"><svg viewBox="0 0 24 24" aria-hidden="true"><path class="i-play" d="M8 5.5v13l11-6.5z"/><path class="i-pausa" d="M7 5h4v14H7zM13 5h4v14h-4z"/></svg><span class="oir-t"><span class="oir-a">Escuchar</span><span class="oir-b">18 segundos</span></span><span class="oir-barra" aria-hidden="true"><i></i></span></button>
+</div></header>
+
+<main class="ancho">
+  <nav class="indice" id="indice" aria-labelledby="t-indice">
+    <h2 id="t-indice">¿Qué quieres hacer?</h2>
+    <ol><li><a href="#entrar"><span aria-hidden="true">1</span>Entrar a la aplicación</a></li><li><a href="#codigo"><span aria-hidden="true">2</span>La primera vez: el código de tu apartamento</a></li><li><a href="#instalar"><span aria-hidden="true">3</span>Instalar la aplicación en tu teléfono</a></li><li><a href="#inicio"><span aria-hidden="true">4</span>La pantalla de inicio</a></li><li><a href="#pagar"><span aria-hidden="true">5</span>Ver cuánto debes y avisar que pagaste</a></li><li><a href="#avisos"><span aria-hidden="true">6</span>Leer los avisos de la administración</a></li><li><a href="#visitas"><span aria-hidden="true">7</span>Invitar una visita</a></li><li><a href="#reservar"><span aria-hidden="true">8</span>Reservar la parrillera o el caney</a></li><li><a href="#averia"><span aria-hidden="true">9</span>Reportar una avería de las áreas comunes</a></li><li><a href="#atri"><span aria-hidden="true">10</span>Preguntarle a Atri, el conserje</a></li></ol>
+  </nav>
+  
+<section class="paso" id="entrar" aria-labelledby="t-entrar">
+  <div class="paso-cab">
+    <span class="num" aria-hidden="true">1</span>
+    <div>
+      <h2 id="t-entrar">Entrar a la aplicación</h2>
+      <p class="resumen">Solo necesitas tu correo electrónico. No hay contraseña que recordar.</p>
+    </div>
+  </div>
+  <button type="button" class="oir" data-audio="instructivo/audio/01-entrar.mp3" aria-label="Escuchar el paso 1"><svg viewBox="0 0 24 24" aria-hidden="true"><path class="i-play" d="M8 5.5v13l11-6.5z"/><path class="i-pausa" d="M7 5h4v14H7zM13 5h4v14h-4z"/></svg><span class="oir-t"><span class="oir-a">Escuchar</span><span class="oir-b">21 segundos</span></span><span class="oir-barra" aria-hidden="true"><i></i></span></button>
+  
+  <ol class="hacer"><li>Abre el navegador (Chrome o Safari) y escribe esta dirección: <b class="dir">portal.atryum.net</b></li><li>Escribe tu correo electrónico y toca <b>Enviar código</b>.</li><li>Revisa tu correo: te llega un mensaje con un código de números.</li><li>Escribe ese código en la pantalla y toca <b>Verificar y entrar</b>.</li></ol>
+  
+  <p class="nota">Si el correo no aparece, búscalo en la carpeta de correo no deseado.</p>
+  <div class="caps solo-tel"><figure class="cap cap-tel"><button type="button" class="ver" aria-label="Ampliar la imagen: Escribe tu correo y toca Enviar código."><img src="instructivo/img/tel-entrar-1-correo.webp" alt="Escribe tu correo y toca «Enviar código»." loading="lazy" width="390" height="780"></button><figcaption>Escribe tu correo y toca «Enviar código».</figcaption></figure><figure class="cap cap-tel"><button type="button" class="ver" aria-label="Ampliar la imagen: Escribe el código que llegó a tu correo."><img src="instructivo/img/tel-entrar-2-codigo.webp" alt="Escribe el código que llegó a tu correo." loading="lazy" width="390" height="780"></button><figcaption>Escribe el código que llegó a tu correo.</figcaption></figure></div>
+  <div class="caps caps-pc solo-pc"><figure class="cap cap-pc"><button type="button" class="ver" aria-label="Ampliar la imagen: Escribe tu correo y haz clic en Enviar código."><img src="instructivo/img/pc-entrar-1-correo.webp" alt="Escribe tu correo y haz clic en «Enviar código»." loading="lazy" width="1200" height="750"></button><figcaption>Escribe tu correo y haz clic en «Enviar código».</figcaption></figure><figure class="cap cap-pc"><button type="button" class="ver" aria-label="Ampliar la imagen: Escribe el código que llegó a tu correo."><img src="instructivo/img/pc-entrar-2-codigo.webp" alt="Escribe el código que llegó a tu correo." loading="lazy" width="1200" height="750"></button><figcaption>Escribe el código que llegó a tu correo.</figcaption></figure></div>
+  <a class="arriba" href="#indice">Volver a la lista de pasos</a>
+</section>
+<section class="paso" id="codigo" aria-labelledby="t-codigo">
+  <div class="paso-cab">
+    <span class="num" aria-hidden="true">2</span>
+    <div>
+      <h2 id="t-codigo">La primera vez: el código de tu apartamento</h2>
+      <p class="resumen">Se hace una sola vez. Así la aplicación sabe cuál es tu apartamento.</p>
+    </div>
+  </div>
+  <button type="button" class="oir" data-audio="instructivo/audio/02-codigo.mp3" aria-label="Escuchar el paso 2"><svg viewBox="0 0 24 24" aria-hidden="true"><path class="i-play" d="M8 5.5v13l11-6.5z"/><path class="i-pausa" d="M7 5h4v14H7zM13 5h4v14h-4z"/></svg><span class="oir-t"><span class="oir-a">Escuchar</span><span class="oir-b">18 segundos</span></span><span class="oir-barra" aria-hidden="true"><i></i></span></button>
+  
+  <ol class="hacer"><li>La administración te entrega un código con letras, números y guiones.</li><li>Ya dentro de la aplicación, abre esta dirección: <b class="dir">portal.atryum.net/join</b></li><li>Escribe el código tal como te lo dieron y toca <b>Canjear y acceder</b>.</li></ol>
+  
+  <p class="nota">Si no tienes tu código, pídeselo a la administración. El código de este ejemplo no es real.</p>
+  <div class="caps solo-tel"><figure class="cap cap-tel"><button type="button" class="ver" aria-label="Ampliar la imagen: Escribe el código y toca Canjear y acceder."><img src="instructivo/img/tel-codigo-apartamento.webp" alt="Escribe el código y toca «Canjear y acceder»." loading="lazy" width="390" height="780"></button><figcaption>Escribe el código y toca «Canjear y acceder».</figcaption></figure></div>
+  <div class="caps caps-pc solo-pc"><figure class="cap cap-pc"><button type="button" class="ver" aria-label="Ampliar la imagen: Escribe el código y haz clic en Canjear y acceder."><img src="instructivo/img/pc-codigo-apartamento.webp" alt="Escribe el código y haz clic en «Canjear y acceder»." loading="lazy" width="1200" height="750"></button><figcaption>Escribe el código y haz clic en «Canjear y acceder».</figcaption></figure></div>
+  <a class="arriba" href="#indice">Volver a la lista de pasos</a>
+</section>
+<section class="paso" id="instalar" aria-labelledby="t-instalar">
+  <div class="paso-cab">
+    <span class="num" aria-hidden="true">3</span>
+    <div>
+      <h2 id="t-instalar">Instalar la aplicación en tu teléfono</h2>
+      <p class="resumen">Queda un ícono en la pantalla de tu teléfono y entras con un solo toque. Es gratis.</p>
+    </div>
+  </div>
+  <button type="button" class="oir" data-audio="instructivo/audio/03-instalar.mp3" aria-label="Escuchar el paso 3"><svg viewBox="0 0 24 24" aria-hidden="true"><path class="i-play" d="M8 5.5v13l11-6.5z"/><path class="i-pausa" d="M7 5h4v14H7zM13 5h4v14h-4z"/></svg><span class="oir-t"><span class="oir-a">Escuchar</span><span class="oir-b">20 segundos</span></span><span class="oir-barra" aria-hidden="true"><i></i></span></button>
+  <p class="aviso-pc solo-pc">Este paso es solo para el teléfono. En la computadora no hace falta instalar nada.</p>
+  <ol class="hacer"><li>Al entrar desde el teléfono aparece la invitación <b>Instala Atryum en tu teléfono</b>.</li><li>Toca <b>Instalar ahora</b>.</li><li>Sigue los pasos que te muestra la pantalla. Son distintos en Android y en iPhone.</li></ol>
+  
+  <p class="nota">Si cerraste la invitación, toca el botón «Instalar» que queda arriba, debajo del nombre del condominio.</p>
+  <div class="caps solo-tel siempre"><figure class="cap cap-tel"><button type="button" class="ver" aria-label="Ampliar la imagen: La invitación al entrar."><img src="instructivo/img/tel-instalar-1-invitacion.webp" alt="La invitación al entrar." loading="lazy" width="390" height="780"></button><figcaption>La invitación al entrar.</figcaption></figure><figure class="cap cap-tel"><button type="button" class="ver" aria-label="Ampliar la imagen: Los pasos en Android."><img src="instructivo/img/tel-instalar-2-pasos-android.webp" alt="Los pasos en Android." loading="lazy" width="390" height="780"></button><figcaption>Los pasos en Android.</figcaption></figure><figure class="cap cap-tel"><button type="button" class="ver" aria-label="Ampliar la imagen: Los pasos en iPhone."><img src="instructivo/img/tel-instalar-2-pasos-iphone.webp" alt="Los pasos en iPhone." loading="lazy" width="390" height="780"></button><figcaption>Los pasos en iPhone.</figcaption></figure></div>
+  
+  <a class="arriba" href="#indice">Volver a la lista de pasos</a>
+</section>
+<section class="paso" id="inicio" aria-labelledby="t-inicio">
+  <div class="paso-cab">
+    <span class="num" aria-hidden="true">4</span>
+    <div>
+      <h2 id="t-inicio">La pantalla de inicio</h2>
+      <p class="resumen">Desde aquí llegas a todo. No hace falta aprenderse nada más.</p>
+    </div>
+  </div>
+  <button type="button" class="oir" data-audio="instructivo/audio/04-inicio.mp3" aria-label="Escuchar el paso 4"><svg viewBox="0 0 24 24" aria-hidden="true"><path class="i-play" d="M8 5.5v13l11-6.5z"/><path class="i-pausa" d="M7 5h4v14H7zM13 5h4v14h-4z"/></svg><span class="oir-t"><span class="oir-a">Escuchar</span><span class="oir-b">20 segundos</span></span><span class="oir-barra" aria-hidden="true"><i></i></span></button>
+  
+  <ol class="hacer"><li>Arriba, <b>Atri</b>, el conserje, te saluda y te dice lo más importante del día.</li><li>Debajo hay cinco botones grandes: pagar, reportar una avería, invitar una visita, reservar un área y ver los avisos.</li><li>El botón <b>Menú</b>, arriba, muestra el resto de las opciones.</li></ol>
+  <p class="en-pc solo-pc">En la computadora, las mismas opciones están en el menú azul de la izquierda.</p>
+  
+  <div class="caps solo-tel"><figure class="cap cap-tel"><button type="button" class="ver" aria-label="Ampliar la imagen: El inicio en el teléfono."><img src="instructivo/img/tel-inicio.webp" alt="El inicio en el teléfono." loading="lazy" width="390" height="780"></button><figcaption>El inicio en el teléfono.</figcaption></figure><figure class="cap cap-tel"><button type="button" class="ver" aria-label="Ampliar la imagen: Lo que aparece al tocar Menú."><img src="instructivo/img/tel-menu.webp" alt="Lo que aparece al tocar «Menú»." loading="lazy" width="390" height="780"></button><figcaption>Lo que aparece al tocar «Menú».</figcaption></figure></div>
+  <div class="caps caps-pc solo-pc"><figure class="cap cap-pc"><button type="button" class="ver" aria-label="Ampliar la imagen: El inicio en la computadora, con el menú a la izquierda."><img src="instructivo/img/pc-inicio.webp" alt="El inicio en la computadora, con el menú a la izquierda." loading="lazy" width="1200" height="750"></button><figcaption>El inicio en la computadora, con el menú a la izquierda.</figcaption></figure></div>
+  <a class="arriba" href="#indice">Volver a la lista de pasos</a>
+</section>
+<section class="paso" id="pagar" aria-labelledby="t-pagar">
+  <div class="paso-cab">
+    <span class="num" aria-hidden="true">5</span>
+    <div>
+      <h2 id="t-pagar">Ver cuánto debes y avisar que pagaste</h2>
+      <p class="resumen">Pagas por tu banco, como siempre, y aquí lo registras para que la administración lo apruebe.</p>
+    </div>
+  </div>
+  <button type="button" class="oir" data-audio="instructivo/audio/05-pagar.mp3" aria-label="Escuchar el paso 5"><svg viewBox="0 0 24 24" aria-hidden="true"><path class="i-play" d="M8 5.5v13l11-6.5z"/><path class="i-pausa" d="M7 5h4v14H7zM13 5h4v14h-4z"/></svg><span class="oir-t"><span class="oir-a">Escuchar</span><span class="oir-b">23 segundos</span></span><span class="oir-barra" aria-hidden="true"><i></i></span></button>
+  
+  <ol class="hacer"><li>Toca <b>Pagar</b>. Verás cuánto debes, en dólares y en bolívares a la tasa del día.</li><li>Haz tu pago por tu banco.</li><li>Vuelve a la aplicación y toca <b>Registrar pago</b>.</li><li>Elige el método, escribe el número de referencia y adjunta la foto del comprobante.</li><li>Toca <b>Registrar pago</b>. Cuando la administración lo apruebe, podrás descargar tu constancia.</li></ol>
+  <p class="en-pc solo-pc">En la computadora: menú de la izquierda, opción «Pagos».</p>
+  
+  <div class="caps solo-tel"><figure class="cap cap-tel"><button type="button" class="ver" aria-label="Ampliar la imagen: Tu estado de cuenta."><img src="instructivo/img/tel-pagos-1.webp" alt="Tu estado de cuenta." loading="lazy" width="390" height="780"></button><figcaption>Tu estado de cuenta.</figcaption></figure><figure class="cap cap-tel"><button type="button" class="ver" aria-label="Ampliar la imagen: El formulario para registrar tu pago."><img src="instructivo/img/tel-pagos-2-registrar.webp" alt="El formulario para registrar tu pago." loading="lazy" width="390" height="780"></button><figcaption>El formulario para registrar tu pago.</figcaption></figure></div>
+  <div class="caps caps-pc solo-pc"><figure class="cap cap-pc"><button type="button" class="ver" aria-label="Ampliar la imagen: Tu estado de cuenta."><img src="instructivo/img/pc-pagos-1.webp" alt="Tu estado de cuenta." loading="lazy" width="1200" height="750"></button><figcaption>Tu estado de cuenta.</figcaption></figure><figure class="cap cap-pc"><button type="button" class="ver" aria-label="Ampliar la imagen: El formulario para registrar tu pago."><img src="instructivo/img/pc-pagos-2-registrar.webp" alt="El formulario para registrar tu pago." loading="lazy" width="1200" height="750"></button><figcaption>El formulario para registrar tu pago.</figcaption></figure></div>
+  <a class="arriba" href="#indice">Volver a la lista de pasos</a>
+</section>
+<section class="paso" id="avisos" aria-labelledby="t-avisos">
+  <div class="paso-cab">
+    <span class="num" aria-hidden="true">6</span>
+    <div>
+      <h2 id="t-avisos">Leer los avisos de la administración</h2>
+      <p class="resumen">Cortes de agua, mantenimientos, reuniones: todo llega aquí.</p>
+    </div>
+  </div>
+  <button type="button" class="oir" data-audio="instructivo/audio/06-avisos.mp3" aria-label="Escuchar el paso 6"><svg viewBox="0 0 24 24" aria-hidden="true"><path class="i-play" d="M8 5.5v13l11-6.5z"/><path class="i-pausa" d="M7 5h4v14H7zM13 5h4v14h-4z"/></svg><span class="oir-t"><span class="oir-a">Escuchar</span><span class="oir-b">11 segundos</span></span><span class="oir-barra" aria-hidden="true"><i></i></span></button>
+  
+  <ol class="hacer"><li>Toca <b>Ver los avisos</b>.</li><li>El número naranja te indica cuántos avisos nuevos tienes sin leer.</li></ol>
+  <p class="en-pc solo-pc">En la computadora: menú de la izquierda, opción «Comunicados».</p>
+  
+  <div class="caps solo-tel"><figure class="cap cap-tel"><button type="button" class="ver" aria-label="Ampliar la imagen: Los avisos, del más nuevo al más viejo."><img src="instructivo/img/tel-avisos.webp" alt="Los avisos, del más nuevo al más viejo." loading="lazy" width="390" height="780"></button><figcaption>Los avisos, del más nuevo al más viejo.</figcaption></figure></div>
+  <div class="caps caps-pc solo-pc"><figure class="cap cap-pc"><button type="button" class="ver" aria-label="Ampliar la imagen: Los avisos, del más nuevo al más viejo."><img src="instructivo/img/pc-avisos.webp" alt="Los avisos, del más nuevo al más viejo." loading="lazy" width="1200" height="750"></button><figcaption>Los avisos, del más nuevo al más viejo.</figcaption></figure></div>
+  <a class="arriba" href="#indice">Volver a la lista de pasos</a>
+</section>
+<section class="paso" id="visitas" aria-labelledby="t-visitas">
+  <div class="paso-cab">
+    <span class="num" aria-hidden="true">7</span>
+    <div>
+      <h2 id="t-visitas">Invitar una visita</h2>
+      <p class="resumen">Creas un pase para tu visita y se lo envías por WhatsApp.</p>
+    </div>
+  </div>
+  <button type="button" class="oir" data-audio="instructivo/audio/07-visitas.mp3" aria-label="Escuchar el paso 7"><svg viewBox="0 0 24 24" aria-hidden="true"><path class="i-play" d="M8 5.5v13l11-6.5z"/><path class="i-pausa" d="M7 5h4v14H7zM13 5h4v14h-4z"/></svg><span class="oir-t"><span class="oir-a">Escuchar</span><span class="oir-b">17 segundos</span></span><span class="oir-barra" aria-hidden="true"><i></i></span></button>
+  
+  <ol class="hacer"><li>Toca <b>Invitar una visita</b> y luego <b>Nuevo visitante</b>.</li><li>Elige el tipo de visita y escribe el nombre.</li><li>Toca <b>Generar QR</b>.</li><li>Toca <b>Compartir por WhatsApp</b> para enviárselo. Tu visita lo muestra al vigilante en la entrada.</li></ol>
+  <p class="en-pc solo-pc">En la computadora: menú de la izquierda, opción «Visitantes».</p>
+  
+  <div class="caps solo-tel"><figure class="cap cap-tel"><button type="button" class="ver" aria-label="Ampliar la imagen: Los datos de la visita."><img src="instructivo/img/tel-visitas-2-nuevo.webp" alt="Los datos de la visita." loading="lazy" width="390" height="780"></button><figcaption>Los datos de la visita.</figcaption></figure><figure class="cap cap-tel"><button type="button" class="ver" aria-label="Ampliar la imagen: El pase listo para enviar."><img src="instructivo/img/tel-visitas-3-qr.webp" alt="El pase listo para enviar." loading="lazy" width="390" height="780"></button><figcaption>El pase listo para enviar.</figcaption></figure></div>
+  <div class="caps caps-pc solo-pc"><figure class="cap cap-pc"><button type="button" class="ver" aria-label="Ampliar la imagen: Los datos de la visita."><img src="instructivo/img/pc-visitas-2-nuevo.webp" alt="Los datos de la visita." loading="lazy" width="1200" height="750"></button><figcaption>Los datos de la visita.</figcaption></figure><figure class="cap cap-pc"><button type="button" class="ver" aria-label="Ampliar la imagen: El pase listo para enviar."><img src="instructivo/img/pc-visitas-3-qr.webp" alt="El pase listo para enviar." loading="lazy" width="1200" height="750"></button><figcaption>El pase listo para enviar.</figcaption></figure></div>
+  <a class="arriba" href="#indice">Volver a la lista de pasos</a>
+</section>
+<section class="paso" id="reservar" aria-labelledby="t-reservar">
+  <div class="paso-cab">
+    <span class="num" aria-hidden="true">8</span>
+    <div>
+      <h2 id="t-reservar">Reservar la parrillera o el caney</h2>
+      <p class="resumen">Ves qué días están libres y apartas el tuyo.</p>
+    </div>
+  </div>
+  <button type="button" class="oir" data-audio="instructivo/audio/08-reservar.mp3" aria-label="Escuchar el paso 8"><svg viewBox="0 0 24 24" aria-hidden="true"><path class="i-play" d="M8 5.5v13l11-6.5z"/><path class="i-pausa" d="M7 5h4v14H7zM13 5h4v14h-4z"/></svg><span class="oir-t"><span class="oir-a">Escuchar</span><span class="oir-b">17 segundos</span></span><span class="oir-barra" aria-hidden="true"><i></i></span></button>
+  
+  <ol class="hacer"><li>Toca <b>Reservar un área</b>. Verás los días libres y los ocupados.</li><li>Toca <b>Nueva reserva</b>.</li><li>Elige el espacio, la fecha y la hora.</li><li>Toca <b>Confirmar reserva</b>.</li></ol>
+  <p class="en-pc solo-pc">En la computadora: menú de la izquierda, opción «Reservas».</p>
+  <p class="nota">Para reservar debes estar al día con el condominio.</p>
+  <div class="caps solo-tel"><figure class="cap cap-tel"><button type="button" class="ver" aria-label="Ampliar la imagen: Los días libres y tus reservas."><img src="instructivo/img/tel-reservas-1.webp" alt="Los días libres y tus reservas." loading="lazy" width="390" height="780"></button><figcaption>Los días libres y tus reservas.</figcaption></figure><figure class="cap cap-tel"><button type="button" class="ver" aria-label="Ampliar la imagen: Los datos de la reserva."><img src="instructivo/img/tel-reservas-2-nueva.webp" alt="Los datos de la reserva." loading="lazy" width="390" height="780"></button><figcaption>Los datos de la reserva.</figcaption></figure></div>
+  <div class="caps caps-pc solo-pc"><figure class="cap cap-pc"><button type="button" class="ver" aria-label="Ampliar la imagen: Los días libres y tus reservas."><img src="instructivo/img/pc-reservas-1.webp" alt="Los días libres y tus reservas." loading="lazy" width="1200" height="750"></button><figcaption>Los días libres y tus reservas.</figcaption></figure><figure class="cap cap-pc"><button type="button" class="ver" aria-label="Ampliar la imagen: Los datos de la reserva."><img src="instructivo/img/pc-reservas-2-nueva.webp" alt="Los datos de la reserva." loading="lazy" width="1200" height="750"></button><figcaption>Los datos de la reserva.</figcaption></figure></div>
+  <a class="arriba" href="#indice">Volver a la lista de pasos</a>
+</section>
+<section class="paso" id="averia" aria-labelledby="t-averia">
+  <div class="paso-cab">
+    <span class="num" aria-hidden="true">9</span>
+    <div>
+      <h2 id="t-averia">Reportar una avería de las áreas comunes</h2>
+      <p class="resumen">Un bombillo quemado, un portón que no cierra: avisas y sigues la reparación.</p>
+    </div>
+  </div>
+  <button type="button" class="oir" data-audio="instructivo/audio/09-averia.mp3" aria-label="Escuchar el paso 9"><svg viewBox="0 0 24 24" aria-hidden="true"><path class="i-play" d="M8 5.5v13l11-6.5z"/><path class="i-pausa" d="M7 5h4v14H7zM13 5h4v14h-4z"/></svg><span class="oir-t"><span class="oir-a">Escuchar</span><span class="oir-b">20 segundos</span></span><span class="oir-barra" aria-hidden="true"><i></i></span></button>
+  
+  <ol class="hacer"><li>Toca <b>Reportar una avería</b> y luego <b>Reportar un problema</b>.</li><li>Indica dónde está el problema y cuenta qué pasó.</li><li>Si puedes, agrega una foto.</li><li>Toca <b>Enviar reporte</b>. Después verás cómo avanza: nuevo, en revisión, en curso y resuelto.</li></ol>
+  <p class="en-pc solo-pc">En la computadora: menú de la izquierda, opción «Mantenimiento».</p>
+  <p class="nota">Lo que se daña dentro de tu apartamento no se reporta aquí.</p>
+  <div class="caps solo-tel"><figure class="cap cap-tel"><button type="button" class="ver" aria-label="Ampliar la imagen: El reporte de la avería."><img src="instructivo/img/tel-averias-2-reportar.webp" alt="El reporte de la avería." loading="lazy" width="390" height="780"></button><figcaption>El reporte de la avería.</figcaption></figure><figure class="cap cap-tel"><button type="button" class="ver" aria-label="Ampliar la imagen: El avance de la reparación."><img src="instructivo/img/tel-averias-1.webp" alt="El avance de la reparación." loading="lazy" width="390" height="780"></button><figcaption>El avance de la reparación.</figcaption></figure></div>
+  <div class="caps caps-pc solo-pc"><figure class="cap cap-pc"><button type="button" class="ver" aria-label="Ampliar la imagen: El reporte de la avería."><img src="instructivo/img/pc-averias-2-reportar.webp" alt="El reporte de la avería." loading="lazy" width="1200" height="750"></button><figcaption>El reporte de la avería.</figcaption></figure><figure class="cap cap-pc"><button type="button" class="ver" aria-label="Ampliar la imagen: El avance de la reparación."><img src="instructivo/img/pc-averias-1.webp" alt="El avance de la reparación." loading="lazy" width="1200" height="750"></button><figcaption>El avance de la reparación.</figcaption></figure></div>
+  <a class="arriba" href="#indice">Volver a la lista de pasos</a>
+</section>
+<section class="paso" id="atri" aria-labelledby="t-atri">
+  <div class="paso-cab">
+    <span class="num" aria-hidden="true">10</span>
+    <div>
+      <h2 id="t-atri">Preguntarle a Atri, el conserje</h2>
+      <p class="resumen">Pregúntale con tus propias palabras, como si le escribieras a una persona.</p>
+    </div>
+  </div>
+  <button type="button" class="oir" data-audio="instructivo/audio/10-atri.mp3" aria-label="Escuchar el paso 10"><svg viewBox="0 0 24 24" aria-hidden="true"><path class="i-play" d="M8 5.5v13l11-6.5z"/><path class="i-pausa" d="M7 5h4v14H7zM13 5h4v14h-4z"/></svg><span class="oir-t"><span class="oir-a">Escuchar</span><span class="oir-b">16 segundos</span></span><span class="oir-barra" aria-hidden="true"><i></i></span></button>
+  
+  <ol class="hacer"><li>En el inicio, toca donde dice <b>Escríbele a Atri</b>.</li><li>Escribe tu pregunta. Por ejemplo: «¿Cuánto debo?», «¿Cómo pago?» o «¿Está libre el caney el sábado?».</li><li>Toca <b>Enviar</b>. Atri te responde al momento.</li></ol>
+  <p class="en-pc solo-pc">En la computadora: menú de la izquierda, opción «Conserje», o el círculo con la cara de Atri, abajo a la derecha.</p>
+  
+  <div class="caps solo-tel"><figure class="cap cap-tel"><button type="button" class="ver" aria-label="Ampliar la imagen: Escribe tu pregunta en el inicio."><img src="instructivo/img/tel-atri-1-escribir.webp" alt="Escribe tu pregunta en el inicio." loading="lazy" width="390" height="780"></button><figcaption>Escribe tu pregunta en el inicio.</figcaption></figure><figure class="cap cap-tel"><button type="button" class="ver" aria-label="Ampliar la imagen: La respuesta de Atri."><img src="instructivo/img/tel-atri-2-respuesta.webp" alt="La respuesta de Atri." loading="lazy" width="390" height="780"></button><figcaption>La respuesta de Atri.</figcaption></figure></div>
+  <div class="caps caps-pc solo-pc"><figure class="cap cap-pc"><button type="button" class="ver" aria-label="Ampliar la imagen: La pantalla de Atri."><img src="instructivo/img/pc-atri-1-escribir.webp" alt="La pantalla de Atri." loading="lazy" width="1200" height="750"></button><figcaption>La pantalla de Atri.</figcaption></figure><figure class="cap cap-pc"><button type="button" class="ver" aria-label="Ampliar la imagen: La respuesta de Atri."><img src="instructivo/img/pc-atri-2-respuesta.webp" alt="La respuesta de Atri." loading="lazy" width="1200" height="750"></button><figcaption>La respuesta de Atri.</figcaption></figure></div>
+  <a class="arriba" href="#indice">Volver a la lista de pasos</a>
+</section>
+  <section class="ayuda" id="ayuda" aria-labelledby="t-ayuda">
+    <h2 id="t-ayuda">Si algo no te sale</h2>
+    <p>No te preocupes. Puedes volver a esta guía cuando quieras, o comunicarte con la administración.</p>
+    <button type="button" class="oir" data-audio="instructivo/audio/11-ayuda.mp3" aria-label="Escuchar la despedida"><svg viewBox="0 0 24 24" aria-hidden="true"><path class="i-play" d="M8 5.5v13l11-6.5z"/><path class="i-pausa" d="M7 5h4v14H7zM13 5h4v14h-4z"/></svg><span class="oir-t"><span class="oir-a">Escuchar</span><span class="oir-b">13 segundos</span></span><span class="oir-barra" aria-hidden="true"><i></i></span></button>
+    <ul class="contacto">
+      <li><small>Teléfono</small><a href="tel:+584248562044">0424-8562044</a></li>
+      <li><small>Correo</small><a href="mailto:condominiocostadeplata15@gmail.com">condominiocostadeplata15@gmail.com</a></li>
+      <li><small>Horario de la oficina</small><span>Lunes a viernes, de 8:00 a. m. a 3:00 p. m.</span></li>
+    </ul>
+  </section>
+</main>
+<footer><div class="ancho">Las imágenes muestran un apartamento de ejemplo: los nombres y los montos no son reales. Aplicación hecha con Atryum.</div></footer>
+
+<dialog class="lupa" aria-label="Imagen ampliada"><div class="lupa-in"><button type="button">Cerrar</button><div><img alt=""></div></div></dialog>
+<script>
+(function(){
+  var cuerpo=document.body, raiz=document.documentElement;
+  function guardar(k,v){try{localStorage.setItem(k,v)}catch(e){}}
+  function leer(k){try{return localStorage.getItem(k)}catch(e){return null}}
+  // Teléfono o computadora: se elige solo según la pantalla, y se puede cambiar.
+  function modo(m){cuerpo.dataset.modo=m;document.querySelectorAll('.modo button').forEach(function(b){b.setAttribute('aria-pressed',String(b.dataset.m===m))})}
+  modo(leer('instructivo:modo')||(window.matchMedia('(min-width: 900px)').matches?'pc':'tel'));
+  document.querySelectorAll('.modo button').forEach(function(b){b.addEventListener('click',function(){var y=window.scrollY,h=document.documentElement.scrollHeight;modo(b.dataset.m);guardar('instructivo:modo',b.dataset.m)})});
+  var letra=document.querySelector('.letra');
+  function grande(si){raiz.classList.toggle('grande',si);letra.setAttribute('aria-pressed',String(si))}
+  grande(leer('instructivo:letra')==='grande');
+  letra.addEventListener('click',function(){var si=!raiz.classList.contains('grande');grande(si);guardar('instructivo:letra',si?'grande':'normal')});
+  // Narración: un solo audio a la vez.
+  var audio=new Audio(), actual=null;
+  function soltar(){if(actual){actual.classList.remove('suena');actual.querySelector('.oir-a').textContent='Escuchar';actual.querySelector('i').style.width='0'}actual=null}
+  audio.addEventListener('ended',soltar);
+  audio.addEventListener('timeupdate',function(){if(actual&&audio.duration)actual.querySelector('i').style.width=(100*audio.currentTime/audio.duration)+'%'});
+  audio.addEventListener('error',function(){if(actual){var b=actual;soltar();b.querySelector('.oir-a').textContent='No se pudo cargar el audio'}});
+  document.querySelectorAll('.oir').forEach(function(b){b.addEventListener('click',function(){
+    if(actual===b){if(audio.paused){audio.play();b.classList.add('suena');b.querySelector('.oir-a').textContent='Pausar'}else{audio.pause();b.classList.remove('suena');b.querySelector('.oir-a').textContent='Seguir escuchando'}return}
+    soltar();actual=b;audio.src=b.dataset.audio;audio.play().catch(function(){});b.classList.add('suena');b.querySelector('.oir-a').textContent='Pausar';
+  })});
+  // Ampliar una captura.
+  var lupa=document.querySelector('dialog.lupa'), grandeImg=lupa.querySelector('img');
+  document.querySelectorAll('.ver').forEach(function(v){v.addEventListener('click',function(){var i=v.querySelector('img');grandeImg.src=i.currentSrc||i.src;grandeImg.alt=i.alt;grandeImg.className=v.closest('.cap-tel')?'alto':'';if(lupa.showModal)lupa.showModal()})});
+  lupa.querySelector('button').addEventListener('click',function(){lupa.close()});
+  lupa.addEventListener('click',function(e){if(e.target===lupa||e.target.tagName==='DIV')lupa.close()});
+})();
+</script>
+</body>
+</html>
