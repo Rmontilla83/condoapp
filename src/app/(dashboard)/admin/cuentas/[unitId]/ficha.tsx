@@ -10,7 +10,7 @@ import { estadoDeCuenta } from "@/lib/contabilidad/estado-cuenta";
 import { conveniosActivos, diasEntre } from "@/lib/contabilidad/cobranza";
 import { ETIQUETA_TIPO } from "@/lib/cuotas";
 import { Cifra, Cifras, Encabezado, EstadoRecibo, tabla, Vacio } from "@/components/contabilidad/ui";
-import { AccionesCuenta, AnularRecibo, CerrarConvenio } from "./acciones";
+import { AccionesCuenta, AnularAbono, AnularRecibo, CerrarConvenio, ReemitirRecibo } from "./acciones";
 import { AvisoVerificacion } from "@/components/contabilidad/aviso-verificacion";
 import { pendientesDeVerificacion } from "@/lib/verificacion-pendiente";
 import { ContactoDeLaUnidad, type PersonaDeLaUnidad } from "./contacto";
@@ -388,7 +388,7 @@ export async function FichaDeLaUnidad({ unitId, origen }: { unitId: string; orig
             </ul>
             <p className="text-[12px] text-mute">
               Al abrir la constancia puedes enviarla por WhatsApp o por correo con el resumen del pago ya escrito, y guardarla en PDF para adjuntarla. El vecino
-              también puede sacarla él mismo desde Pagos.
+              también puede sacarla él mismo desde Pagos. Para un abono que no completa el recibo, usa «Comprobante» en la tabla de movimientos.
             </p>
           </>
         )}
@@ -409,6 +409,7 @@ export async function FichaDeLaUnidad({ unitId, origen }: { unitId: string; orig
                   <th className={tabla.thNum}>Cargo</th>
                   <th className={tabla.thNum}>Abono</th>
                   <th className={tabla.thNum}>Saldo</th>
+                  <th className={tabla.th} data-print-hide />
                 </tr>
               </thead>
               <tbody>
@@ -431,6 +432,17 @@ export async function FichaDeLaUnidad({ unitId, origen }: { unitId: string; orig
                     <td className={tabla.tdNum}>{m.cargo ? usd(m.cargo) : ""}</td>
                     <td className={`${tabla.tdNum} text-emerald-700`}>{m.abono ? usd(m.abono) : ""}</td>
                     <td className={`${tabla.tdNum} font-medium text-marine-deep`}>{usd(m.saldo)}</td>
+                    <td className={`${tabla.td} whitespace-nowrap text-right`} data-print-hide>
+                      {m.transaccionId && (
+                        <span className="inline-flex items-center gap-3">
+                          <Link href={`/pagos/comprobante/${m.transaccionId}`} className="text-[12px] font-medium text-cyan-ink hover:underline">
+                            Comprobante
+                          </Link>
+                          {administra && <AnularAbono txId={m.transaccionId} monto={m.abono} referencia={m.documento.startsWith("Ref. ") ? m.documento.slice(5) : null} />}
+                        </span>
+                      )}
+                      {administra && m.reemitible && m.invoiceId && <ReemitirRecibo invoiceId={m.invoiceId} concepto={m.concepto} monto={m.cargo} />}
+                    </td>
                   </tr>
                 ))}
               </tbody>

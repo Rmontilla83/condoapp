@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { usd } from "@/lib/format";
-import { anularRecibo, cerrarConvenio, crearConvenio, registrarPagoRecibido } from "../actions";
+import { bs, tasa as fmtTasa, usd } from "@/lib/format";
+import { anularAbono, anularRecibo, cerrarConvenio, crearConvenio, reemitirRecibo, registrarPagoRecibido, tasaDelDia } from "../actions";
 
 const campo = "h-10 w-full rounded-lg border border-border bg-background px-3 text-[15px] md:text-[14px]";
 const etiqueta = "text-[13px] font-medium text-marine-deep";
@@ -39,7 +40,32 @@ function RegistrarPago({ unitId, hoy }: { unitId: string; hoy: string }) {
   const [pending, start] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [ok, setOk] = useState<string | null>(null);
+  const [comprobante, setComprobante] = useState<string | null>(null);
   const [metodo, setMetodo] = useState("transfer");
+  const [moneda, setMoneda] = useState<"USD" | "VES">("USD");
+  const [monto, setMonto] = useState("");
+  const [fecha, setFecha] = useState(hoy);
+  const [tasa, setTasa] = useState<number | null>(null);
+
+  // La equivalencia se calcula con la tasa BCV del día del pago, no con la de hoy.
+  useEffect(() => {
+    if (!open) return;
+    let vigente = true;
+    tasaDelDia(fecha).then((r) => {
+      if (vigente) setTasa(r.tasa);
+    });
+    return () => {
+      vigente = false;
+    };
+  }, [open, fecha]);
+
+  const valor = Number(monto.replace(/\s/g, "").replace(",", "."));
+  const equivalencia =
+    valor > 0 && tasa
+      ? moneda === "VES"
+        ? `Equivale a ${usd(Math.round((valor / tasa) * 100) / 100)}`
+        : `Equivale a ${bs(Math.round(valor * tasa * 100) / 100)}`
+      : null;
 
   return (
     <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) { setError(null); if (ok) window.location.reload(); } }}>
@@ -49,13 +75,23 @@ function RegistrarPago({ unitId, hoy }: { unitId: string; hoy: string }) {
           <DialogTitle>Registrar pago recibido</DialogTitle>
           <DialogDescription>
             Un pago que llegó a la administración sin reporte del vecino. Se aplica a los recibos más antiguos; si sobra,
-            queda como saldo a favor.
+            queda como saldo a favor. Si te pagaron en bolívares, escribe los bolívares exactos del comprobante.
           </DialogDescription>
         </DialogHeader>
         {ok ? (
           <div className="space-y-4">
             <Aviso ok={ok} />
-            <Button onClick={() => window.location.reload()}>Listo</Button>
+            <div className="flex flex-wrap gap-2">
+              <Button onClick={() => window.location.reload()}>Listo</Button>
+              {comprobante && (
+                <Link
+                  href={`/pagos/comprobante/${comprobante}`}
+                  className="inline-flex h-9 items-center rounded-lg border border-border px-3.5 text-[13px] font-medium text-marine-deep hover:bg-frost"
+                >
+                  Ver el comprobante de pago
+                </Link>
+              )}
+            </div>
           </div>
         ) : (
           <form
@@ -66,20 +102,40 @@ function RegistrarPago({ unitId, hoy }: { unitId: string; hoy: string }) {
               start(async () => {
                 const r = await registrarPagoRecibido(fd);
                 if ("error" in r) setError(r.error);
-                else setOk(r.mensaje ?? "Pago registrado.");
+                else {
+                  setComprobante(r.comprobante ?? null);
+                  setOk(r.mensaje ?? "Pago registrado.");
+                }
               });
             }}
           >
             <div className="grid grid-cols-2 gap-3">
               <label className="space-y-1">
-                <span className={etiqueta}>Monto (USD)</span>
-                <input name="monto" inputMode="decimal" required className={campo} placeholder="0,00" />
+                <span className={etiqueta}>Recibido en</span>
+                <select name="moneda" value={moneda} onChange={(e) => setMoneda(e.target.value as "USD" | "VES")} className={campo}>
+                  <option value="USD">Dólares</option>
+                  <option value="VES">Bolívares</option>
+                </select>
               </label>
               <label className="space-y-1">
                 <span className={etiqueta}>Fecha del pago</span>
-                <input name="fecha" type="date" required max={hoy} defaultValue={hoy} className={campo} />
+                <input name="fecha" type="date" required max={hoy} value={fecha} onChange={(e) => setFecha(e.target.value)} className={campo} />
               </label>
             </div>
+            <label className="block space-y-1">
+              <span className={etiqueta}>{moneda === "VES" ? "Monto en bolívares, como salió en el banco" : "Monto en dólares"}</span>
+              <input name="monto" inputMode="decimal" required value={monto} onChange={(e) => setMonto(e.target.value)} className={campo} placeholder="0,00" />
+            </label>
+            <p className="rounded-lg bg-frost px-3 py-2 text-[13px] text-marine-deep">
+              {tasa ? (
+                <>
+                  Tasa BCV de esa fecha: <strong>{fmtTasa(tasa)}</strong> Bs por dólar.
+                  {equivalencia ? <> {equivalencia}.</> : null}
+                </>
+              ) : (
+                "No hay tasa BCV cargada para esa fecha: el pago solo se puede registrar en dólares."
+              )}
+            </p>
             <label className="block space-y-1">
               <span className={etiqueta}>Método</span>
               <select name="metodo" value={metodo} onChange={(e) => setMetodo(e.target.value)} className={campo}>
@@ -221,6 +277,97 @@ export function AnularRecibo({ invoiceId, numero }: { invoiceId: string; numero:
             }
           >
             {pending ? "Anulando…" : "Anular con nota de crédito"}
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+/** Anula un pago que se registró donde no era. El recibo recupera su saldo. */
+export function AnularAbono({ txId, monto, referencia }: { txId: string; monto: number; referencia?: string | null }) {
+  const [open, setOpen] = useState(false);
+  const [pending, start] = useTransition();
+  const [error, setError] = useState<string | null>(null);
+  const [motivo, setMotivo] = useState("");
+  return (
+    <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) setError(null); }}>
+      <DialogTrigger render={<button type="button" className="text-[12px] font-medium text-red-600 hover:underline" />}>
+        Anular abono
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Anular el abono de {usd(monto)}</DialogTitle>
+          <DialogDescription>
+            {referencia ? `Referencia ${referencia}. ` : ""}Úsalo cuando el pago se registró en el apartamento equivocado o con un monto que no
+            era. El abono queda anulado con su motivo y el recibo vuelve a mostrar ese saldo como pendiente. El recibo no se anula.
+          </DialogDescription>
+        </DialogHeader>
+        <textarea
+          value={motivo}
+          onChange={(e) => setMotivo(e.target.value)}
+          rows={3}
+          placeholder="Motivo (queda en el historial de la unidad)"
+          className="w-full rounded-lg border border-border bg-background px-3 py-2 text-[14px]"
+        />
+        <Aviso error={error} />
+        <div className="flex justify-end gap-2">
+          <Button variant="outline" onClick={() => setOpen(false)}>
+            Volver
+          </Button>
+          <Button
+            disabled={pending || motivo.trim().length < 10}
+            className="bg-red-600 hover:bg-red-700"
+            onClick={() =>
+              start(async () => {
+                const r = await anularAbono(txId, motivo);
+                if ("error" in r) setError(r.error);
+                else window.location.reload();
+              })
+            }
+          >
+            {pending ? "Anulando…" : "Anular este abono"}
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+/** Un recibo anulado por error se emite otra vez, igual al anterior. */
+export function ReemitirRecibo({ invoiceId, concepto, monto }: { invoiceId: string; concepto: string; monto: number }) {
+  const [open, setOpen] = useState(false);
+  const [pending, start] = useTransition();
+  const [error, setError] = useState<string | null>(null);
+  return (
+    <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) setError(null); }}>
+      <DialogTrigger render={<button type="button" className="text-[12px] font-medium text-cyan-ink hover:underline" />}>
+        Volver a emitir
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Volver a emitir este recibo</DialogTitle>
+          <DialogDescription>
+            «{concepto}», por {usd(monto)}. Un recibo anulado no se reactiva, porque su nota de crédito ya quedó emitida: se emite
+            otro igual, con el mismo concepto, monto y vencimiento. Los dos quedan en el estado de cuenta.
+          </DialogDescription>
+        </DialogHeader>
+        <Aviso error={error} />
+        <div className="flex justify-end gap-2">
+          <Button variant="outline" onClick={() => setOpen(false)}>
+            Volver
+          </Button>
+          <Button
+            disabled={pending}
+            onClick={() =>
+              start(async () => {
+                const r = await reemitirRecibo(invoiceId);
+                if ("error" in r) setError(r.error);
+                else window.location.reload();
+              })
+            }
+          >
+            {pending ? "Emitiendo…" : "Emitir de nuevo"}
           </Button>
         </div>
       </DialogContent>

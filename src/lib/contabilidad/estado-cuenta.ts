@@ -25,6 +25,10 @@ export interface Movimiento {
   abono: number;
   saldo: number;
   invoiceId?: string;
+  /** Solo en pagos con dinero real: la transacción, para su comprobante o para anularla. */
+  transaccionId?: string;
+  /** Solo en recibos anulados: no hay otro igual activo, así que se puede emitir de nuevo. */
+  reemitible?: boolean;
   /** Solo en recibos: estado actual. */
   estado?: string;
   vence?: string;
@@ -84,13 +88,16 @@ export async function estadoDeCuenta(db: SupabaseClient, unitId: string, tz = "A
   const { data: pagos } = ids.length
     ? await db
         .from("transactions")
-        .select("invoice_id, amount, status, payment_method, reference, paid_at, reviewed_at")
+        .select("id, invoice_id, amount, status, payment_method, reference, paid_at, reviewed_at")
         .in("invoice_id", ids)
         .in("status", ["approved", "pending"])
     : { data: [] };
 
   const porId = new Map((cuotas ?? []).map((c) => [c.id as string, c]));
   const movs: Omit<Movimiento, "saldo">[] = [];
+  const clave = (c: { due_date: unknown; kind: unknown; description: unknown }) =>
+    `${c.due_date}|${c.kind}|${String(c.description).trim().toLowerCase()}`;
+  const activos = new Set((cuotas ?? []).filter((c) => c.status !== "cancelled").map(clave));
 
   for (const c of cuotas ?? []) {
     const apertura = c.kind === "opening";
@@ -106,6 +113,7 @@ export async function estadoDeCuenta(db: SupabaseClient, unitId: string, tz = "A
       abono: 0,
       invoiceId: c.id as string,
       estado: c.status as string,
+      reemitible: c.status === "cancelled" && Number(c.amount) > 0 && !activos.has(clave(c)),
       vence: c.due_date as string,
       pendiente: estaAbierta(c.status as string) ? pendienteDe(c) : 0,
     });
@@ -125,6 +133,7 @@ export async function estadoDeCuenta(db: SupabaseClient, unitId: string, tz = "A
       cargo: 0,
       abono: Number(p.amount),
       invoiceId: p.invoice_id as string,
+      transaccionId: credito ? undefined : (p.id as string),
     });
   }
 

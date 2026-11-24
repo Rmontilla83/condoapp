@@ -11,7 +11,7 @@ import { notificar, perfilesDeUnidad } from "@/lib/notificaciones";
 import { todayInTimeZone, zonedToISO } from "@/lib/utils";
 import { usd } from "@/lib/format";
 
-type Resultado = { error: string } | { success: true; mensaje?: string };
+type Resultado = { error: string } | { success: true; mensaje?: string; comprobante?: string };
 
 const r2 = (n: number) => Math.round(n * 100) / 100;
 
@@ -70,16 +70,25 @@ export async function registrarPagoRecibido(fd: FormData): Promise<Resultado> {
   const { db, orgId, profile, tz } = a;
 
   const unitId = String(fd.get("unit_id") ?? "");
-  const monto = r2(Number(String(fd.get("monto") ?? "").replace(",", ".")));
+  const enBolivares = String(fd.get("moneda") ?? "USD") === "VES";
+  const escrito = r2(Number(String(fd.get("monto") ?? "").replace(/\s/g, "").replace(",", ".")));
   const metodo = String(fd.get("metodo") ?? "transfer");
   const referencia = String(fd.get("referencia") ?? "").trim().slice(0, 60) || null;
   const fecha = String(fd.get("fecha") ?? "") || todayInTimeZone(tz);
   const nota = String(fd.get("nota") ?? "").trim().slice(0, 200) || null;
 
   if (!(await unidadDelCondominio(db, unitId, orgId))) return { error: "Esa unidad no es de este condominio." };
-  if (!(monto > 0)) return { error: "Escribe un monto mayor que cero." };
+  if (!(escrito > 0)) return { error: "Escribe un monto mayor que cero." };
   if (!/^\d{4}-\d{2}-\d{2}$/.test(fecha) || fecha > todayInTimeZone(tz)) return { error: "La fecha no puede ser futura." };
   if (metodo !== "cash" && !referencia) return { error: "Escribe la referencia bancaria: es lo que permite conciliar con el banco." };
+
+  // Un pago en bolívares se convierte a la tasa BCV del día del pago, no a la de hoy:
+  // así los bolívares guardados son los mismos que entraron al banco.
+  const tasa = await tasaEn(db, orgId, fecha);
+  if (enBolivares && !tasa) return { error: "No hay tasa BCV cargada para esa fecha: registra el pago en dólares o carga la tasa primero." };
+  const montoBs = enBolivares ? escrito : null;
+  const monto = enBolivares ? r2(escrito / (tasa as number)) : escrito;
+  if (!(monto > 0)) return { error: "Ese monto en bolívares no llega a un centavo de dólar." };
 
   const { data: cuotas } = await db
     .from("invoices")
@@ -89,8 +98,9 @@ export async function registrarPagoRecibido(fd: FormData): Promise<Resultado> {
     .order("due_date")
     .order("receipt_number", { nullsFirst: true });
 
-  const tasa = await tasaEn(db, orgId, fecha);
   const cuando = zonedToISO(fecha, "12:00", tz);
+  // Todas las filas de un mismo pago comparten grupo: el comprobante las junta.
+  const grupo = crypto.randomUUID();
   let resta = monto;
   const filas: Record<string, unknown>[] = [];
   for (const c of cuotas ?? []) {
@@ -113,15 +123,23 @@ export async function registrarPagoRecibido(fd: FormData): Promise<Resultado> {
       reviewed_at: new Date().toISOString(),
       notes: nota ? `Registrado por la administración. ${nota}` : "Registrado por la administración",
       currency_paid: c.currency,
+      payment_group_id: grupo,
       exchange_rate: tasa,
-      amount_bs: tasa ? r2(aplica * tasa) : null,
+      amount_bs: montoBs != null ? r2((montoBs * aplica) / monto) : tasa ? r2(aplica * tasa) : null,
     });
     resta = r2(resta - aplica);
   }
+  // En bolívares, la suma de las filas tiene que dar exactamente lo que entró al banco.
+  if (montoBs != null && filas.length && resta <= 0) {
+    const otras = filas.slice(0, -1).reduce((t, x) => t + Number(x.amount_bs), 0);
+    filas[filas.length - 1].amount_bs = r2(montoBs - otras);
+  }
 
+  let comprobante: string | undefined;
   if (filas.length) {
-    const { error } = await db.from("transactions").insert(filas);
+    const { data: creadas, error } = await db.from("transactions").insert(filas).select("id");
     if (error) return { error: error.message };
+    comprobante = creadas?.[0]?.id as string | undefined;
   }
   if (resta > 0) {
     const { error } = await db.from("unit_credits").insert({
@@ -150,17 +168,136 @@ export async function registrarPagoRecibido(fd: FormData): Promise<Resultado> {
     orgId,
     actorId: profile.id,
     evento: "payment_registered",
-    datos: { unit_id: unitId, monto, metodo, referencia, recibos: filas.length, saldo_a_favor: resta },
+    datos: { unit_id: unitId, monto, ...(montoBs != null ? { bolivares: montoBs, tasa } : {}), metodo, referencia, recibos: filas.length, saldo_a_favor: resta },
   });
 
   refrescar(unitId);
   return {
     success: true,
+    comprobante,
     mensaje:
       filas.length === 0
         ? `No había recibos pendientes: ${usd(monto)} quedó como saldo a favor.`
         : `Aplicado a ${filas.length} recibo${filas.length !== 1 ? "s" : ""}${resta > 0 ? `; ${usd(resta)} quedó como saldo a favor` : ""}.`,
   };
+}
+
+/** La tasa BCV de una fecha, para mostrar la equivalencia antes de registrar. */
+export async function tasaDelDia(fecha: string): Promise<{ tasa: number | null }> {
+  const a = await admin();
+  if ("guard" in a || !/^\d{4}-\d{2}-\d{2}$/.test(fecha)) return { tasa: null };
+  return { tasa: await tasaEn(a.db, a.orgId, fecha) };
+}
+
+// ─── Anular un abono ─────────────────────────────────────────────────────────
+
+/**
+ * Un pago que se registró donde no era (otro apartamento, monto equivocado).
+ * No se borra: queda anulado con su motivo, el recibo recupera su saldo y el
+ * registro sigue en el historial. Solo dinero real: lo aplicado con saldo a
+ * favor se devuelve al anular el recibo.
+ */
+export async function anularAbono(txId: string, motivo: string): Promise<Resultado> {
+  const a = await admin();
+  if ("guard" in a) return a.guard!;
+  const { db, orgId, profile } = a;
+  const m = motivo.replace(/\s+/g, " ").trim().slice(0, 200);
+  if (m.length < 10) return { error: "Escribe el motivo (mínimo 10 caracteres). Queda en el historial de la unidad." };
+
+  const { data: tx } = await db
+    .from("transactions")
+    .select("id, amount, status, payment_method, reference, invoices!inner(unit_id, organization_id)")
+    .eq("id", txId)
+    .eq("invoices.organization_id", orgId)
+    .maybeSingle();
+  if (!tx) return { error: "Ese abono no existe." };
+  if (tx.status !== "approved") return { error: "Ese abono ya no está aplicado." };
+  if (tx.payment_method === "credit") return { error: "Eso es saldo a favor aplicado, no un pago: se devuelve al anular el recibo." };
+  const unitId = ((Array.isArray(tx.invoices) ? tx.invoices[0] : tx.invoices) as { unit_id: string }).unit_id;
+
+  const { data: hecho, error } = await db
+    .from("transactions")
+    .update({
+      status: "rejected",
+      rejection_reason: `Abono anulado por la administración: ${m}`,
+      reviewed_at: new Date().toISOString(),
+      reviewed_by: profile.id,
+    })
+    .eq("id", txId)
+    .eq("status", "approved")
+    .select("id")
+    .maybeSingle();
+  if (error) return { error: error.message };
+  if (!hecho) return { error: "Ese abono ya no está aplicado." };
+
+  await notificar(orgId, await perfilesDeUnidad(unitId), {
+    tipo: "pago_revisado",
+    titulo: `La administración anuló un abono de ${usd(Number(tx.amount))}`,
+    cuerpo: `Motivo: ${m}. El recibo vuelve a mostrar ese saldo como pendiente.`,
+    enlace: "/pagos",
+    correo: false,
+  });
+  await registrarEvento({
+    orgId,
+    actorId: profile.id,
+    evento: "payment_voided",
+    datos: { unit_id: unitId, transaccion: txId, monto: Number(tx.amount), referencia: tx.reference, motivo: m },
+  });
+  refrescar(unitId);
+  return { success: true, mensaje: "Abono anulado. El recibo recuperó su saldo pendiente." };
+}
+
+// ─── Volver a emitir un recibo anulado ───────────────────────────────────────
+
+/**
+ * Un recibo anulado no se reactiva: su nota de crédito ya está emitida. Si se
+ * anuló por error, se emite otro igual (mismo concepto, monto y vencimiento),
+ * y los dos documentos quedan en el estado de cuenta.
+ */
+export async function reemitirRecibo(invoiceId: string): Promise<Resultado> {
+  const a = await admin();
+  if ("guard" in a) return a.guard!;
+  const { db, orgId, profile } = a;
+
+  const { data: r } = await db
+    .from("invoices")
+    .select("id, unit_id, amount, currency, description, due_date, kind, exchange_rate, amount_bs, reserve_amount, contingency_amount, status")
+    .eq("id", invoiceId)
+    .eq("organization_id", orgId)
+    .maybeSingle();
+  if (!r) return { error: "Ese recibo no existe." };
+  if (r.status !== "cancelled") return { error: "Ese recibo no está anulado." };
+
+  const { data: nuevo, error } = await db
+    .from("invoices")
+    .insert({
+      organization_id: orgId,
+      unit_id: r.unit_id,
+      amount: r.amount,
+      currency: r.currency,
+      description: r.description,
+      due_date: r.due_date,
+      kind: r.kind,
+      exchange_rate: r.exchange_rate,
+      amount_bs: r.amount_bs,
+      reserve_amount: r.reserve_amount,
+      contingency_amount: r.contingency_amount,
+      status: "pending",
+      created_by: profile.id,
+    })
+    .select("id")
+    .single();
+  if (error) {
+    return { error: error.code === "23505" ? "Ya hay un recibo activo con ese mismo concepto y vencimiento: no hace falta emitirlo otra vez." : error.message };
+  }
+  await registrarEvento({
+    orgId,
+    actorId: profile.id,
+    evento: "invoice_reissued",
+    datos: { unit_id: r.unit_id, recibo: nuevo.id, concepto: r.description, monto: Number(r.amount), vence: r.due_date },
+  });
+  refrescar(r.unit_id as string);
+  return { success: true, mensaje: "Recibo emitido de nuevo." };
 }
 
 // ─── Anular un recibo ────────────────────────────────────────────────────────

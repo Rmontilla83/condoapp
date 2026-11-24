@@ -50,6 +50,8 @@ export const EVENTOS = {
   payment_approved: { area: "Cobranza", texto: "Aprobó un pago" },
   payment_rejected: { area: "Cobranza", texto: "Rechazó un pago" },
   payment_registered: { area: "Cobranza", texto: "Registró un pago recibido" },
+  payment_voided: { area: "Cobranza", texto: "Anuló un abono" },
+  invoice_reissued: { area: "Cobranza", texto: "Volvió a emitir un recibo anulado" },
   late_fees_issued: { area: "Cobranza", texto: "Emitió intereses de mora" },
   late_fee_rate_updated: { area: "Cobranza", texto: "Cambió la tasa de mora" },
   opening_balances_loaded: { area: "Cobranza", texto: "Cargó saldos de apertura" },

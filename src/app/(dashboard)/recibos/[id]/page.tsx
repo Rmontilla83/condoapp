@@ -30,7 +30,7 @@ export default async function ReciboPage({ params }: { params: Promise<{ id: str
     membreteDe(r.organization_id as string),
     db
       .from("transactions")
-      .select("amount, payment_method, reference, paid_at, reviewed_at, exchange_rate, amount_bs")
+      .select("id, amount, payment_method, reference, paid_at, reviewed_at, exchange_rate, amount_bs")
       .eq("invoice_id", id)
       .eq("status", "approved")
       .order("paid_at"),
@@ -129,7 +129,22 @@ export default async function ReciboPage({ params }: { params: Promise<{ id: str
                     {PAYMENT_METHOD_LABELS[p.payment_method as string] ?? "Pago"}
                     {p.reference && p.payment_method !== "credit" ? ` · Ref. ${p.reference as string}` : ""}
                   </td>
-                  <td className="py-2 text-right tabular-nums">{usd(Number(p.amount))}</td>
+                  <td className="py-2 text-right tabular-nums">
+                    {usd(Number(p.amount))}
+                    {p.amount_bs != null && p.payment_method !== "credit" && (
+                      <span className="block text-[11px] text-mute">
+                        {bs(Number(p.amount_bs))}
+                        {p.exchange_rate != null ? ` a ${tasa(Number(p.exchange_rate))}` : ""}
+                      </span>
+                    )}
+                  </td>
+                  <td className="py-2 pl-3 text-right print:hidden">
+                    {p.payment_method !== "credit" && (
+                      <a href={`/pagos/comprobante/${p.id as string}`} className="text-[12px] font-medium text-cyan-ink hover:underline">
+                        Comprobante
+                      </a>
+                    )}
+                  </td>
                 </tr>
               ))}
             </tbody>

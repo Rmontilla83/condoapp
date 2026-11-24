@@ -44,6 +44,8 @@ export const ETIQUETA: Record<string, string> = {
   metodo: "Método",
   referencia: "Referencia",
   saldo_a_favor: "Saldo a favor",
+  bolivares: "Bolívares",
+  tasa: "Tasa BCV",
   al_fondo_de_reserva: "Al fondo de reserva",
   al_fondo_de_contingencia: "Al fondo de contingencia",
   con_fondo: "Pagado con",
