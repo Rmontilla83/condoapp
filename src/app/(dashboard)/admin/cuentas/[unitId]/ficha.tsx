@@ -434,7 +434,7 @@ export async function FichaDeLaUnidad({ unitId, origen }: { unitId: string; orig
                     <td className={`${tabla.tdNum} font-medium text-marine-deep`}>{usd(m.saldo)}</td>
                     <td className={`${tabla.td} whitespace-nowrap text-right`} data-print-hide>
                       {m.transaccionId && (
-                        <span className="inline-flex items-center gap-3">
+                        <span className="flex flex-col items-end gap-1">
                           <Link href={`/pagos/comprobante/${m.transaccionId}`} className="text-[12px] font-medium text-cyan-ink hover:underline">
                             Comprobante
                           </Link>
