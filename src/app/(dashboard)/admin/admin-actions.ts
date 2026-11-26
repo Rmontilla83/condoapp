@@ -138,7 +138,9 @@ export async function generateMonthlyInvoices(formData: FormData) {
     const year = formData.get("year") as string;
     const dueDay = parseInt(formData.get("due_day") as string) || 15;
     if (!month || !year) return { error: "Completa mes y año" };
-    dueDate = `${year}-${month.padStart(2, "0")}-${String(dueDay).padStart(2, "0")}`;
+    // Un día que el mes no tiene (31 en un mes de 30) es su último día.
+    const finDeMes = new Date(Date.UTC(parseInt(year), parseInt(month), 0)).getUTCDate() || 28;
+    dueDate = `${year}-${month.padStart(2, "0")}-${String(Math.min(Math.max(dueDay, 1), finDeMes)).padStart(2, "0")}`;
   }
 
   // Description: obligatoria para extraordinary, default razonable para monthly

@@ -115,7 +115,9 @@ export function GenerateInvoicesDialog({ org, units, feeTypeAmounts, exchangeRat
   const dueDateResolved = useMemo(() => {
     if (form.kind === "extraordinary") return form.due_date;
     if (!form.month || !form.year) return "";
-    const day = String(parseInt(form.due_day || "15") || 15).padStart(2, "0");
+    // «31» en un mes de 30 es su último día: así «vence el último día del mes» sirve todo el año.
+    const finDeMes = new Date(Date.UTC(parseInt(form.year), parseInt(form.month), 0)).getUTCDate() || 28;
+    const day = String(Math.min(Math.max(parseInt(form.due_day || "15") || 15, 1), finDeMes)).padStart(2, "0");
     return `${form.year}-${form.month.padStart(2, "0")}-${day}`;
   }, [form.kind, form.month, form.year, form.due_day, form.due_date]);
 
@@ -624,7 +626,7 @@ function PeriodStep({
           id="due_day"
           type="number"
           min="1"
-          max="28"
+          max="31"
           value={form.due_day}
           onChange={(e) => onChange((p) => ({ ...p, due_day: e.target.value }))}
         />
