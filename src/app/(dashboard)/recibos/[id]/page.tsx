@@ -134,7 +134,7 @@ export default async function ReciboPage({ params }: { params: Promise<{ id: str
         <section className="mt-8">
           <p className="font-meta text-mute">RELACIÓN DE GASTOS DE {nombreDelMes((relacion.expense_month as string).slice(0, 7)).toUpperCase()}</p>
           <p className="mt-1 text-[12px] text-mute">
-            Cada gasto del mes y la parte que le corresponde a esta unidad ({(parte * 100).toLocaleString("es-VE", { maximumFractionDigits: 6 })} % del total).
+            Cada gasto del mes y la parte que le corresponde a esta unidad ({(parte * 100).toLocaleString("es-VE", { maximumFractionDigits: 4 })} % del total).
           </p>
           <table className="mt-3 w-full text-[12.5px]">
             <thead>
