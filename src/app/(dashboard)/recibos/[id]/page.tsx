@@ -8,6 +8,7 @@ import { bs, tasa, usd } from "@/lib/format";
 import { PAYMENT_METHOD_LABELS } from "@/lib/labels";
 import { todayInTimeZone } from "@/lib/utils";
 import { Dato, Documento } from "@/components/documentos/documento";
+import { nombreDelMes, type CategoriaDeGasto } from "@/lib/cobranza/relacion-gastos";
 
 /**
  * Recibo de condominio. Con su número correlativo y, por la migration 052,
@@ -21,7 +22,7 @@ export default async function ReciboPage({ params }: { params: Promise<{ id: str
   const db = createAdminClient();
   const { data: r } = await db
     .from("invoices")
-    .select("id, organization_id, unit_id, receipt_number, description, kind, amount, reserve_amount, contingency_amount, paid_amount, currency, exchange_rate, amount_bs, due_date, status, created_at, units(unit_number, block, aliquot)")
+    .select("id, organization_id, unit_id, receipt_number, description, kind, amount, reserve_amount, contingency_amount, paid_amount, currency, exchange_rate, amount_bs, due_date, status, created_at, relacion_id, units(unit_number, block, aliquot)")
     .eq("id", id)
     .maybeSingle();
   if (!r || !(await puedeVerUnidad(profile, r.unit_id as string))) notFound();
@@ -42,6 +43,18 @@ export default async function ReciboPage({ params }: { params: Promise<{ id: str
     .map((d) => ((Array.isArray(d.profiles) ? d.profiles[0] : d.profiles) as { full_name: string | null } | null)?.full_name)
     .filter(Boolean)
     .join(", ");
+
+  // La relación de gastos que se cobró en este recibo, guardada al emitirlo.
+  const { data: relacion } = r.relacion_id
+    ? await db.from("relaciones_de_cobro").select("expense_month, total_gastos, reserve_pct, contingency_pct, detalle").eq("id", r.relacion_id as string).maybeSingle()
+    : { data: null };
+  const r2 = (n: number) => Math.round(n * 100) / 100;
+  const base = r2(Number(r.amount) - Number(r.reserve_amount ?? 0) - Number(r.contingency_amount ?? 0));
+  const totalGastos = Number(relacion?.total_gastos ?? 0);
+  // La parte de esta unidad en los gastos del mes: lo que se le cobró entre lo que se gastó.
+  const parte = totalGastos > 0 ? base / totalGastos : 0;
+  const categorias = (relacion?.detalle ?? []) as CategoriaDeGasto[];
+  const pct = (n: number) => `${Number(n).toLocaleString("es-VE", { maximumFractionDigits: 3 })} %`;
 
   const hoy = todayInTimeZone(membrete.timezone);
   const pendiente = r.status === "cancelled" ? 0 : pendienteDe(r);
@@ -116,6 +129,71 @@ export default async function ReciboPage({ params }: { params: Promise<{ id: str
           )}
         </tfoot>
       </table>
+
+      {relacion && categorias.length > 0 && (
+        <section className="mt-8">
+          <p className="font-meta text-mute">RELACIÓN DE GASTOS DE {nombreDelMes((relacion.expense_month as string).slice(0, 7)).toUpperCase()}</p>
+          <p className="mt-1 text-[12px] text-mute">
+            Cada gasto del mes y la parte que le corresponde a esta unidad ({(parte * 100).toLocaleString("es-VE", { maximumFractionDigits: 6 })} % del total).
+          </p>
+          <table className="mt-3 w-full text-[12.5px]">
+            <thead>
+              <tr className="border-b border-marine-deep/30 text-left text-[11px] uppercase tracking-[0.06em] text-mute">
+                <th className="py-2 font-medium">Descripción del gasto</th>
+                <th className="py-2 text-right font-medium">Monto</th>
+                <th className="py-2 pl-4 text-right font-medium">Su cuota</th>
+              </tr>
+            </thead>
+            {categorias.map((c, i) => (
+              <tbody key={i} className="break-inside-avoid">
+                <tr className="border-b border-border bg-frost/60 font-semibold">
+                  <td className="px-2 py-1.5">{c.nombre}</td>
+                  <td className="py-1.5 text-right tabular-nums">{usd(c.total)}</td>
+                  <td className="py-1.5 pl-4 pr-2 text-right tabular-nums">{usd(r2(c.total * parte))}</td>
+                </tr>
+                {c.lineas.map((l, j) => (
+                  <tr key={j} className="border-b border-border/60">
+                    <td className="py-1 pl-5 pr-2">
+                      {l.proveedor ? `${l.proveedor}: ` : ""}
+                      {l.descripcion}
+                    </td>
+                    <td className="py-1 text-right tabular-nums">{usd(l.monto)}</td>
+                    <td className="py-1 pl-4 pr-2 text-right tabular-nums">{usd(r2(l.monto * parte))}</td>
+                  </tr>
+                ))}
+              </tbody>
+            ))}
+            <tfoot>
+              <tr className="border-t border-marine-deep/30">
+                <td className="py-1.5 font-medium">Total de gastos del mes</td>
+                <td className="py-1.5 text-right tabular-nums">{usd(totalGastos)}</td>
+                <td className="py-1.5 pl-4 pr-2 text-right tabular-nums">{usd(base)}</td>
+              </tr>
+              {Number(r.reserve_amount ?? 0) > 0 && (
+                <tr>
+                  <td className="py-1">Fondo de reserva ({pct(Number(relacion.reserve_pct))})</td>
+                  <td className="py-1 text-right tabular-nums">{usd(r2((totalGastos * Number(relacion.reserve_pct)) / 100))}</td>
+                  <td className="py-1 pl-4 pr-2 text-right tabular-nums">{usd(Number(r.reserve_amount))}</td>
+                </tr>
+              )}
+              {Number(r.contingency_amount ?? 0) > 0 && (
+                <tr>
+                  <td className="py-1">Fondo de contingencia ({pct(Number(relacion.contingency_pct))})</td>
+                  <td className="py-1 text-right tabular-nums">{usd(r2((totalGastos * Number(relacion.contingency_pct)) / 100))}</td>
+                  <td className="py-1 pl-4 pr-2 text-right tabular-nums">{usd(Number(r.contingency_amount))}</td>
+                </tr>
+              )}
+              <tr className="border-t border-marine-deep/30 font-semibold">
+                <td className="py-1.5">Total de gastos comunes</td>
+                <td className="py-1.5 text-right tabular-nums">
+                  {usd(r2(totalGastos * (1 + (Number(r.reserve_amount ?? 0) > 0 ? Number(relacion.reserve_pct) : 0) / 100 + (Number(r.contingency_amount ?? 0) > 0 ? Number(relacion.contingency_pct) : 0) / 100)))}
+                </td>
+                <td className="py-1.5 pl-4 pr-2 text-right tabular-nums">{usd(Number(r.amount))}</td>
+              </tr>
+            </tfoot>
+          </table>
+        </section>
+      )}
 
       {(pagos ?? []).length > 0 && (
         <section className="mt-8">

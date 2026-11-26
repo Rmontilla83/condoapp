@@ -1,7 +1,7 @@
 "use client";
 
 import { usd, bs } from "@/lib/format";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -13,7 +13,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { generateMonthlyInvoices } from "./admin-actions";
+import { generateMonthlyInvoices, resumenGastosDelMes } from "./admin-actions";
 import {
   computeInvoiceAmounts,
   type ComputeUnit,
@@ -54,6 +54,8 @@ interface FormState {
   manual_amounts: Record<string, string>; // unit_id -> string
   group_id: string;
   group_total: string;
+  /** Mes de los gastos que cobra esta emisión (YYYY-MM), o vacío. */
+  expense_month: string;
   /** Sumar a la cuota mensual el aporte al fondo de reserva. */
   incluir_fondo: boolean;
   /** La derrama completa va a un fondo. */
@@ -99,6 +101,7 @@ export function GenerateInvoicesDialog({ org, units, feeTypeAmounts, exchangeRat
     manual_amounts: Object.fromEntries(units.map((u) => [u.id, ""])),
     group_id: groups[0]?.id ?? "",
     group_total: "",
+    expense_month: "",
     incluir_fondo: Number(org.reserve_fund_pct ?? 0) + Number(org.contingency_fund_pct ?? 0) > 0,
     fondo_todo: false,
     fondo_destino: "reserva",
@@ -178,6 +181,7 @@ export function GenerateInvoicesDialog({ org, units, feeTypeAmounts, exchangeRat
       manual_amounts: Object.fromEntries(units.map((u) => [u.id, ""])),
       group_id: groups[0]?.id ?? "",
       group_total: "",
+    expense_month: "",
       incluir_fondo: Number(org.reserve_fund_pct ?? 0) + Number(org.contingency_fund_pct ?? 0) > 0,
       fondo_todo: false,
       fondo_destino: "reserva",
@@ -269,6 +273,9 @@ export function GenerateInvoicesDialog({ org, units, feeTypeAmounts, exchangeRat
     if (form.mode === "flat") fd.set("flat_amount", form.flat_amount);
     if (form.mode === "divide_total") fd.set("total_amount", form.total_amount);
     if (form.mode === "by_aliquot") fd.set("base_amount", form.base_amount);
+    if (form.kind === "monthly" && form.expense_month && (form.mode === "by_aliquot" || form.mode === "by_group")) {
+      fd.set("expense_month", form.expense_month);
+    }
     if (form.mode === "by_group") {
       fd.set("group_id", form.group_id);
       fd.set("group_total", form.group_total);
@@ -655,6 +662,33 @@ function ModeStep({
 }) {
   const pctFondos = pctFondo + pctConting;
   const pc = (n: number) => `${n.toLocaleString("es-VE")} %`;
+
+  // Gastos del mes que se cobra: el condominio reparte los gastos reales a mes vencido.
+  type Resumen = { total: number; gastos: number; porAlicuota: number; grupos: { id: string; nombre: string; pct: number; monto: number }[] };
+  // Se guarda junto al mes al que pertenece: lo que llegó para otro mes no se muestra.
+  const [cargado, setCargado] = useState<{ mes: string; datos: Resumen | null } | null>(null);
+  const mesGastos = form.expense_month;
+  useEffect(() => {
+    if (!mesGastos) return;
+    let vigente = true;
+    resumenGastosDelMes(mesGastos).then((r) => {
+      if (vigente) setCargado({ mes: mesGastos, datos: "error" in r ? null : r });
+    });
+    return () => {
+      vigente = false;
+    };
+  }, [mesGastos]);
+  const resumen = cargado && cargado.mes === mesGastos ? cargado.datos : null;
+  const cargandoResumen = !!mesGastos && cargado?.mes !== mesGastos;
+  const mesesRecientes = Array.from({ length: 6 }, (_, i) => {
+    const d = new Date();
+    d.setDate(1);
+    d.setMonth(d.getMonth() - i);
+    const valor = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+    return { valor, texto: `${MONTH_LABELS[d.getMonth()]} ${d.getFullYear()}` };
+  });
+  const grupoElegido = resumen?.grupos.find((g) => g.id === form.group_id) ?? null;
+  const montoSugerido = form.mode === "by_group" ? (grupoElegido?.monto ?? null) : (resumen?.porAlicuota ?? null);
   const detalleFondos = [pctFondo > 0 ? `reserva ${pc(pctFondo)}` : null, pctConting > 0 ? `contingencia ${pc(pctConting)}` : null]
     .filter(Boolean)
     .join(" y ");
@@ -769,6 +803,70 @@ function ModeStep({
             {groups.some((g) => Number(g.aliquot ?? 0) > 0) &&
               ` No incluyas aquí ${groups.filter((g) => Number(g.aliquot ?? 0) > 0).map((g) => g.name).join(", ")}: se emite aparte, por grupo.`}
           </p>
+        </div>
+      )}
+
+      {form.kind === "monthly" && (form.mode === "by_aliquot" || form.mode === "by_group") && (
+        <div className="space-y-2 rounded-lg border border-border p-3">
+          <Label htmlFor="expense-month">Gastos del mes que cobra este recibo</Label>
+          <select
+            id="expense-month"
+            value={form.expense_month}
+            onChange={(e) => onChange((p) => ({ ...p, expense_month: e.target.value }))}
+            className="flex h-11 w-full rounded-md border border-input bg-background px-3 py-2 text-base md:text-sm"
+          >
+            <option value="">No tomar el monto de los gastos</option>
+            {mesesRecientes.map((m) => (
+              <option key={m.valor} value={m.valor}>
+                {m.texto}
+              </option>
+            ))}
+          </select>
+          {form.expense_month && cargandoResumen && <p className="text-[12px] text-mute">Sumando los gastos…</p>}
+          {form.expense_month && !cargandoResumen && resumen && resumen.total <= 0 && (
+            <p className="text-[12px] text-destructive">Ese mes no tiene gastos cargados. Cárgalos en Gastos e ingresos antes de emitir.</p>
+          )}
+          {form.expense_month && !cargandoResumen && resumen && resumen.total > 0 && (
+            <div className="space-y-1.5 text-[13px]">
+              <div className="flex justify-between">
+                <span>Gastos del mes ({resumen.gastos})</span>
+                <span className="font-mono">{usd(resumen.total)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Se reparte por alícuota</span>
+                <span className="font-mono">{usd(resumen.porAlicuota)}</span>
+              </div>
+              {resumen.grupos.map((g) => (
+                <div key={g.id} className="flex justify-between">
+                  <span>
+                    {g.nombre} ({pc(Math.round(g.pct * 100) / 100)}), se emite aparte
+                  </span>
+                  <span className="font-mono">{usd(g.monto)}</span>
+                </div>
+              ))}
+              {montoSugerido != null && montoSugerido > 0 ? (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() =>
+                    onChange((p) =>
+                      p.mode === "by_group"
+                        ? { ...p, group_total: montoSugerido.toFixed(2), incluir_fondo: pctFondos > 0 }
+                        : { ...p, base_amount: montoSugerido.toFixed(2) },
+                    )
+                  }
+                >
+                  Usar {usd(montoSugerido)} como total a repartir
+                </Button>
+              ) : (
+                form.mode === "by_group" && <p className="text-[12px] text-mute">Este grupo no tiene un porcentaje de los gastos: escribe su total a mano.</p>
+              )}
+              <p className="text-[12px] text-mute">
+                Los fondos se suman aparte, sobre ese monto. El recibo llevará la lista de estos gastos con la parte que le toca a cada unidad.
+              </p>
+            </div>
+          )}
         </div>
       )}
 

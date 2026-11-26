@@ -11,6 +11,7 @@ import { cuotaEmitida } from "@/lib/email/templates";
 import { emailsPorUnidad, nombreDeOrg } from "@/lib/email/recipients";
 import { computeInvoiceAmounts } from "@/lib/cobranza/compute-invoices";
 import { aplicarSaldos } from "@/lib/saldos";
+import { esMes, gastosDelMes, nombreDelMes } from "@/lib/cobranza/relacion-gastos";
 import type { ComputeUnit } from "@/lib/cobranza/compute-invoices";
 import type { FeeMode, InvoiceKind, Organization } from "@/types/database";
 
@@ -70,6 +71,37 @@ export async function updateExchangeRate(rate: number) {
  */
 function mismaDescripcion(a: string | null, b: string): boolean {
   return (a ?? "").trim().toLowerCase() === b.trim().toLowerCase();
+}
+
+/**
+ * Para el diálogo de emisión: cuánto se gastó en un mes y cómo se reparte
+ * entre las alícuotas y los grupos que se cobran aparte (la marina).
+ */
+export async function resumenGastosDelMes(mes: string) {
+  const profile = await getCurrentProfile();
+  const guard = requireAdmin(profile);
+  if (guard) return guard;
+  if (!esMes(mes)) return { error: "Mes inválido" };
+  const supabase = createAdminClient();
+  const orgId = profile!.organization_id!;
+  const [relacion, { data: grupos }] = await Promise.all([
+    gastosDelMes(supabase, orgId, mes),
+    supabase.from("charge_groups").select("id, name, aliquot").eq("organization_id", orgId).eq("active", true).not("aliquot", "is", null),
+  ]);
+  const r2 = (n: number) => Math.round(n * 100) / 100;
+  const porGrupo = (grupos ?? []).map((g) => ({
+    id: g.id as string,
+    nombre: g.name as string,
+    pct: Number(g.aliquot),
+    monto: r2((relacion.total * Number(g.aliquot)) / 100),
+  }));
+  return {
+    total: relacion.total,
+    gastos: relacion.categorias.reduce((s, c) => s + c.lineas.length, 0),
+    // Lo que no va a los grupos se reparte por alícuota.
+    porAlicuota: r2(relacion.total - porGrupo.reduce((s, g) => s + g.monto, 0)),
+    grupos: porGrupo,
+  };
 }
 
 export async function generateMonthlyInvoices(formData: FormData) {
@@ -134,6 +166,11 @@ export async function generateMonthlyInvoices(formData: FormData) {
   const pctFondo = conFondos ? Number(org.reserve_fund_pct ?? 0) : 0;
   const pctConting = conFondos ? Number(org.contingency_fund_pct ?? 0) : 0;
   const fondoDestino = formData.get("fondo_destino") === "contingencia" ? "contingencia" : "reserva";
+
+  // El mes de los gastos que cobra esta emisión (se cobra a mes vencido). Si
+  // viene, el recibo lleva la relación de esos gastos con la parte de cada unidad.
+  const mesGastos = kind === "monthly" ? String(formData.get("expense_month") ?? "") : "";
+  if (mesGastos && !esMes(mesGastos)) return { error: "El mes de los gastos no es válido" };
 
   if (mode === "flat") {
     const raw =
@@ -285,11 +322,39 @@ export async function generateMonthlyInvoices(formData: FormData) {
   const omitidas = result.invoices.length - aEmitir.length;
   const r2 = (n: number) => Math.round(n * 100) / 100;
 
+  // Copia de los gastos del mes, tal como están al emitir: el recibo no cambia
+  // aunque después se anule o se cargue un gasto de ese mes.
+  let relacionId: string | null = null;
+  if (mesGastos) {
+    const relacion = await gastosDelMes(supabase, profile!.organization_id!, mesGastos);
+    if (relacion.total <= 0) {
+      return { error: `No hay gastos cargados en ${nombreDelMes(mesGastos)}. Cárgalos en Gastos e ingresos o emite sin elegir el mes de los gastos.` };
+    }
+    const { data: guardada, error: errRelacion } = await supabase
+      .from("relaciones_de_cobro")
+      .insert({
+        organization_id: profile!.organization_id!,
+        expense_month: `${mesGastos}-01`,
+        description,
+        due_date: dueDate,
+        total_gastos: relacion.total,
+        reserve_pct: pctFondo,
+        contingency_pct: pctConting,
+        detalle: relacion.categorias,
+        created_by: profile!.id,
+      })
+      .select("id")
+      .single();
+    if (errRelacion) return { error: errRelacion.message };
+    relacionId = guardada.id as string;
+  }
+
   const { data: insertadas, error } = await supabase
     .from("invoices")
-    .insert(aEmitir.map((i) => ({ ...i, created_by: profile!.id })))
+    .insert(aEmitir.map((i) => ({ ...i, created_by: profile!.id, ...(relacionId ? { relacion_id: relacionId } : {}) })))
     .select("id, unit_id");
   if (error) {
+    if (relacionId) await supabase.from("relaciones_de_cobro").delete().eq("id", relacionId);
     if ((error as { code?: string }).code === "23505") {
       return {
         error:
