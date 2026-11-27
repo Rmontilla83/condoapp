@@ -41,6 +41,7 @@ export const EVENTOS = {
   owner_contacts_imported: { area: "Personas", texto: "Aplicó una planilla de contactos" },
   portal_invite_sent: { area: "Personas", texto: "Invitó a propietarios al portal" },
   access_code_revoked: { area: "Personas", texto: "Revocó un código de acceso" },
+  profile_updated: { area: "Personas", texto: "Corrigió el nombre de una persona" },
   admin_cuenta_creada: { area: "Personas", texto: "Creó una cuenta de administración" },
   admin_funcion_cambiada: { area: "Personas", texto: "Cambió la función de una cuenta de administración" },
   // Cobranza

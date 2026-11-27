@@ -64,13 +64,18 @@ export default async function ComprobantePage({ params }: { params: Promise<{ id
     db.from("units").select("unit_number, block").eq("id", recibo.unit_id).maybeSingle(),
   ]);
   const hoy = todayInTimeZone(membrete.timezone);
-  const total = Math.round(filas.reduce((s, f) => s + Number(f.amount), 0) * 100) / 100;
-  const conBs = filas.every((f) => f.amount_bs != null);
-  const totalBs = conBs ? Math.round(filas.reduce((s, f) => s + Number(f.amount_bs), 0) * 100) / 100 : null;
+  // Si el pago fue mayor que lo pendiente, el resto quedó como saldo a favor.
+  const { data: adelanto } = base.payment_group_id
+    ? await db.from("unit_credits").select("amount, amount_bs").eq("payment_group_id", base.payment_group_id).eq("kind", "deposit").maybeSingle()
+    : { data: null };
+  const aFavor = Number(adelanto?.amount ?? 0);
+  const total = Math.round((filas.reduce((s, f) => s + Number(f.amount), 0) + aFavor) * 100) / 100;
+  const conBs = filas.every((f) => f.amount_bs != null) && (aFavor <= 0 || adelanto?.amount_bs != null);
+  const totalBs = conBs ? Math.round((filas.reduce((s, f) => s + Number(f.amount_bs), 0) + Number(adelanto?.amount_bs ?? 0)) * 100) / 100 : null;
   const tasaPago = base.exchange_rate != null ? Number(base.exchange_rate) : null;
   const propietarios = (cuenta?.propietarios ?? []).map((p) => p.nombre).filter(Boolean).join(", ");
   const etiquetaUnidad = unidad ? `${unidad.block ? `${unidad.block as string} · ` : ""}${unidad.unit_number as string}` : "—";
-  const conceptos = filas.map((f) => f.invoices!.description).join("; ");
+  const conceptos = [...filas.map((f) => f.invoices!.description), ...(aFavor > 0 ? ["saldo a favor para el próximo recibo"] : [])].join("; ");
   const volver = isAdminRole(profile)
     ? { href: `/admin/cuentas/${recibo.unit_id}`, texto: "Cuenta de la unidad" }
     : { href: "/pagos", texto: "Pagos" };
@@ -145,6 +150,14 @@ export default async function ComprobantePage({ params }: { params: Promise<{ id
                 <td className="py-2 text-right tabular-nums">{f.invoices!.status === "cancelled" ? "—" : usd(pendienteDe(f.invoices!))}</td>
               </tr>
             ))}
+            {aFavor > 0 && (
+              <tr className="border-b border-border">
+                <td className="py-2 whitespace-nowrap font-mono text-[12px]">Saldo a favor</td>
+                <td className="py-2">Se descuenta del próximo recibo de la unidad</td>
+                <td className="py-2 text-right tabular-nums">{usd(aFavor)}</td>
+                <td className="py-2 text-right tabular-nums">—</td>
+              </tr>
+            )}
           </tbody>
           <tfoot>
             <tr>

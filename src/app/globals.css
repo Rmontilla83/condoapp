@@ -396,6 +396,12 @@
     display: none !important;
   }
 
+  /* El membrete de un documento (logo, RIF, número) también es un <header>:
+     ese es justo lo que tiene que salir en el papel. */
+  .documento header {
+    display: flex !important;
+  }
+
   html,
   body {
     background: #fff !important;

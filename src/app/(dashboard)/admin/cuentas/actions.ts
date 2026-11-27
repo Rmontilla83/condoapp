@@ -142,15 +142,29 @@ export async function registrarPagoRecibido(fd: FormData): Promise<Resultado> {
     comprobante = creadas?.[0]?.id as string | undefined;
   }
   if (resta > 0) {
-    const { error } = await db.from("unit_credits").insert({
-      organization_id: orgId,
-      unit_id: unitId,
-      amount: resta,
-      kind: "deposit",
-      note: `Pago recibido${referencia ? ` (ref. ${referencia})` : ""}: excedente sobre los recibos pendientes`,
-      created_by: profile.id,
-    });
+    // Lo que no encontró recibo queda como saldo a favor, con los datos del pago
+    // para poder darle su comprobante (un pago adelantado no tiene recibo todavía).
+    const bsAplicados = filas.reduce((t, x) => t + Number(x.amount_bs ?? 0), 0);
+    const { data: saldo, error } = await db
+      .from("unit_credits")
+      .insert({
+        organization_id: orgId,
+        unit_id: unitId,
+        amount: resta,
+        kind: "deposit",
+        note: `Pago recibido${referencia ? ` (ref. ${referencia})` : ""}: ${filas.length ? "excedente sobre los recibos pendientes" : "pago adelantado, sin recibos pendientes"}`,
+        created_by: profile.id,
+        payment_method: metodo,
+        reference: referencia,
+        paid_at: cuando,
+        exchange_rate: tasa,
+        amount_bs: montoBs != null ? r2(montoBs - bsAplicados) : tasa ? r2(resta * tasa) : null,
+        payment_group_id: grupo,
+      })
+      .select("id")
+      .single();
     if (error) return { error: error.message };
+    comprobante ??= `saldo/${saldo.id as string}`;
   }
 
   await notificar(orgId, await perfilesDeUnidad(unitId), {

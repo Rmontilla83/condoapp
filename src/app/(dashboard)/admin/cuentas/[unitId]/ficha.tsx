@@ -63,6 +63,15 @@ export async function FichaDeLaUnidad({ unitId, origen }: { unitId: string; orig
     db.from("unit_notas").select("id, texto, creada_en, creada_por, profiles(full_name)").eq("unit_id", unitId).is("retirada_en", null).order("creada_en", { ascending: false }).limit(50),
     db.from("invoices").select("id, description, amount, due_date").eq("unit_id", unitId).eq("status", "paid").order("due_date", { ascending: false }).limit(12),
   ]);
+  // Pagos que quedaron como saldo a favor: cada uno tiene su comprobante.
+  const { data: adelantos } = await db
+    .from("unit_credits")
+    .select("id, amount, note, reference, paid_at, created_at, payment_group_id")
+    .eq("unit_id", unitId)
+    .eq("kind", "deposit")
+    .gt("amount", 0)
+    .order("created_at", { ascending: false })
+    .limit(12);
   const administra = puede(profile, "administrar");
   const notas: NotaDeUnidad[] = (notasCrudas ?? []).map((n) => ({
     id: n.id as string,
@@ -393,6 +402,32 @@ export async function FichaDeLaUnidad({ unitId, origen }: { unitId: string; orig
           </>
         )}
       </section>
+
+      {(adelantos ?? []).length > 0 && (
+        <section className="space-y-3" data-print-hide>
+          <h2 className="font-display text-[19px] text-marine-deep">Pagos adelantados y saldo a favor</h2>
+          <ul className="divide-y divide-border rounded-2xl border border-border bg-card px-4">
+            {(adelantos ?? []).map((a) => (
+              <li key={a.id as string} className="flex flex-wrap items-center justify-between gap-3 py-3 text-[14px]">
+                <span className="min-w-0 text-marine-deep">
+                  {fechaCorta(((a.paid_at ?? a.created_at) as string).slice(0, 10))}
+                  <span className="ml-2 tabular-nums">{usd(Number(a.amount))}</span>
+                  <span className="ml-2 text-mute">{(a.note as string | null) ?? ""}</span>
+                </span>
+                <Link
+                  href={`/pagos/comprobante/saldo/${a.id as string}`}
+                  className="inline-flex h-8 shrink-0 items-center rounded-lg border border-border px-3 text-[13px] font-medium text-marine-deep hover:bg-frost"
+                >
+                  Comprobante
+                </Link>
+              </li>
+            ))}
+          </ul>
+          <p className="text-[12px] text-mute">
+            Un pago que llega antes de que exista el recibo queda como saldo a favor y se descuenta solo del próximo recibo que se emita.
+          </p>
+        </section>
+      )}
 
       <section className="space-y-3">
         <h2 className="font-display text-[19px] text-marine-deep">Movimientos</h2>
