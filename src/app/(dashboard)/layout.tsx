@@ -84,9 +84,9 @@ export default async function DashboardLayout({
     : null;
 
   return (
-    <div className="flex h-screen bg-background">
+    <div data-print-flujo className="flex h-screen bg-background">
       <Sidebar isAdmin={isAdmin} condominio={condominio} pendientes={pendientes} />
-      <div className="flex flex-1 flex-col overflow-hidden">
+      <div data-print-flujo className="flex flex-1 flex-col overflow-hidden">
         {/* Cintillo live: hora Venezuela + tasa BCV actualizada.
             data-print-hide: la constancia de pago se imprime, y la tasa de HOY
             arriba de un comprobante de hace tres meses es engañosa. */}

@@ -145,8 +145,9 @@ export default async function ReciboPage({ params }: { params: Promise<{ id: str
               </tr>
             </thead>
             {categorias.map((c, i) => (
-              <tbody key={i} className="break-inside-avoid">
-                <tr className="border-b border-border bg-frost/60 font-semibold">
+              <tbody key={i}>
+                {/* La categoría puede partirse entre hojas; su título no se queda solo al pie. */}
+                <tr className="break-after-avoid border-b border-border bg-frost/60 font-semibold">
                   <td className="px-2 py-1.5">{c.nombre}</td>
                   <td className="py-1.5 text-right tabular-nums">{usd(c.total)}</td>
                   <td className="py-1.5 pl-4 pr-2 text-right tabular-nums">{usd(r2(c.total * parte))}</td>

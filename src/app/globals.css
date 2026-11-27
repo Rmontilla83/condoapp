@@ -425,6 +425,37 @@
     max-width: none !important;
   }
 
+  /* Los dos contenedores que envuelven a <main> también fijan la altura y
+     recortan: sin esto, un recibo con muchos gastos sale en una sola hoja,
+     cortado. En bloque, el documento fluye a las hojas que necesite. */
+  [data-print-flujo],
+  main {
+    display: block !important;
+    height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+  }
+
+  .documento tr {
+    break-inside: avoid;
+  }
+
+  /* El pie de una tabla se repite en cada hoja: los totales saldrían varias
+     veces. Como grupo de filas normal, salen una sola vez, al final. */
+  .documento tfoot {
+    display: table-row-group;
+  }
+
+  /* En papel las filas van más juntas: la relación de gastos de un mes cabe
+     en dos hojas en vez de cuatro. */
+  .documento table td,
+  .documento table th {
+    padding-top: 3px !important;
+    padding-bottom: 3px !important;
+    font-size: 11.5px !important;
+    line-height: 1.3 !important;
+  }
+
   /* Los tokens de marca en papel: fondos oscuros gastan tinta y no aportan. */
   .bg-card,
   .bg-cloud,
