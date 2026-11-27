@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { InvoiceRow } from "./invoice-row";
 import { MultiPayDialog } from "./multi-pay-dialog";
 import type { BankAccount, Invoice } from "@/types/database";
+import { anterioresSinElegir } from "@/lib/cobranza/orden-de-pago";
 
 interface PaymentTarget {
   invoices: Invoice[];
@@ -25,6 +26,24 @@ export function PendingInvoices({
 }) {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [target, setTarget] = useState<PaymentTarget | null>(null);
+  const [aviso, setAviso] = useState<string | null>(null);
+
+  /** Abre el pago solo si no queda un recibo más antiguo fuera de la selección. */
+  function pagar(elegidos: Invoice[]) {
+    const anteriores = anterioresSinElegir(elegidos, invoices);
+    if (anteriores.length > 0) {
+      setAviso(
+        anteriores.length === 1
+          ? `Primero hay que pagar el recibo más antiguo: «${anteriores[0].description}». Selecciónalo junto con este, o págalo antes.`
+          : `Primero hay que pagar los ${anteriores.length} recibos más antiguos, empezando por «${anteriores[0].description}». Selecciónalos junto con este, o págalos antes.`,
+      );
+      // Deja marcado lo que falta, para que el siguiente toque ya sirva.
+      setSelected(new Set([...elegidos, ...anteriores].map((i) => i.id)));
+      return;
+    }
+    setAviso(null);
+    setTarget({ invoices: elegidos });
+  }
 
   const selectedInvoices = useMemo(
     () => invoices.filter((i) => selected.has(i.id)),
@@ -52,12 +71,12 @@ export function PendingInvoices({
   }
 
   function payOne(invoice: Invoice) {
-    setTarget({ invoices: [invoice] });
+    pagar([invoice]);
   }
 
   function paySelected() {
     if (selectedInvoices.length === 0) return;
-    setTarget({ invoices: selectedInvoices });
+    pagar(selectedInvoices);
   }
 
   if (invoices.length === 0) {
@@ -93,6 +112,14 @@ export function PendingInvoices({
           )}
         </div>
       </div>
+
+      {aviso && (
+        <div role="alert" className="mb-3 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-[14px] text-amber-900">
+          <p className="font-semibold">Los recibos se pagan del más antiguo al más reciente</p>
+          <p className="mt-1">{aviso}</p>
+          <p className="mt-1 text-[13px]">Ya te los dejamos seleccionados: toca «Registrar pago» para pagarlos juntos.</p>
+        </div>
+      )}
 
       <div className="space-y-3">
         {invoices.map((invoice) => (

@@ -1,6 +1,7 @@
 "use server";
 
-import { estaAbierta, pendienteDe } from "@/lib/cuotas";
+import { ESTADOS_ABIERTOS, estaAbierta, pendienteDe } from "@/lib/cuotas";
+import { anterioresSinElegir } from "@/lib/cobranza/orden-de-pago";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import {
@@ -75,7 +76,7 @@ export async function submitPaymentForMultipleInvoices(formData: FormData) {
   // Validar todas las invoices existen y están pending/overdue
   const { data: invoices } = await supabase
     .from("invoices")
-    .select("id, amount, paid_amount, currency, status, unit_id")
+    .select("id, amount, paid_amount, currency, status, unit_id, due_date")
     .in("id", invoiceIds);
 
   if (!invoices || invoices.length !== invoiceIds.length) {
@@ -92,6 +93,31 @@ export async function submitPaymentForMultipleInvoices(formData: FormData) {
   const allPayable = invoices.every((i) => estaAbierta(i.status as string) && pendienteDe(i) > 0);
   if (!allPayable) {
     return { error: "Hay cuotas que ya no están pendientes" };
+  }
+
+  // Primero lo más antiguo: no se reporta el pago de un recibo reciente con uno
+  // anterior sin pagar en la misma unidad. Un recibo con comprobante en revisión
+  // ya está atendido y no bloquea.
+  const unidadesDelPago = [...new Set(invoices.map((i) => i.unit_id as string))];
+  const { data: abiertas } = await createAdminClient()
+    .from("invoices")
+    .select("id, unit_id, due_date, description, amount, paid_amount, status, transactions(status)")
+    .in("unit_id", unidadesDelPago)
+    .in("status", [...ESTADOS_ABIERTOS]);
+  const sinAtender = (abiertas ?? [])
+    .filter((a) => pendienteDe(a) > 0 && !((a.transactions ?? []) as { status: string }[]).some((t) => t.status === "pending"))
+    .map((a) => ({ id: a.id as string, unit_id: a.unit_id as string, due_date: a.due_date as string, description: a.description as string }));
+  const anteriores = anterioresSinElegir(
+    invoices.map((i) => ({ id: i.id as string, unit_id: i.unit_id as string, due_date: i.due_date as string })),
+    sinAtender,
+  );
+  if (anteriores.length > 0) {
+    return {
+      error:
+        anteriores.length === 1
+          ? `Primero hay que pagar el recibo más antiguo: «${anteriores[0].description}». Selecciónalo junto con este, o págalo antes.`
+          : `Primero hay que pagar los ${anteriores.length} recibos más antiguos, empezando por «${anteriores[0].description}». Selecciónalos junto con este, o págalos antes.`,
+    };
   }
 
   // Abono: solo sobre UNA cuota, mayor que cero y menor que lo que falta.
