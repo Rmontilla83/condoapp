@@ -10,6 +10,7 @@ import { bs, usd } from "@/lib/format";
 import {
   getCurrentProfile,
   getEffectiveRole,
+  getExpenseAccounts,
   getExpenseCategories,
   getCurrentBudget,
 } from "@/lib/queries";
@@ -20,7 +21,7 @@ import { NewExpenseDialog } from "./new-expense-dialog";
 import { NewIncomeDialog, VoidIncome } from "./new-income-dialog";
 import { VoidExpenseDialog } from "./void-expense-dialog";
 import { BudgetProgressCard } from "@/components/budget/budget-progress-card";
-import type { ExpenseCategory, OrgBudget, OrgBudgetItem } from "@/types/database";
+import type { ExpenseAccount, ExpenseCategory, OrgBudget, OrgBudgetItem } from "@/types/database";
 
 interface ExpenseRow {
   id: string;
@@ -77,7 +78,7 @@ export default async function FinanzasPage({ searchParams }: { searchParams: Pro
 
   const { centro: centroElegido } = await searchParams;
 
-  const [invoicesRes, expensesRes, transactionsRes, categoriesData, currentBudgetData, otrosRes, centrosRes, fondo, contingencia] = await Promise.all([
+  const [invoicesRes, expensesRes, transactionsRes, categoriesData, cuentasData, currentBudgetData, otrosRes, centrosRes, fondo, contingencia] = await Promise.all([
     supabase
       .from("invoices")
       .select("amount, paid_amount, status")
@@ -97,6 +98,7 @@ export default async function FinanzasPage({ searchParams }: { searchParams: Pro
       .neq("payment_method", "credit")
       .order("paid_at", { ascending: false }),
     getExpenseCategories(profile.organization_id),
+    getExpenseAccounts(profile.organization_id),
     getCurrentBudget(profile.organization_id, currentYear),
     supabase
       .from("other_incomes")
@@ -237,7 +239,7 @@ export default async function FinanzasPage({ searchParams }: { searchParams: Pro
         {puede(profile, "cargar") && (
           <div className="flex flex-wrap justify-end gap-2">
             <NewIncomeDialog centros={centros} hoy={hoy} tasas={tasas} />
-            <NewExpenseDialog categories={categories} centros={centros} saldoFondo={fondo.saldo} saldoContingencia={contingencia.saldo} tasas={tasas} porPagar={porPagar} />
+            <NewExpenseDialog categories={categories} cuentas={cuentasData as ExpenseAccount[]} centros={centros} saldoFondo={fondo.saldo} saldoContingencia={contingencia.saldo} tasas={tasas} porPagar={porPagar} />
           </div>
         )}
       </div>

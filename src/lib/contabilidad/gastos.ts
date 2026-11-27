@@ -72,12 +72,12 @@ export function salidaEnUsd(
 export async function saldosPorPagar(db: SupabaseClient, orgId: string): Promise<{ provisiones: number; retenciones: number }> {
   const { data, error } = await db
     .from("libro_diario")
-    .select("cuenta, debe_bs, haber_bs")
+    .select("cuenta_base, debe_bs, haber_bs")
     .eq("organization_id", orgId)
-    .in("cuenta", ["2.3.01", "2.3.02"]);
+    .in("cuenta_base", ["2.3.01", "2.3.02"]);
   if (error) throw new Error(error.message);
   const saldo = (cuenta: string) =>
-    Math.round((data ?? []).filter((l) => l.cuenta === cuenta).reduce((s, l) => s + Number(l.haber_bs) - Number(l.debe_bs), 0) * 100) / 100;
+    Math.round((data ?? []).filter((l) => l.cuenta_base === cuenta).reduce((s, l) => s + Number(l.haber_bs) - Number(l.debe_bs), 0) * 100) / 100;
   return { provisiones: saldo("2.3.01"), retenciones: saldo("2.3.02") };
 }
 

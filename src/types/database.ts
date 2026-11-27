@@ -278,6 +278,19 @@ export interface ExpenseCategory {
   created_at: string;
 }
 
+/** Cuenta de gasto: el segundo nivel, entre la categoría y la cuenta contable. */
+export interface ExpenseAccount {
+  id: string;
+  organization_id: string;
+  category_id: string;
+  code: string;
+  label: string;
+  ledger_code: string | null;
+  ledger_name: string | null;
+  position: number;
+  is_active: boolean;
+}
+
 export interface Vendor {
   id: string;
   organization_id: string;

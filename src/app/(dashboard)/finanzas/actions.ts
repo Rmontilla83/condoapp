@@ -17,7 +17,8 @@ export async function createExpense(formData: FormData) {
   if (!profile?.organization_id) return { error: "No tienes organización asignada" };
   if (!puede(profile, "cargar")) return { error: sinPermiso(profile) };
 
-  const categoryId = (formData.get("category_id") as string)?.trim();
+  let categoryId = (formData.get("category_id") as string)?.trim();
+  const accountId = (formData.get("expense_account_id") as string)?.trim() || null;
   const description = (formData.get("description") as string)?.trim();
   const amount = parseFloat(formData.get("amount") as string);
   const expenseDate =
@@ -38,12 +39,26 @@ export async function createExpense(formData: FormData) {
   const vendorIdRaw = (formData.get("vendor_id") as string)?.trim();
   const vendorNewName = (formData.get("vendor_new_name") as string)?.trim();
 
-  if (!categoryId || !description || !amount || amount <= 0) {
+  if (!description || !amount || amount <= 0) {
     return { error: "Completa todos los campos requeridos" };
   }
   if (retencion < 0 || retencion >= amount) return { error: "La retención debe ser menor que el monto" };
 
   const supabase = createAdminClient();
+
+  // Si el condominio usa cuentas de gasto, el gasto se carga por su cuenta: de
+  // ella salen la categoría (lo que ve el vecino) y la cuenta contable del libro.
+  const { data: cuentas } = await supabase
+    .from("expense_accounts")
+    .select("id, category_id")
+    .eq("organization_id", profile.organization_id)
+    .eq("is_active", true);
+  if ((cuentas ?? []).length > 0) {
+    const cuenta = (cuentas ?? []).find((c) => c.id === accountId);
+    if (!cuenta) return { error: "Elige la cuenta de gasto" };
+    categoryId = cuenta.category_id as string;
+  }
+  if (!categoryId) return { error: "Completa todos los campos requeridos" };
 
   // El libro valora cada gasto a la tasa BCV de su fecha, en las dos monedas.
   const tasas = await serieDeTasas(supabase, profile.organization_id);
@@ -125,6 +140,7 @@ export async function createExpense(formData: FormData) {
   const { error } = await supabase.from("expense_records").insert({
     organization_id: profile.organization_id,
     category_id: categoryId,
+    expense_account_id: (cuentas ?? []).length > 0 ? accountId : null,
     vendor_id: vendorId,
     cost_center_id: costCenterId,
     paid_from_reserve: conFondo,

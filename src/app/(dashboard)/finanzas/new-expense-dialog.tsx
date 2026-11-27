@@ -15,10 +15,12 @@ import {
 import { bs, usd } from "@/lib/format";
 import { hayTasaPara, tasaEn, type SerieTasas, type TipoContable } from "@/lib/contabilidad/gastos";
 import { createExpense } from "./actions";
-import type { ExpenseCategory } from "@/types/database";
+import type { ExpenseAccount, ExpenseCategory } from "@/types/database";
 
 interface Props {
   categories: ExpenseCategory[];
+  /** Cuentas de gasto. Si hay alguna, se elige la cuenta y la categoría sale de ella. */
+  cuentas?: ExpenseAccount[];
   /** Centros de costo activos. Si hay alguno, cada gasto debe decir el suyo. */
   centros?: { id: string; name: string }[];
   /** Saldo disponible de cada fondo. */
@@ -40,7 +42,7 @@ const AYUDA_TIPO: Record<TipoContable, string> = {
   entero_retencion: "Sale dinero del banco para pagarle al SENIAT lo retenido. No se cuenta otra vez como gasto.",
 };
 
-export function NewExpenseDialog({ categories, centros = [], saldoFondo = 0, saldoContingencia = 0, tasas = [], porPagar = { provisiones: 0, retenciones: 0 } }: Props) {
+export function NewExpenseDialog({ categories, cuentas = [], centros = [], saldoFondo = 0, saldoContingencia = 0, tasas = [], porPagar = { provisiones: 0, retenciones: 0 } }: Props) {
   const [conFondo, setConFondo] = useState(false);
   const [fondo, setFondo] = useState<"reserva" | "contingencia">("reserva");
   const saldoDelFondo = fondo === "contingencia" ? saldoContingencia : saldoFondo;
@@ -143,19 +145,44 @@ export function NewExpenseDialog({ categories, centros = [], saldoFondo = 0, sal
               {tipo === "entero_retencion" && ` Retenciones por enterar: ${bs(porPagar.retenciones)}.`}
             </p>
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="category_id">Categoría</Label>
-            <select id="category_id" name="category_id" className={campo} required defaultValue="">
-              <option value="" disabled>
-                Selecciona…
-              </option>
-              {categories.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.label}
+          {cuentas.length > 0 ? (
+            <div className="space-y-2">
+              <Label htmlFor="expense_account_id">Cuenta de gasto</Label>
+              <select id="expense_account_id" name="expense_account_id" className={campo} required defaultValue="">
+                <option value="" disabled>
+                  Selecciona…
                 </option>
-              ))}
-            </select>
-          </div>
+                {categories
+                  .filter((c) => cuentas.some((k) => k.category_id === c.id))
+                  .map((c) => (
+                    <optgroup key={c.id} label={c.label}>
+                      {cuentas
+                        .filter((k) => k.category_id === c.id)
+                        .map((k) => (
+                          <option key={k.id} value={k.id}>
+                            {k.code} · {k.label}
+                          </option>
+                        ))}
+                    </optgroup>
+                  ))}
+              </select>
+              <p className="text-[12px] text-mute">Las cuentas están agrupadas por categoría, que es lo que ve el vecino en su recibo.</p>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              <Label htmlFor="category_id">Categoría</Label>
+              <select id="category_id" name="category_id" className={campo} required defaultValue="">
+                <option value="" disabled>
+                  Selecciona…
+                </option>
+                {categories.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
           {centros.length > 0 && (
             <div className="space-y-2">
               <Label htmlFor="cost_center_id">Centro de costo</Label>

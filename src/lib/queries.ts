@@ -517,6 +517,21 @@ export async function getExpenseCategories(orgId: string) {
   return data ?? [];
 }
 
+/**
+ * Cuentas de gasto activas del condominio. Vacío si el condominio no las usa:
+ * en ese caso el gasto se carga eligiendo solo la categoría.
+ */
+export async function getExpenseAccounts(orgId: string) {
+  const { data } = await createAdminClient()
+    .from("expense_accounts")
+    .select("id, organization_id, category_id, code, label, ledger_code, ledger_name, position, is_active")
+    .eq("organization_id", orgId)
+    .eq("is_active", true)
+    .order("position", { ascending: true })
+    .order("code", { ascending: true });
+  return data ?? [];
+}
+
 export async function getActiveVendors(orgId: string) {
   const supabase = await createClient();
   const { data } = await supabase
